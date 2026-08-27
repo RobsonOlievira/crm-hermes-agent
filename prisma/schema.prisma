@@ -1,0 +1,409 @@
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+    output = "/home/ubuntu/crm_whitelabel/nextjs_space/node_modules/.prisma/client"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  MANAGER
+  MEMBER
+}
+
+enum LeadStatus {
+  PRIMEIRO_CONTATO
+  CONVERSA_ATIVA
+  FOLLOW_UP
+  BANCO_7_DIAS
+  NOVAS_MENSAGENS
+  REUNIAO_AGENDADA
+  PROPOSTA_ENVIADA
+  SERVICO_FECHADO
+  PAGAMENTO_CONFIRMADO
+  INATIVO
+  SEM_RESPOSTA
+}
+
+enum LeadSource {
+  WHATSAPP
+  LANDING_PAGE
+  META_ADS
+  GOOGLE_ADS
+  MANUAL
+  IMPORT
+  INDICACAO
+  ORGANICO
+}
+
+enum CatalogKind {
+  PRODUTO
+  SERVICO
+}
+
+enum ClientStatus {
+  ATIVO
+  INATIVO
+  INADIMPLENTE
+  CANCELADO
+  PROSPECTADO
+}
+
+enum InteractionType {
+  WHATSAPP_SENT
+  WHATSAPP_RECEIVED
+  EMAIL_SENT
+  PHONE_CALL
+  MEETING
+  PAYMENT_RECEIVED
+  STATUS_CHANGE
+  NOTE
+  CONTRACT_SENT
+  CONTRACT_SIGNED
+  TASK_CREATED
+  SYSTEM_EVENT
+}
+
+model Tenant {
+  id             String   @id @default(cuid())
+  name           String
+  slug           String   @unique
+  logoUrl        String?
+  primaryColor   String   @default("#3B82F6")
+  secondaryColor String   @default("#10B981")
+  mcpEnabled     Boolean  @default(false)
+  mcpToken       String?
+  mcpTokenSetAt  DateTime?
+  waOutboundWebhook String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  users               User[]
+  modules             Module[]
+  pipelines           Pipeline[]
+  leads               Lead[]
+  clients             Client[]
+  leadTypes           LeadType[]
+  catalogItems        CatalogItem[]
+  classificationRules ClassificationRule[]
+  purchases           Purchase[]
+  journeyAutomations  JourneyAutomation[]
+  calendarEvents      CalendarEvent[]
+  messages            Message[]
+  students            Student[]
+}
+
+model LeadType {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  key         String
+  label       String
+  color       String   @default("#3B82F6")
+  icon        String   @default("Tag")
+  description String?
+  isSystem    Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  leads        Lead[]
+  catalogItems CatalogItem[]
+  rules        ClassificationRule[]
+
+  @@unique([tenantId, key])
+}
+
+model CatalogItem {
+  id          String      @id @default(cuid())
+  tenantId    String
+  tenant      Tenant      @relation(fields: [tenantId], references: [id])
+  name        String
+  kind        CatalogKind @default(PRODUTO)
+  description String?
+  price       Float?
+  objective   String?
+  leadTypeId  String?
+  leadType    LeadType?   @relation(fields: [leadTypeId], references: [id])
+  isActive    Boolean     @default(true)
+  sortOrder   Int         @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  leads Lead[]
+  rules ClassificationRule[]
+  purchases Purchase[]
+}
+
+model ClassificationRule {
+  id            String       @id @default(cuid())
+  tenantId      String
+  tenant        Tenant       @relation(fields: [tenantId], references: [id])
+  name          String
+  keywords      String[]     @default([])
+  matchType     String       @default("any")
+  source        String?
+  leadTypeId    String?
+  leadType      LeadType?    @relation(fields: [leadTypeId], references: [id])
+  catalogItemId String?
+  catalogItem   CatalogItem? @relation(fields: [catalogItemId], references: [id])
+  autoReply     String?
+  isActive      Boolean      @default(true)
+  priority      Int          @default(0)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(MEMBER)
+  avatarUrl String?
+  jobTitle  String?
+  tenantId  String?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assignedLeads   Lead[]        @relation("LeadAssignee")
+  assignedClients Client[]      @relation("ClientAssignee")
+  interactions    Interaction[]
+  calendarEvents  CalendarEvent[] @relation("EventAssignee")
+}
+
+model Module {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  key         String
+  displayName String
+  description String?
+  category    String
+  isActive    Boolean  @default(false)
+  isCore      Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@unique([tenantId, key])
+}
+
+model Pipeline {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  name      String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  stages Stage[]
+}
+
+model Stage {
+  id         String   @id @default(cuid())
+  pipelineId String
+  pipeline   Pipeline @relation(fields: [pipelineId], references: [id])
+  name       String
+  color      String   @default("#3B82F6")
+  position   Int      @default(0)
+
+  leads Lead[]
+}
+
+model Lead {
+  id              String     @id @default(cuid())
+  tenantId        String
+  tenant          Tenant     @relation(fields: [tenantId], references: [id])
+  name            String
+  email           String?
+  phone           String
+  companyName     String?
+  cnpj            String?
+  status          LeadStatus @default(PRIMEIRO_CONTATO)
+  source          LeadSource @default(MANUAL)
+  score           Int        @default(0)
+  tags            String[]   @default([])
+  dealValue       Float?
+  assignedToId    String?
+  assignedTo      User?      @relation("LeadAssignee", fields: [assignedToId], references: [id])
+  stageId         String?
+  stage           Stage?     @relation(fields: [stageId], references: [id])
+  stagePosition   Int        @default(0)
+  leadTypeId      String?
+  leadType        LeadType?  @relation(fields: [leadTypeId], references: [id])
+  catalogItemId   String?
+  catalogItem     CatalogItem? @relation(fields: [catalogItemId], references: [id])
+  socialMedia     String?
+  objective       String?
+  firstContactAt  DateTime   @default(now())
+  lastInteraction DateTime?
+  totalPurchased  Float      @default(0)
+  lastMessageAt   DateTime?
+  lastMessageText String?
+  unreadCount     Int        @default(0)
+  isArchived      Boolean    @default(false)
+  archivedAt      DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  interactions Interaction[]
+  purchases    Purchase[]
+  calendarEvents CalendarEvent[]
+  messages     Message[]
+
+  @@index([tenantId, isArchived])
+  @@index([tenantId, lastMessageAt])
+}
+
+model Purchase {
+  id            String       @id @default(cuid())
+  tenantId      String
+  tenant        Tenant       @relation(fields: [tenantId], references: [id])
+  leadId        String
+  lead          Lead         @relation(fields: [leadId], references: [id])
+  description   String
+  amount        Float        @default(0)
+  catalogItemId String?
+  catalogItem   CatalogItem? @relation(fields: [catalogItemId], references: [id])
+  createdAt     DateTime     @default(now())
+
+  @@index([tenantId])
+  @@index([leadId])
+}
+
+model JourneyAutomation {
+  id            String   @id @default(cuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  name          String
+  description   String?
+  fromStatus    String?
+  toStatus      String?
+  triggerType   String   @default("no_reply")
+  delayHours    Int      @default(0)
+  action        String   @default("move_stage")
+  message       String?
+  keepChannelTag Boolean @default(true)
+  connectHermes Boolean  @default(true)
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+model Client {
+  id            String       @id @default(cuid())
+  tenantId      String
+  tenant        Tenant       @relation(fields: [tenantId], references: [id])
+  name          String
+  companyName   String?
+  cnpj          String?
+  email         String?
+  phone         String
+  status        ClientStatus @default(ATIVO)
+  lifetimeValue Float        @default(0)
+  segment       String?
+  assignedToId  String?
+  assignedTo    User?        @relation("ClientAssignee", fields: [assignedToId], references: [id])
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  interactions Interaction[]
+}
+
+model CalendarEvent {
+  id           String    @id @default(cuid())
+  tenantId     String
+  tenant       Tenant    @relation(fields: [tenantId], references: [id])
+  title        String
+  description  String?
+  type         String    @default("MEETING")
+  status       String    @default("SCHEDULED")
+  startsAt     DateTime
+  endsAt       DateTime
+  allDay       Boolean   @default(false)
+  location     String?
+  meetingUrl   String?
+  leadId       String?
+  lead         Lead?     @relation(fields: [leadId], references: [id])
+  assignedToId String?
+  assignedTo   User?     @relation("EventAssignee", fields: [assignedToId], references: [id])
+  color        String?
+  reminderMinutes Int?
+  syncSource   String    @default("local")
+  googleEventId String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([tenantId, startsAt])
+}
+
+model Interaction {
+  id        String          @id @default(cuid())
+  tenantId  String
+  leadId    String?
+  lead      Lead?           @relation(fields: [leadId], references: [id])
+  clientId  String?
+  client    Client?         @relation(fields: [clientId], references: [id])
+  userId    String?
+  user      User?           @relation(fields: [userId], references: [id])
+  type      InteractionType
+  title     String
+  content   String?
+  amount    Float?
+  createdAt DateTime        @default(now())
+}
+
+model Student {
+  id           String   @id @default(cuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  name         String
+  email        String?
+  phone        String?
+  product      String?
+  plan         String?
+  status       String   @default("ATIVO")
+  progress     Int      @default(0)
+  amountPaid   Float    @default(0)
+  source       String?
+  enrolledAt   DateTime @default(now())
+  lastAccessAt DateTime?
+  avatarUrl    String?
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, enrolledAt])
+}
+
+model Message {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  leadId      String
+  lead        Lead     @relation(fields: [leadId], references: [id])
+  direction   String   @default("INBOUND")
+  content     String
+  status      String   @default("SENT")
+  senderName  String?
+  isFromBot   Boolean  @default(false)
+  mediaUrl    String?
+  mediaType   String?
+  waMessageId String?
+  timestamp   DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId, leadId])
+  @@index([leadId, timestamp])
+}
