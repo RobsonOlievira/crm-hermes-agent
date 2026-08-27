@@ -4,7 +4,18 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/session'
 import { recordOutboundMessage, notifyOutboundWebhook } from '@/lib/conversations'
-import type { Message } from '@prisma/client'
+
+interface Message {
+  id: string
+  direction: string
+  content: string
+  status: string
+  senderName: string | null
+  isFromBot: boolean
+  mediaUrl: string | null
+  mediaType: string | null
+  timestamp: Date
+}
 
 // Retorna as mensagens de uma conversa (ordem cronológica).
 export async function GET(_req: Request, { params }: { params: { leadId: string } }) {
