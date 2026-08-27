@@ -16,6 +16,13 @@ export function phoneKey(raw: string): string {
   return normalizePhone(raw).slice(-8)
 }
 
+// Forma mínima de Lead usada em buscas por telefone (evita dependência do
+// Prisma client gerado, que o ambiente de build não executa).
+interface LeadPhone {
+  id: string
+  phone: string
+}
+
 async function firstStageId(tenantId: string): Promise<string | null> {
   const pipeline = await prisma.pipeline.findFirst({
     where: { tenantId },
@@ -32,7 +39,7 @@ export async function findLeadByPhone(tenantId: string, phone: string) {
     where: { tenantId },
     select: { id: true, phone: true },
   })
-  return leads.find((l) => phoneKey(l.phone) === key) ?? null
+  return leads.find((l: LeadPhone) => phoneKey(l.phone) === key) ?? null
 }
 
 interface InboundInput {
