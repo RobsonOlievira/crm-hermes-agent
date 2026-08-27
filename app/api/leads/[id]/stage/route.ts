@@ -3,7 +3,19 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/session'
-import { LeadStatus } from '@prisma/client'
+
+type LeadStatus =
+  | 'PRIMEIRO_CONTATO'
+  | 'CONVERSA_ATIVA'
+  | 'FOLLOW_UP'
+  | 'BANCO_7_DIAS'
+  | 'NOVAS_MENSAGENS'
+  | 'REUNIAO_AGENDADA'
+  | 'PROPOSTA_ENVIADA'
+  | 'SERVICO_FECHADO'
+  | 'PAGAMENTO_CONFIRMADO'
+  | 'INATIVO'
+  | 'SEM_RESPOSTA';
 
 const STAGE_STATUS: Record<string, LeadStatus> = {
   'stage-1': 'PRIMEIRO_CONTATO',
