@@ -32,3 +32,6 @@ Thumbs.db
 
 # Build artifacts
 *.tsbuildinfo
+
+# StayCloud CLI (credenciais locais — não versionar)
+.staycloud/
