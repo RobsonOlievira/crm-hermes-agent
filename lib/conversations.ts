@@ -223,7 +223,7 @@ export async function listConversations(tenantId: string, opts?: { search?: stri
     orderBy: { lastMessageAt: 'desc' },
     take: opts?.limit ?? 100,
     include: {
-      leadType: { select: { label: true, color: true } },
+      leadTypes: { select: { leadType: { select: { label: true, color: true } } } },
       assignedTo: { select: { name: true } },
     },
   })

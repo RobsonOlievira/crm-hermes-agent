@@ -12,25 +12,25 @@ export default async function PipelinePage() {
   const pipeline = tenantId
     ? await prisma.pipeline.findFirst({
         where: { tenantId },
-        include: {
-          stages: {
-            orderBy: { position: 'asc' },
-            include: {
-              leads: {
-                where: { tenantId, isArchived: false },
-                include: { assignedTo: true, leadType: true },
-                orderBy: { stagePosition: 'asc' },
+include: {
+            stages: {
+              orderBy: { position: 'asc' },
+              include: {
+                leads: {
+                  where: { tenantId, isArchived: false },
+                  include: { assignedTo: true, leadTypes: { include: { leadType: true } } },
+                  orderBy: { stagePosition: 'asc' },
+                },
               },
             },
           },
-        },
       })
     : null
 
   const archivedLeads = tenantId
     ? await prisma.lead.findMany({
         where: { tenantId, isArchived: true },
-        include: { assignedTo: true, leadType: true, stage: true },
+        include: { assignedTo: true, leadTypes: { include: { leadType: true } }, stage: true },
         orderBy: { archivedAt: 'desc' },
       })
     : []
@@ -45,10 +45,10 @@ export default async function PipelinePage() {
       source: l.source,
       assignedToName: l.assignedTo?.name ?? null,
       assignedToAvatar: l.assignedTo?.avatarUrl ?? null,
-      leadTypeId: l.leadTypeId ?? null,
-      leadTypeLabel: l.leadType?.label ?? null,
-      leadTypeColor: l.leadType?.color ?? null,
-      leadTypeIcon: l.leadType?.icon ?? null,
+      leadTypeIds: (l.leadTypes ?? []).map((lt: any) => lt.leadTypeId),
+      leadTypeLabels: (l.leadTypes ?? []).map((lt: any) => lt.leadType?.label),
+      leadTypeColors: (l.leadTypes ?? []).map((lt: any) => lt.leadType?.color),
+      leadTypeIcons: (l.leadTypes ?? []).map((lt: any) => lt.leadType?.icon),
       objective: l.objective ?? null,
       totalPurchased: l.totalPurchased ?? 0,
       createdAt: (l.createdAt instanceof Date ? l.createdAt : new Date(l.createdAt)).toISOString(),
@@ -70,10 +70,10 @@ export default async function PipelinePage() {
     source: l.source,
     assignedToName: l.assignedTo?.name ?? null,
     assignedToAvatar: l.assignedTo?.avatarUrl ?? null,
-    leadTypeId: l.leadTypeId ?? null,
-    leadTypeLabel: l.leadType?.label ?? null,
-    leadTypeColor: l.leadType?.color ?? null,
-    leadTypeIcon: l.leadType?.icon ?? null,
+    leadTypeIds: (l.leadTypes ?? []).map((lt: any) => lt.leadTypeId),
+    leadTypeLabels: (l.leadTypes ?? []).map((lt: any) => lt.leadType?.label),
+    leadTypeColors: (l.leadTypes ?? []).map((lt: any) => lt.leadType?.color),
+    leadTypeIcons: (l.leadTypes ?? []).map((lt: any) => lt.leadType?.icon),
     objective: l.objective ?? null,
     totalPurchased: l.totalPurchased ?? 0,
     createdAt: (l.createdAt instanceof Date ? l.createdAt : new Date(l.createdAt)).toISOString(),

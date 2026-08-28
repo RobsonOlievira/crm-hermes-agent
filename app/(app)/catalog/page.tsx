@@ -13,7 +13,7 @@ export default async function CatalogPage() {
     tenantId
       ? prisma.catalogItem.findMany({
           where: { tenantId },
-          include: { leadType: true, _count: { select: { leads: true } } },
+          include: { leadTypes: { include: { leadType: true } }, _count: { select: { leads: true } } },
           orderBy: { sortOrder: 'asc' },
         })
       : Promise.resolve([]),
@@ -29,10 +29,10 @@ export default async function CatalogPage() {
     description: i.description,
     price: i.price,
     objective: i.objective,
-    leadTypeId: i.leadTypeId,
-    leadTypeLabel: i.leadType?.label ?? null,
-    leadTypeColor: i.leadType?.color ?? null,
-    leadTypeIcon: i.leadType?.icon ?? null,
+    leadTypeIds: (i.leadTypes ?? []).map((l: any) => l.leadTypeId),
+    leadTypeLabels: (i.leadTypes ?? []).map((l: any) => l.leadType?.label),
+    leadTypeColors: (i.leadTypes ?? []).map((l: any) => l.leadType?.color),
+    leadTypeIcons: (i.leadTypes ?? []).map((l: any) => l.leadType?.icon),
     isActive: i.isActive,
     leadCount: i._count?.leads ?? 0,
   }))

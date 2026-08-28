@@ -75,7 +75,7 @@ async function handleMessage(tenantId: string, msg: any): Promise<any | null> {
           capabilities: { tools: { listChanged: false } },
           serverInfo: SERVER_INFO,
           instructions:
-            'Servidor MCP do NexusCRM. Use tools/list para descobrir as ferramentas disponíveis e tools/call para executar ações no CRM (leads, funil, agenda, interações, compras e automações). Todas as ações ficam restritas ao tenant do token.',
+            'Servidor MCP do NexusCRM. Use tools/list para descobrir as ferramentas disponíveis e tools/call para executar ações no CRM (leads, funil, WhatsApp, agenda, pagamentos, contratos, tráfego pago e automações). Todas as ações ficam restritas ao tenant do token.',
         },
       }
 

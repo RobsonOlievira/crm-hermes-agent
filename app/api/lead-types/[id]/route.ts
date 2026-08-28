@@ -31,9 +31,8 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
     const type = await prisma.leadType.findFirst({ where: { id: params.id, tenantId: user.tenantId } })
     if (!type) return NextResponse.json({ error: 'Tipo não encontrado' }, { status: 404 })
     if (type.isSystem) return NextResponse.json({ error: 'Tipos padrão do sistema não podem ser excluídos. Você pode desativá-lo.' }, { status: 400 })
-    // Desvincula referências antes de excluir
-    await prisma.lead.updateMany({ where: { leadTypeId: type.id }, data: { leadTypeId: null } })
-    await prisma.catalogItem.updateMany({ where: { leadTypeId: type.id }, data: { leadTypeId: null } })
+    // Associações com leads e catálogo são removidas automaticamente (ON DELETE CASCADE).
+    // Regras de classificação mantêm referência opcional, então limpamos manualmente.
     await prisma.classificationRule.updateMany({ where: { leadTypeId: type.id }, data: { leadTypeId: null } })
     await prisma.leadType.delete({ where: { id: type.id } })
     return NextResponse.json({ ok: true })

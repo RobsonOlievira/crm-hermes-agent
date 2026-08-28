@@ -14,7 +14,7 @@ export default async function LeadsPage() {
     tenantId
       ? prisma.lead.findMany({
           where: { tenantId },
-          include: { assignedTo: true, leadType: true },
+          include: { assignedTo: true, leadTypes: { include: { leadType: true } } },
           orderBy: { createdAt: 'desc' },
         })
       : Promise.resolve([]),
@@ -32,10 +32,10 @@ export default async function LeadsPage() {
     status: l.status,
     source: l.source,
     dealValue: l.dealValue,
-    leadTypeId: l.leadTypeId ?? null,
-    leadTypeLabel: l.leadType?.label ?? null,
-    leadTypeColor: l.leadType?.color ?? null,
-    leadTypeIcon: l.leadType?.icon ?? null,
+    leadTypeIds: (l.leadTypes ?? []).map((lt: any) => lt.leadTypeId),
+    leadTypeLabels: (l.leadTypes ?? []).map((lt: any) => lt.leadType?.label),
+    leadTypeColors: (l.leadTypes ?? []).map((lt: any) => lt.leadType?.color),
+    leadTypeIcons: (l.leadTypes ?? []).map((lt: any) => lt.leadType?.icon),
     assignedToId: l.assignedToId,
     assignedToName: l.assignedTo?.name ?? null,
     assignedToAvatar: l.assignedTo?.avatarUrl ?? null,

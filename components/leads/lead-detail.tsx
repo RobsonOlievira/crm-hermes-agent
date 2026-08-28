@@ -41,9 +41,9 @@ export interface LeadDetailData {
   lastInteraction: string | null
   socialMedia: string | null
   objective: string | null
-  leadTypeLabel: string | null
-  leadTypeColor: string | null
-  leadTypeIcon: string | null
+  leadTypeLabels: string[]
+  leadTypeColors: string[]
+  leadTypeIcons: string[]
   catalogItemName: string | null
   totalPurchased: number
   purchases: { id: string; description: string; amount: number; createdAt: string; catalogItemName: string | null }[]
@@ -99,11 +99,11 @@ export function LeadDetail({ data }: { data: LeadDetailData }) {
                 {data.companyName && <p className="text-sm text-muted-foreground">{data.companyName}</p>}
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <LeadStatusBadge status={data.status} />
-                  {data.leadTypeLabel && (
-                    <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: (data.leadTypeColor ?? '#6B7280') + '1a', color: data.leadTypeColor ?? '#6B7280' }}>
-                      {data.leadTypeIcon && <Icon name={data.leadTypeIcon} className="h-3 w-3" />} {data.leadTypeLabel}
+                  {(data.leadTypeLabels ?? []).map((label, idx) => (
+                    <span key={idx} className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: (data.leadTypeColors[idx] ?? '#6B7280') + '1a', color: data.leadTypeColors[idx] ?? '#6B7280' }}>
+                      {data.leadTypeIcons[idx] && <Icon name={data.leadTypeIcons[idx]} className="h-3 w-3" />} {label}
                     </span>
-                  )}
+                  ))}
                   <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
                     {LEAD_SOURCE_META[data.source]?.label ?? data.source}
                   </span>
@@ -152,7 +152,15 @@ export function LeadDetail({ data }: { data: LeadDetailData }) {
             <Card className="p-5">
               <h3 className="mb-2 text-sm font-semibold">Detalhes da oportunidade</h3>
               <div className="divide-y">
-                <InfoRow icon={<Tag className="h-4 w-4" />} label="Tipo de lead" value={data.leadTypeLabel} />
+                <InfoRow icon={<Tag className="h-4 w-4" />} label="Tipos de lead" value={(data.leadTypeLabels ?? []).length > 0 ? (
+                  <span className="flex flex-wrap gap-1">
+                    {(data.leadTypeLabels ?? []).map((label, idx) => (
+                      <span key={idx} className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: (data.leadTypeColors[idx] ?? '#6B7280') + '1a', color: data.leadTypeColors[idx] ?? '#6B7280' }}>
+                        {data.leadTypeIcons[idx] && <Icon name={data.leadTypeIcons[idx]} className="h-3 w-3" />} {label}
+                      </span>
+                    ))}
+                  </span>
+                ) : '—'} />
                 <InfoRow icon={<Target className="h-4 w-4" />} label="Objetivo" value={data.objective} />
                 <InfoRow icon={<Package className="h-4 w-4" />} label="Produto de interesse" value={data.catalogItemName} />
                 <InfoRow icon={<Star className="h-4 w-4" />} label="Responsável" value={data.assignedToName} />

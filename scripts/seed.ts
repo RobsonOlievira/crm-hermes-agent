@@ -33,12 +33,12 @@ const LEAD_TYPES = [
 ]
 
 const CATALOG_ITEMS = [
-  { id: 'catalog-1', name: 'Curso de Marketing Digital', kind: CatalogKind.PRODUTO, price: 1997, leadTypeKey: 'aluno', objective: 'Comprar o curso de Marketing Digital', description: 'Formação completa em marketing digital com certificado.', sortOrder: 1 },
-  { id: 'catalog-2', name: 'Mentoria Individual', kind: CatalogKind.SERVICO, price: 2500, leadTypeKey: 'aluno', objective: 'Contratar mentoria individual', description: 'Acompanhamento 1:1 por 3 meses.', sortOrder: 2 },
-  { id: 'catalog-3', name: 'Gestão de Tráfego Pago', kind: CatalogKind.SERVICO, price: 3500, leadTypeKey: 'cliente', objective: 'Contratar gestão de tráfego pago', description: 'Gestão mensal de campanhas Meta e Google Ads.', sortOrder: 3 },
-  { id: 'catalog-4', name: 'Consultoria B2B', kind: CatalogKind.SERVICO, price: 8000, leadTypeKey: 'outra_empresa', objective: 'Fechar projeto de consultoria B2B', description: 'Diagnóstico e plano de crescimento para empresas.', sortOrder: 4 },
-  { id: 'catalog-5', name: 'Plano Anual de Assessoria', kind: CatalogKind.PRODUTO, price: 12000, leadTypeKey: 'cliente', objective: 'Assinar o plano anual de assessoria', description: 'Assessoria de marketing recorrente por 12 meses.', sortOrder: 5 },
-  { id: 'catalog-6', name: 'Programa de Parcerias', kind: CatalogKind.SERVICO, price: null as number | null, leadTypeKey: 'parceiro', objective: 'Ingressar no programa de parcerias', description: 'Comissionamento por indicação de novos clientes.', sortOrder: 6 },
+  { id: 'catalog-1', name: 'Curso de Marketing Digital', kind: CatalogKind.PRODUTO, price: 1997, leadTypeKey: 'aluno', extraLeadTypeKeys: ['cliente'], objective: 'Comprar o curso de Marketing Digital', description: 'Formação completa em marketing digital com certificado.', sortOrder: 1 },
+  { id: 'catalog-2', name: 'Mentoria Individual', kind: CatalogKind.SERVICO, price: 2500, leadTypeKey: 'aluno', extraLeadTypeKeys: ['cliente'], objective: 'Contratar mentoria individual', description: 'Acompanhamento 1:1 por 3 meses.', sortOrder: 2 },
+  { id: 'catalog-3', name: 'Gestão de Tráfego Pago', kind: CatalogKind.SERVICO, price: 3500, leadTypeKey: 'cliente', extraLeadTypeKeys: ['outra_empresa'], objective: 'Contratar gestão de tráfego pago', description: 'Gestão mensal de campanhas Meta e Google Ads.', sortOrder: 3 },
+  { id: 'catalog-4', name: 'Consultoria B2B', kind: CatalogKind.SERVICO, price: 8000, leadTypeKey: 'outra_empresa', extraLeadTypeKeys: ['cliente'], objective: 'Fechar projeto de consultoria B2B', description: 'Diagnóstico e plano de crescimento para empresas.', sortOrder: 4 },
+  { id: 'catalog-5', name: 'Plano Anual de Assessoria', kind: CatalogKind.PRODUTO, price: 12000, leadTypeKey: 'cliente', extraLeadTypeKeys: ['aluno'], objective: 'Assinar o plano anual de assessoria', description: 'Assessoria de marketing recorrente por 12 meses.', sortOrder: 5 },
+  { id: 'catalog-6', name: 'Programa de Parcerias', kind: CatalogKind.SERVICO, price: null as number | null, leadTypeKey: 'parceiro', extraLeadTypeKeys: ['outra_empresa'], objective: 'Ingressar no programa de parcerias', description: 'Comissionamento por indicação de novos clientes.', sortOrder: 6 },
 ]
 
 const CLASSIFICATION_RULES = [
@@ -156,10 +156,12 @@ async function main() {
 
   // Catalog Items
   for (const c of CATALOG_ITEMS) {
+    const leadTypeKeys = [c.leadTypeKey, ...(c.extraLeadTypeKeys ?? [])]
+    const leadTypeConnections = leadTypeKeys.map((k) => ({ leadType: { connect: { id: `ltype-${k}` } } }))
     await prisma.catalogItem.upsert({
       where: { id: c.id },
-      update: { name: c.name, kind: c.kind, price: c.price, objective: c.objective, description: c.description, leadTypeId: `ltype-${c.leadTypeKey}`, sortOrder: c.sortOrder, isActive: true },
-      create: { id: c.id, tenantId: TENANT_ID, name: c.name, kind: c.kind, price: c.price, objective: c.objective, description: c.description, leadTypeId: `ltype-${c.leadTypeKey}`, sortOrder: c.sortOrder, isActive: true },
+      update: { name: c.name, kind: c.kind, price: c.price, objective: c.objective, description: c.description, leadTypes: { deleteMany: {}, create: leadTypeConnections }, sortOrder: c.sortOrder, isActive: true },
+      create: { id: c.id, tenantId: TENANT_ID, name: c.name, kind: c.kind, price: c.price, objective: c.objective, description: c.description, leadTypes: { create: leadTypeConnections }, sortOrder: c.sortOrder, isActive: true },
     })
   }
 
@@ -191,7 +193,9 @@ async function main() {
     const catalogItemId = matchingCatalog?.id ?? null
     const objective = matchingCatalog?.objective ?? null
     const socialMedia = SOCIAL_HANDLES[i % SOCIAL_HANDLES.length]
-    const leadTypeId = `ltype-${leadTypeKey}`
+    const leadTypeKeys = [leadTypeKey]
+    if (leadTypeKey !== 'cliente' && (status === 'SERVICO_FECHADO' || status === 'NOVAS_MENSAGENS')) leadTypeKeys.push('cliente')
+    const leadTypeConnections = leadTypeKeys.map((k) => ({ leadType: { connect: { id: `ltype-${k}` } } }))
 
     // Banco de conversas em off: conversas que "morreram" (ficaram dias sem resposta).
     // Saem das colunas do pipeline e ficam guardadas para consulta rápida.
@@ -220,7 +224,7 @@ async function main() {
 
     await prisma.lead.upsert({
       where: { id: `lead-${i + 1}` },
-      update: { leadTypeId, catalogItemId, objective, socialMedia, status, stageId, totalPurchased, isArchived, archivedAt: isArchived ? daysAgo(9 + (i % 5)) : null },
+      update: { leadTypes: { deleteMany: {}, create: leadTypeConnections }, catalogItemId, objective, socialMedia, status, stageId, totalPurchased, isArchived, archivedAt: isArchived ? daysAgo(9 + (i % 5)) : null },
       create: {
         id: `lead-${i + 1}`,
         tenantId: TENANT_ID,
@@ -237,7 +241,7 @@ async function main() {
         assignedToId,
         stageId,
         stagePosition: Math.floor(i / 6),
-        leadTypeId,
+        leadTypes: { create: leadTypeConnections },
         catalogItemId,
         objective,
         socialMedia,

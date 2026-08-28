@@ -26,10 +26,10 @@ export interface KanbanCard {
   source: string
   assignedToName: string | null
   assignedToAvatar: string | null
-  leadTypeId: string | null
-  leadTypeLabel: string | null
-  leadTypeColor: string | null
-  leadTypeIcon: string | null
+  leadTypeIds: string[]
+  leadTypeLabels: string[]
+  leadTypeColors: string[]
+  leadTypeIcons: string[]
   objective: string | null
   totalPurchased: number
   createdAt: string
@@ -166,9 +166,7 @@ export function KanbanBoard({
 
   const leadTypeOptions = useMemo(() => {
     const map = new Map<string, string>()
-    for (const c of allCards) {
-      if (c.leadTypeId && c.leadTypeLabel) map.set(c.leadTypeId, c.leadTypeLabel)
-    }
+    for (const c of allCards) (c.leadTypeIds ?? []).forEach((id, idx) => { if (id && c.leadTypeLabels[idx]) map.set(id, c.leadTypeLabels[idx]) })
     return Array.from(map.entries()).map(([id, label]) => ({ id, label }))
   }, [allCards])
 
@@ -183,7 +181,7 @@ export function KanbanBoard({
   const matches = useCallback(
     (c: KanbanCard) =>
       inPeriod(c.createdAt, period) &&
-      (leadTypeId === 'all' || c.leadTypeId === leadTypeId) &&
+      (leadTypeId === 'all' || (c.leadTypeIds ?? []).includes(leadTypeId)) &&
       (objective === 'all' || c.objective === objective),
     [period, leadTypeId, objective]
   )
@@ -400,15 +398,16 @@ export function KanbanBoard({
                       </Avatar>
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                      {card.leadTypeLabel && (
+                      {(card.leadTypeLabels ?? []).map((label, idx) => (
                         <span
+                          key={idx}
                           className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
-                          style={{ backgroundColor: `${card.leadTypeColor ?? '#6B7280'}1a`, color: card.leadTypeColor ?? '#6B7280' }}
+                          style={{ backgroundColor: `${card.leadTypeColors[idx] ?? '#6B7280'}1a`, color: card.leadTypeColors[idx] ?? '#6B7280' }}
                         >
-                          {card.leadTypeIcon && <Icon name={card.leadTypeIcon} className="h-3 w-3" />}
-                          {card.leadTypeLabel}
+                          {card.leadTypeIcons[idx] && <Icon name={card.leadTypeIcons[idx]} className="h-3 w-3" />}
+                          {label}
                         </span>
-                      )}
+                      ))}
                       {card.stageName && (
                         <span
                           className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium"
@@ -562,18 +561,21 @@ export function KanbanBoard({
                       </div>
                     </div>
 
-                    {card.leadTypeLabel && (
+                    {card.leadTypeLabels?.length > 0 && (
                       <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                        <span
-                          className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
-                          style={{
-                            backgroundColor: `${card.leadTypeColor ?? '#6B7280'}1a`,
-                            color: card.leadTypeColor ?? '#6B7280',
-                          }}
-                        >
-                          {card.leadTypeIcon && <Icon name={card.leadTypeIcon} className="h-3 w-3" />}
-                          {card.leadTypeLabel}
-                        </span>
+                        {(card.leadTypeLabels ?? []).map((label, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
+                            style={{
+                              backgroundColor: `${card.leadTypeColors[idx] ?? '#6B7280'}1a`,
+                              color: card.leadTypeColors[idx] ?? '#6B7280',
+                            }}
+                          >
+                            {card.leadTypeIcons[idx] && <Icon name={card.leadTypeIcons[idx]} className="h-3 w-3" />}
+                            {label}
+                          </span>
+                        ))}
                       </div>
                     )}
                     {card.objective && (

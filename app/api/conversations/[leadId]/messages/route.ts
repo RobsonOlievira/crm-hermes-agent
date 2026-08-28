@@ -24,7 +24,7 @@ export async function GET(_req: Request, { params }: { params: { leadId: string 
   const lead = await prisma.lead.findFirst({
     where: { id: params.leadId, tenantId: user.tenantId },
     include: {
-      leadType: { select: { label: true, color: true } },
+      leadTypes: { select: { leadType: { select: { label: true, color: true } } } },
       assignedTo: { select: { name: true } },
     },
   })
@@ -51,8 +51,8 @@ export async function GET(_req: Request, { params }: { params: { leadId: string 
       dealValue: lead.dealValue,
       totalPurchased: lead.totalPurchased,
       objective: lead.objective,
-      leadTypeLabel: lead.leadType?.label ?? null,
-      leadTypeColor: lead.leadType?.color ?? null,
+      leadTypeLabels: (lead.leadTypes ?? []).map((lt) => lt.leadType?.label),
+      leadTypeColors: (lead.leadTypes ?? []).map((lt) => lt.leadType?.color),
       assignedToName: lead.assignedTo?.name ?? null,
       firstContactAt: lead.firstContactAt ? lead.firstContactAt.toISOString() : null,
       messageCount,

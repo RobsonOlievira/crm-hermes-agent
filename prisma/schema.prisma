@@ -112,11 +112,36 @@ model LeadType {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  leads        Lead[]
-  catalogItems CatalogItem[]
+  leads        LeadLeadType[]
+  catalogItems CatalogItemLeadType[]
   rules        ClassificationRule[]
 
   @@unique([tenantId, key])
+}
+
+// Um lead pode ter VÁRIOS tipos (ex.: "Aluno" e "Cliente" ao mesmo tempo).
+model LeadLeadType {
+  leadId     String
+  lead       Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  leadTypeId String
+  leadType   LeadType  @relation(fields: [leadTypeId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+
+  @@id([leadId, leadTypeId])
+  @@index([leadTypeId])
+}
+
+// Um item do catálogo pode ter VÁRIOS tipos de lead alvo
+// (leads diferentes podem se interessar pelo mesmo produto/serviço).
+model CatalogItemLeadType {
+  catalogItemId String
+  catalogItem   CatalogItem @relation(fields: [catalogItemId], references: [id], onDelete: Cascade)
+  leadTypeId    String
+  leadType      LeadType    @relation(fields: [leadTypeId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+
+  @@id([catalogItemId, leadTypeId])
+  @@index([leadTypeId])
 }
 
 model CatalogItem {
@@ -128,16 +153,15 @@ model CatalogItem {
   description String?
   price       Float?
   objective   String?
-  leadTypeId  String?
-  leadType    LeadType?   @relation(fields: [leadTypeId], references: [id])
   isActive    Boolean     @default(true)
   sortOrder   Int         @default(0)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  leads Lead[]
-  rules ClassificationRule[]
-  purchases Purchase[]
+  leadTypes  CatalogItemLeadType[]
+  leads      Lead[]
+  rules      ClassificationRule[]
+  purchases  Purchase[]
 }
 
 model ClassificationRule {
@@ -235,8 +259,6 @@ model Lead {
   stageId         String?
   stage           Stage?     @relation(fields: [stageId], references: [id])
   stagePosition   Int        @default(0)
-  leadTypeId      String?
-  leadType        LeadType?  @relation(fields: [leadTypeId], references: [id])
   catalogItemId   String?
   catalogItem     CatalogItem? @relation(fields: [catalogItemId], references: [id])
   socialMedia     String?
@@ -252,6 +274,7 @@ model Lead {
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
+  leadTypes    LeadLeadType[]
   interactions Interaction[]
   purchases    Purchase[]
   calendarEvents CalendarEvent[]

@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger,
 } from '@/components/ui/dialog'
@@ -31,10 +32,10 @@ export interface CatalogRow {
   description: string | null
   price: number | null
   objective: string | null
-  leadTypeId: string | null
-  leadTypeLabel: string | null
-  leadTypeColor: string | null
-  leadTypeIcon: string | null
+  leadTypeIds: string[]
+  leadTypeLabels: string[]
+  leadTypeColors: string[]
+  leadTypeIcons: string[]
   isActive: boolean
   leadCount: number
 }
@@ -56,8 +57,12 @@ function ItemForm({
   const [description, setDescription] = useState(initial?.description ?? '')
   const [price, setPrice] = useState(initial?.price != null ? String(initial.price) : '')
   const [objective, setObjective] = useState(initial?.objective ?? '')
-  const [leadTypeId, setLeadTypeId] = useState(initial?.leadTypeId ?? 'none')
+  const [leadTypeIds, setLeadTypeIds] = useState<string[]>(initial?.leadTypeIds ?? [])
   const [saving, setSaving] = useState(false)
+
+  const toggleLeadType = (id: string, checked: boolean) => {
+    setLeadTypeIds((prev) => (checked ? (prev.includes(id) ? prev : [...prev, id]) : prev.filter((x) => x !== id)))
+  }
 
   const handleSave = async () => {
     if (!name.trim()) { toast.error('Informe o nome do item.'); return }
@@ -67,7 +72,7 @@ function ItemForm({
       const res = await fetch(isEdit ? `/api/catalog/${initial!.id}` : '/api/catalog', {
         method: isEdit ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, kind, description, price, objective, leadTypeId: leadTypeId === 'none' ? null : leadTypeId }),
+        body: JSON.stringify({ name, kind, description, price, objective, leadTypeIds }),
       })
       if (!res.ok) throw new Error()
       toast.success(isEdit ? 'Item atualizado!' : 'Item adicionado ao catálogo!')
@@ -106,16 +111,26 @@ function ItemForm({
             </div>
           </div>
           <div>
-            <Label>Tipo de lead alvo</Label>
-            <Select value={leadTypeId} onValueChange={setLeadTypeId}>
-              <SelectTrigger className="mt-1.5"><SelectValue placeholder="Selecione" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Nenhum</SelectItem>
-                {leadTypes.map((lt) => (
-                  <SelectItem key={lt.id} value={lt.id}>{lt.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>Tipos de lead alvo</Label>
+            <p className="mt-1 text-xs text-muted-foreground">Este produto/serviço pode interessar a mais de um tipo de lead.</p>
+            {leadTypes.length === 0 ? (
+              <p className="mt-1.5 text-xs text-muted-foreground">Nenhum tipo de lead disponível.</p>
+            ) : (
+              <div className="mt-1.5 space-y-2 rounded-lg border p-3">
+                {leadTypes.map((lt) => {
+                  const checked = leadTypeIds.includes(lt.id)
+                  return (
+                    <label key={lt.id} className={`flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors ${checked ? 'bg-muted' : 'hover:bg-muted/60'}`}>
+                      <Checkbox checked={checked} onCheckedChange={(v) => toggleLeadType(lt.id, v === true)} aria-label={`Alvo ${lt.label}`} />
+                      <span className="inline-flex h-6 w-6 items-center justify-center rounded-md" style={{ backgroundColor: lt.color + '1a', color: lt.color }}>
+                        <Icon name={lt.icon} className="h-3.5 w-3.5" />
+                      </span>
+                      <span className="font-medium">{lt.label}</span>
+                    </label>
+                  )
+                })}
+              </div>
+            )}
           </div>
           <div>
             <Label htmlFor="ci-obj">Objetivo do lead</Label>
@@ -207,13 +222,15 @@ export function CatalogManager({ initial, leadTypes, canManage }: { initial: Cat
                     {i.description && <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{i.description}</p>}
                   </div>
                   <div className="space-y-1.5 text-xs">
-                    {i.leadTypeLabel && (
-                      <div className="flex items-center gap-1.5">
+                    {(i.leadTypeLabels.length > 0) && (
+                      <div className="flex flex-wrap items-center gap-1">
                         <Tag className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-muted-foreground">Tipo:</span>
-                        <span className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 font-medium" style={{ backgroundColor: (i.leadTypeColor ?? '#6B7280') + '1a', color: i.leadTypeColor ?? '#6B7280' }}>
-                          {i.leadTypeIcon && <Icon name={i.leadTypeIcon} className="h-3 w-3" />} {i.leadTypeLabel}
-                        </span>
+                        <span className="text-muted-foreground">Tipos:</span>
+                        {i.leadTypeLabels.map((label, idx) => (
+                          <span key={idx} className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 font-medium" style={{ backgroundColor: (i.leadTypeColors[idx] ?? '#6B7280') + '1a', color: i.leadTypeColors[idx] ?? '#6B7280' }}>
+                            {i.leadTypeIcons[idx] && <Icon name={i.leadTypeIcons[idx]} className="h-3 w-3" />} {label}
+                          </span>
+                        ))}
                       </div>
                     )}
                     {i.objective && (

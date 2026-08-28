@@ -46,8 +46,8 @@ export interface ConversationRow {
   name: string
   phone: string | null
   status: string
-  leadTypeLabel: string | null
-  leadTypeColor: string | null
+  leadTypeLabels: string[]
+  leadTypeColors: string[]
   assignedToName: string | null
   lastMessageText: string | null
   lastMessageAt: string | null
@@ -80,8 +80,8 @@ interface LeadDetail {
   dealValue: number | null
   totalPurchased: number | null
   objective: string | null
-  leadTypeLabel: string | null
-  leadTypeColor: string | null
+  leadTypeLabels: string[]
+  leadTypeColors: string[]
   assignedToName: string | null
   firstContactAt: string | null
   messageCount: number
@@ -618,17 +618,18 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
                 >
                   {statusMeta(activeLead.status).label}
                 </Badge>
-                {activeLead.leadTypeLabel && (
+                {(activeLead.leadTypeLabels ?? []).map((label, idx) => (
                   <Badge
+                    key={idx}
                     variant="outline"
                     style={{
-                      borderColor: activeLead.leadTypeColor || '#e5e7eb',
-                      color: activeLead.leadTypeColor || '#6b7280',
+                      borderColor: activeLead.leadTypeColors[idx] || '#e5e7eb',
+                      color: activeLead.leadTypeColors[idx] || '#6b7280',
                     }}
                   >
-                    {activeLead.leadTypeLabel}
+                    {label}
                   </Badge>
-                )}
+                ))}
               </div>
               <Link
                 href={`/leads/${activeLead.id}`}

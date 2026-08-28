@@ -14,7 +14,7 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
     where: { id: params.id, tenantId },
     include: {
       assignedTo: true,
-      leadType: true,
+      leadTypes: { include: { leadType: true } },
       catalogItem: true,
       interactions: { orderBy: { createdAt: 'desc' }, include: { user: true } },
       purchases: { orderBy: { createdAt: 'desc' }, include: { catalogItem: true } },
@@ -51,9 +51,9 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
     lastInteraction: lead.lastInteraction?.toISOString?.() ?? null,
     socialMedia: (lead as any).socialMedia ?? null,
     objective: (lead as any).objective ?? null,
-    leadTypeLabel: (lead as any).leadType?.label ?? null,
-    leadTypeColor: (lead as any).leadType?.color ?? null,
-    leadTypeIcon: (lead as any).leadType?.icon ?? null,
+    leadTypeLabels: ((lead as any).leadTypes ?? []).map((lt: any) => lt.leadType?.label),
+    leadTypeColors: ((lead as any).leadTypes ?? []).map((lt: any) => lt.leadType?.color),
+    leadTypeIcons: ((lead as any).leadTypes ?? []).map((lt: any) => lt.leadType?.icon),
     catalogItemName: (lead as any).catalogItem?.name ?? null,
     totalPurchased: (lead as any).totalPurchased ?? 0,
     purchases: ((lead as any).purchases as any[] ?? []).map((p) => ({

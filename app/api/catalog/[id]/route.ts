@@ -17,7 +17,15 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if ('description' in body) data.description = body.description?.trim() || null
     if ('price' in body) data.price = body.price != null && body.price !== '' ? Number(body.price) : null
     if ('objective' in body) data.objective = body.objective?.trim() || null
-    if ('leadTypeId' in body) data.leadTypeId = body.leadTypeId || null
+    if ('leadTypeIds' in body) {
+      const requestedIds: string[] = Array.isArray(body.leadTypeIds) ? body.leadTypeIds.filter((id: unknown): id is string => typeof id === 'string' && Boolean(id)) : []
+      const validTypes = requestedIds.length
+        ? await prisma.leadType.findMany({ where: { id: { in: requestedIds }, tenantId: user.tenantId }, select: { id: true } })
+        : []
+      data.leadTypes = validTypes.length
+        ? { deleteMany: {}, create: validTypes.map((t) => ({ leadType: { connect: { id: t.id } } })) }
+        : { deleteMany: {} }
+    }
     if (typeof body.isActive === 'boolean') data.isActive = body.isActive
     const updated = await prisma.catalogItem.update({ where: { id: item.id }, data })
     return NextResponse.json({ item: updated })

@@ -24,10 +24,10 @@ export interface LeadRow {
   status: string
   source: string
   dealValue: number | null
-  leadTypeId: string | null
-  leadTypeLabel: string | null
-  leadTypeColor: string | null
-  leadTypeIcon: string | null
+  leadTypeIds: string[]
+  leadTypeLabels: string[]
+  leadTypeColors: string[]
+  leadTypeIcons: string[]
   assignedToId: string | null
   assignedToName: string | null
   assignedToAvatar: string | null
@@ -48,7 +48,7 @@ export function LeadsTable({ leads, members, currentUserId }: { leads: LeadRow[]
 
   const leadTypeOptions = useMemo(() => {
     const map = new Map<string, string>()
-    for (const l of leads ?? []) if (l.leadTypeId && l.leadTypeLabel) map.set(l.leadTypeId, l.leadTypeLabel)
+    for (const l of leads ?? []) (l.leadTypeIds ?? []).forEach((id, idx) => { if (id && l.leadTypeLabels[idx]) map.set(id, l.leadTypeLabels[idx]) })
     return Array.from(map.entries()).map(([id, label]) => ({ id, label }))
   }, [leads])
 
@@ -62,7 +62,7 @@ export function LeadsTable({ leads, members, currentUserId }: { leads: LeadRow[]
     }
     if (status !== 'all') list = list.filter((l) => l.status === status)
     if (source !== 'all') list = list.filter((l) => l.source === source)
-    if (leadType !== 'all') list = list.filter((l) => l.leadTypeId === leadType)
+    if (leadType !== 'all') list = list.filter((l) => (l.leadTypeIds ?? []).includes(leadType))
     if (assignee !== 'all') list = list.filter((l) => l.assignedToId === assignee)
     return list
   }, [leads, search, status, source, leadType, assignee, viewRole, currentUserId])
@@ -164,10 +164,14 @@ export function LeadsTable({ leads, members, currentUserId }: { leads: LeadRow[]
                   <TableCell className="hidden lg:table-cell text-sm font-mono text-xs">{l.phone}</TableCell>
                   <TableCell><LeadStatusBadge status={l.status} /></TableCell>
                   <TableCell className="hidden md:table-cell">
-                    {l.leadTypeLabel ? (
-                      <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: (l.leadTypeColor ?? '#6B7280') + '1a', color: l.leadTypeColor ?? '#6B7280' }}>
-                        {l.leadTypeIcon && <Icon name={l.leadTypeIcon} className="h-3 w-3" />} {l.leadTypeLabel}
-                      </span>
+                    {(l.leadTypeLabels?.length ?? 0) > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {l.leadTypeLabels.map((label, idx) => (
+                          <span key={idx} className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: (l.leadTypeColors[idx] ?? '#6B7280') + '1a', color: l.leadTypeColors[idx] ?? '#6B7280' }}>
+                            {l.leadTypeIcons[idx] && <Icon name={l.leadTypeIcons[idx]} className="h-3 w-3" />} {label}
+                          </span>
+                        ))}
+                      </div>
                     ) : <span className="text-xs text-muted-foreground">—</span>}
                   </TableCell>
                   <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">{LEAD_SOURCE_META[l.source]?.label ?? l.source}</TableCell>
