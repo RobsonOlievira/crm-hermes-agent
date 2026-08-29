@@ -160,7 +160,7 @@ model CatalogItem {
 
   leadTypes  CatalogItemLeadType[]
   leads      Lead[]
-  rules      ClassificationRule[]
+  rules      ClassificationRuleCatalogItem[]
   purchases  Purchase[]
 }
 
@@ -176,24 +176,35 @@ model ClassificationRuleLeadType {
   @@index([leadTypeId])
 }
 
-model ClassificationRule {
-  id            String       @id @default(cuid())
-  tenantId      String
-  tenant        Tenant       @relation(fields: [tenantId], references: [id])
-  name          String
-  keywords      String[]     @default([])
-  matchType     String       @default("any")
-  source        String?
-  catalogItemId String?
-  catalogItem   CatalogItem? @relation(fields: [catalogItemId], references: [id])
-  autoMessages  String[]     @default([])
-  autoReply     String?
-  isActive      Boolean      @default(true)
-  priority      Int          @default(0)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+// Uma regra pode vincular VÁRIOS produtos/serviços (ex.: produto básico + adicionais).
+model ClassificationRuleCatalogItem {
+  ruleId        String
+  rule          ClassificationRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  catalogItemId String
+  catalogItem   CatalogItem        @relation(fields: [catalogItemId], references: [id], onDelete: Cascade)
+  createdAt     DateTime           @default(now())
 
-  leadTypes ClassificationRuleLeadType[]
+  @@id([ruleId, catalogItemId])
+  @@index([catalogItemId])
+}
+
+model ClassificationRule {
+  id           String   @id @default(cuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  name         String
+  keywords     String[] @default([])
+  matchType    String   @default("any")
+  source       String?
+  autoMessages String[] @default([])
+  autoReply    String?
+  isActive     Boolean  @default(true)
+  priority     Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  leadTypes    ClassificationRuleLeadType[]
+  catalogItems ClassificationRuleCatalogItem[]
 }
 
 model User {

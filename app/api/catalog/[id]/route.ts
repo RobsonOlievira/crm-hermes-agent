@@ -41,7 +41,6 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
     const item = await prisma.catalogItem.findFirst({ where: { id: params.id, tenantId: user.tenantId } })
     if (!item) return NextResponse.json({ error: 'Item não encontrado' }, { status: 404 })
     await prisma.lead.updateMany({ where: { catalogItemId: item.id }, data: { catalogItemId: null } })
-    await prisma.classificationRule.updateMany({ where: { catalogItemId: item.id }, data: { catalogItemId: null } })
     await prisma.catalogItem.delete({ where: { id: item.id } })
     return NextResponse.json({ ok: true })
   } catch (e) {

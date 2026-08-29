@@ -34,7 +34,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         : []
       data.leadTypes = { set: validTypes.map((t) => ({ leadTypeId: t.id })) }
     }
-    if ('catalogItemId' in body) data.catalogItemId = body.catalogItemId || null
+    if ('catalogItemIds' in body) {
+      const requestedCatalogIds: string[] = Array.isArray(body.catalogItemIds) ? body.catalogItemIds.filter((id: unknown): id is string => typeof id === 'string' && Boolean(id)) : []
+      const validCatalogItems = requestedCatalogIds.length
+        ? await prisma.catalogItem.findMany({ where: { tenantId: user.tenantId, id: { in: requestedCatalogIds }, isActive: true }, select: { id: true } })
+        : []
+      data.catalogItems = { set: validCatalogItems.map((c) => ({ catalogItemId: c.id })) }
+    }
     if ('autoMessages' in body) data.autoMessages = parseStrings(body.autoMessages)
     if ('autoReply' in body) data.autoReply = body.autoReply?.trim() || null
     if (typeof body.isActive === 'boolean') data.isActive = body.isActive

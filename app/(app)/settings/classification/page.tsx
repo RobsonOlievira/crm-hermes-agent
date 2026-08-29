@@ -13,7 +13,7 @@ export default async function ClassificationPage() {
     tenantId
       ? prisma.classificationRule.findMany({
           where: { tenantId },
-          include: { leadTypes: { include: { leadType: true } }, catalogItem: true },
+          include: { leadTypes: { include: { leadType: true } }, catalogItems: { include: { catalogItem: true } } },
           orderBy: { priority: 'asc' },
         })
       : Promise.resolve([]),
@@ -35,8 +35,8 @@ export default async function ClassificationPage() {
     leadTypeLabels: (r.leadTypes ?? []).map((lt: any) => lt.leadType?.label ?? null),
     leadTypeColors: (r.leadTypes ?? []).map((lt: any) => lt.leadType?.color ?? null),
     leadTypeIcons: (r.leadTypes ?? []).map((lt: any) => lt.leadType?.icon ?? null),
-    catalogItemId: r.catalogItemId,
-    catalogItemName: r.catalogItem?.name ?? null,
+    catalogItemIds: (r.catalogItems ?? []).map((ci: any) => ci.catalogItemId),
+    catalogItemNames: (r.catalogItems ?? []).map((ci: any) => ci.catalogItem?.name ?? null),
     autoMessages: r.autoMessages ?? [],
     autoReply: r.autoReply ?? null,
     isActive: r.isActive,

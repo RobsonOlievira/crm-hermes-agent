@@ -18,7 +18,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import {
-  Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose,
+  Drawer, DrawerTrigger, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose,
 } from '@/components/ui/drawer'
 import { Icon } from '@/components/layout/icon'
 import { PageHeading } from '@/components/layout/page-heading'
@@ -37,8 +37,8 @@ export interface RuleRow {
   leadTypeLabels: (string | null)[]
   leadTypeColors: (string | null)[]
   leadTypeIcons: (string | null)[]
-  catalogItemId: string | null
-  catalogItemName: string | null
+  catalogItemIds: string[]
+  catalogItemNames: (string | null)[]
   autoMessages: string[]
   autoReply: string | null
   isActive: boolean
@@ -64,7 +64,7 @@ function RuleForm({
   const [matchType, setMatchType] = useState(initial?.matchType ?? 'any')
   const [source, setSource] = useState(initial?.source ?? 'any')
   const [leadTypeIds, setLeadTypeIds] = useState<string[]>(initial?.leadTypeIds ?? [])
-  const [catalogItemId, setCatalogItemId] = useState(initial?.catalogItemId ?? 'none')
+  const [catalogItemIds, setCatalogItemIds] = useState<string[]>(initial?.catalogItemIds ?? [])
   const [autoMessages, setAutoMessages] = useState<string[]>((initial?.autoMessages ?? []).length ? (initial?.autoMessages ?? []) : [''])
   const [autoReply, setAutoReply] = useState(initial?.autoReply ?? '')
   const [priority, setPriority] = useState(initial?.priority != null ? String(initial.priority) : '0')
@@ -84,6 +84,10 @@ function RuleForm({
     setLeadTypeIds((prev) => (checked ? (prev.includes(id) ? prev : [...prev, id]) : prev.filter((x) => x !== id)))
   }
 
+  const toggleCatalogItem = (id: string, checked: boolean) => {
+    setCatalogItemIds((prev) => (checked ? (prev.includes(id) ? prev : [...prev, id]) : prev.filter((x) => x !== id)))
+  }
+
   const handleSave = async () => {
     if (!name.trim()) { toast.error('Informe um nome para a regra.'); return }
     if (!keywords.trim()) { toast.error('Informe ao menos uma palavra-chave.'); return }
@@ -97,7 +101,7 @@ function RuleForm({
           name, keywords, matchType,
           source: source === 'any' ? null : source,
           leadTypeIds,
-          catalogItemId: catalogItemId === 'none' ? null : catalogItemId,
+          catalogItemIds,
           autoMessages: autoMessages.map((m) => m.trim()).filter(Boolean), autoReply, priority: Number(priority) || 0,
         }),
       })
@@ -155,22 +159,24 @@ function RuleForm({
             <Label>Classificar como tipo (um ou mais)</Label>
             <p className="mt-1 text-xs text-muted-foreground">Quando a regra bater, esses tipos são somados aos que o lead já tem.</p>
             <Drawer>
-              <Button type="button" variant="outline" className="mt-1.5 h-auto w-full flex-wrap justify-between gap-2 px-3 py-2">
-                {leadTypeIds.length === 0 ? (
-                  <span className="py-0.5 text-sm font-normal text-muted-foreground">Selecione os tipos…</span>
-                ) : (
-                  <span className="flex flex-wrap items-center gap-1.5">
-                    {leadTypes
-                      .filter((lt) => leadTypeIds.includes(lt.id))
-                      .map((lt) => (
-                        <span key={lt.id} className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: lt.color + '1a', color: lt.color }}>
-                          <Icon name={lt.icon} className="h-3 w-3" /> {lt.label}
-                        </span>
-                      ))}
-                  </span>
-                )}
-                <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-              </Button>
+              <DrawerTrigger asChild>
+                <Button type="button" variant="outline" className="mt-1.5 h-auto w-full flex-wrap justify-between gap-2 px-3 py-2">
+                  {leadTypeIds.length === 0 ? (
+                    <span className="py-0.5 text-sm font-normal text-muted-foreground">Selecione os tipos…</span>
+                  ) : (
+                    <span className="flex flex-wrap items-center gap-1.5">
+                      {leadTypes
+                        .filter((lt) => leadTypeIds.includes(lt.id))
+                        .map((lt) => (
+                          <span key={lt.id} className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: lt.color + '1a', color: lt.color }}>
+                            <Icon name={lt.icon} className="h-3 w-3" /> {lt.label}
+                          </span>
+                        ))}
+                    </span>
+                  )}
+                  <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+                </Button>
+              </DrawerTrigger>
               <DrawerContent>
                 <DrawerHeader>
                   <DrawerTitle>Classificar como tipo</DrawerTitle>
@@ -203,16 +209,55 @@ function RuleForm({
             </Drawer>
           </div>
           <div>
-            <Label>Vincular produto/serviço</Label>
-            <Select value={catalogItemId} onValueChange={setCatalogItemId}>
-              <SelectTrigger className="mt-1.5"><SelectValue placeholder="Selecione" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Nenhum</SelectItem>
-                {catalogItems.map((ci) => (
-                  <SelectItem key={ci.id} value={ci.id}>{ci.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>Vincular produto/serviço (um ou mais)</Label>
+            <p className="mt-1 text-xs text-muted-foreground">Um lead pode querer outros produtos além do básico. Quando a regra bater, todos os produtos selecionados são vinculados ao lead.</p>
+            <Drawer>
+              <DrawerTrigger asChild>
+                <Button type="button" variant="outline" className="mt-1.5 h-auto w-full flex-wrap justify-between gap-2 px-3 py-2">
+                  {catalogItemIds.length === 0 ? (
+                    <span className="py-0.5 text-sm font-normal text-muted-foreground">Selecione os produtos…</span>
+                  ) : (
+                    <span className="flex flex-wrap items-center gap-1.5">
+                      {catalogItems
+                        .filter((ci) => catalogItemIds.includes(ci.id))
+                        .map((ci) => (
+                          <span key={ci.id} className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-foreground">
+                            <Target className="h-3 w-3" /> {ci.name}
+                          </span>
+                        ))}
+                    </span>
+                  )}
+                  <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+                </Button>
+              </DrawerTrigger>
+              <DrawerContent>
+                <DrawerHeader>
+                  <DrawerTitle>Vincular produto/serviço</DrawerTitle>
+                  <DrawerDescription>Selecione um ou mais produtos que esta regra irá vincular ao lead.</DrawerDescription>
+                </DrawerHeader>
+                <div className="max-h-[50vh] space-y-2 overflow-y-auto px-4 pb-2">
+                  {catalogItems.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Nenhum produto/serviço no catálogo. Adicione itens em Catálogo de Produtos.</p>
+                  ) : (
+                    catalogItems.map((ci) => {
+                      const checked = catalogItemIds.includes(ci.id)
+                      return (
+                        <label key={ci.id} className={`flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors ${checked ? 'bg-muted' : 'hover:bg-muted/60'}`}>
+                          <Checkbox checked={checked} onCheckedChange={(v) => toggleCatalogItem(ci.id, v === true)} aria-label={`Vincular ${ci.name}`} />
+                          <Target className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          <span className="font-medium">{ci.name}</span>
+                        </label>
+                      )
+                    })
+                  )}
+                </div>
+                <DrawerFooter>
+                  <DrawerClose asChild>
+                    <Button>Concluir ({catalogItemIds.length} selecionado{catalogItemIds.length === 1 ? '' : 's'})</Button>
+                  </DrawerClose>
+                </DrawerFooter>
+              </DrawerContent>
+            </Drawer>
           </div>
           <div>
             <Label>Mensagens automáticas (uma ou mais)</Label>
@@ -342,12 +387,16 @@ export function ClassificationManager({
                       })}
                     </div>
                   )}
-                  {r.catalogItemName && (
-                    <div className="flex items-center gap-1.5">
-                      <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
-                      <Target className="h-3.5 w-3.5 text-muted-foreground" />
+                  {r.catalogItemNames?.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <Target className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                       <span className="text-muted-foreground">Vincula:</span>
-                      <span className="font-medium">{r.catalogItemName}</span>
+                      {(r.catalogItemIds ?? []).map((id, idx) => (
+                        <span key={id} className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 font-medium">
+                          {r.catalogItemNames?.[idx] ?? id}
+                        </span>
+                      ))}
                     </div>
                   )}
                   {r.autoMessages?.length > 0 && (
