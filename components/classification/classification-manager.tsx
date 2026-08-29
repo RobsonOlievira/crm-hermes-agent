@@ -11,15 +11,12 @@ import { Switch } from '@/components/ui/switch'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose,
 } from '@/components/ui/dialog'
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import {
-  Drawer, DrawerTrigger, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose,
-} from '@/components/ui/drawer'
 import { Icon } from '@/components/layout/icon'
 import { PageHeading } from '@/components/layout/page-heading'
 import { Stagger, StaggerItem } from '@/components/ui/animate'
@@ -47,6 +44,66 @@ export interface RuleRow {
 
 export interface LeadTypeOption { id: string; label: string; color: string; icon: string }
 export interface CatalogOption { id: string; name: string }
+
+type PickOption = { id: string; label: string; color?: string; icon?: string }
+
+function MultiSelectDialog({
+  title,
+  description,
+  emptyText,
+  options,
+  selectedIds,
+  onToggle,
+  trigger,
+}: {
+  title: string
+  description: string
+  emptyText: string
+  options: PickOption[]
+  selectedIds: string[]
+  onToggle: (id: string, checked: boolean) => void
+  trigger: React.ReactNode
+}) {
+  const [open, setOpen] = useState(false)
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogContent className="max-w-[min(50vw,520px)] gap-0 overflow-hidden p-0 sm:rounded-lg">
+        <DialogHeader className="border-b p-5 pb-4 text-left">
+          <DialogTitle className="leading-snug">{title}</DialogTitle>
+          <DialogDescription className="mt-1">{description}</DialogDescription>
+        </DialogHeader>
+        <div className="max-h-[min(60vh,420px)] space-y-1 overflow-y-auto p-3">
+          {options.length === 0 ? (
+            <p className="px-2 py-6 text-sm text-muted-foreground">{emptyText}</p>
+          ) : (
+            options.map((opt) => {
+              const checked = selectedIds.includes(opt.id)
+              return (
+                <label key={opt.id} className={`flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors ${checked ? 'bg-muted' : 'hover:bg-muted/60'}`}>
+                  <Checkbox checked={checked} onCheckedChange={(v) => onToggle(opt.id, v === true)} aria-label={`${title}: ${opt.label}`} />
+                  {opt.icon && (
+                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-md" style={{ backgroundColor: (opt.color ?? '#6B7280') + '1a', color: opt.color ?? '#6B7280' }}>
+                      <Icon name={opt.icon} className="h-3.5 w-3.5" />
+                    </span>
+                  )}
+                  <span className="font-medium">{opt.label}</span>
+                </label>
+              )
+            })
+          )}
+        </div>
+        <DialogFooter className="border-t p-4">
+          <DialogClose asChild>
+            <Button className="w-full sm:w-auto">
+              Concluir ({selectedIds.length} selecionado{selectedIds.length === 1 ? '' : 's'})
+            </Button>
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 function RuleForm({
   initial, leadTypes, catalogItems, onSaved, trigger, title,
@@ -158,8 +215,14 @@ function RuleForm({
           <div>
             <Label>Classificar como tipo (um ou mais)</Label>
             <p className="mt-1 text-xs text-muted-foreground">Quando a regra bater, esses tipos são somados aos que o lead já tem.</p>
-            <Drawer>
-              <DrawerTrigger asChild>
+            <MultiSelectDialog
+              title="Classificar como tipo"
+              description="Selecione um ou mais tipos de lead que esta regra irá atribuir."
+              emptyText="Nenhum tipo de lead disponível. Cadastre tipos em Tipos de Lead."
+              options={leadTypes.map((lt) => ({ id: lt.id, label: lt.label, color: lt.color, icon: lt.icon }))}
+              selectedIds={leadTypeIds}
+              onToggle={toggleLeadType}
+              trigger={
                 <Button type="button" variant="outline" className="mt-1.5 h-auto w-full flex-wrap justify-between gap-2 px-3 py-2">
                   {leadTypeIds.length === 0 ? (
                     <span className="py-0.5 text-sm font-normal text-muted-foreground">Selecione os tipos…</span>
@@ -176,43 +239,20 @@ function RuleForm({
                   )}
                   <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
                 </Button>
-              </DrawerTrigger>
-              <DrawerContent>
-                <DrawerHeader>
-                  <DrawerTitle>Classificar como tipo</DrawerTitle>
-                  <DrawerDescription>Selecione um ou mais tipos de lead que esta regra irá atribuir.</DrawerDescription>
-                </DrawerHeader>
-                <div className="space-y-2 px-4 pb-2">
-                  {leadTypes.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Nenhum tipo de lead disponível. Cadastre tipos em Tipos de Lead.</p>
-                  ) : (
-                    leadTypes.map((lt) => {
-                      const checked = leadTypeIds.includes(lt.id)
-                      return (
-                        <label key={lt.id} className={`flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors ${checked ? 'bg-muted' : 'hover:bg-muted/60'}`}>
-                          <Checkbox checked={checked} onCheckedChange={(v) => toggleLeadType(lt.id, v === true)} aria-label={`Classificar como ${lt.label}`} />
-                          <span className="inline-flex h-6 w-6 items-center justify-center rounded-md" style={{ backgroundColor: lt.color + '1a', color: lt.color }}>
-                            <Icon name={lt.icon} className="h-3.5 w-3.5" />
-                          </span>
-                          <span className="font-medium">{lt.label}</span>
-                        </label>
-                      )
-                    })
-                  )}
-                </div>
-                <DrawerFooter>
-                  <DrawerClose asChild>
-                    <Button>Concluir ({leadTypeIds.length} selecionado{leadTypeIds.length === 1 ? '' : 's'})</Button>
-                  </DrawerClose>
-                </DrawerFooter>
-              </DrawerContent>
-            </Drawer>
+              }
+            />
           </div>
           <div>
             <Label>Vincular produto/serviço (um ou mais)</Label>
             <p className="mt-1 text-xs text-muted-foreground">Um lead pode querer outros produtos além do básico. Quando a regra bater, todos os produtos selecionados são vinculados ao lead.</p>
-            <Drawer>
-              <DrawerTrigger asChild>
+            <MultiSelectDialog
+              title="Vincular produto/serviço"
+              description="Selecione um ou mais produtos que esta regra irá vincular ao lead."
+              emptyText="Nenhum produto/serviço no catálogo. Adicione itens em Catálogo de Produtos."
+              options={catalogItems.map((ci) => ({ id: ci.id, label: ci.name, icon: 'Target' }))}
+              selectedIds={catalogItemIds}
+              onToggle={toggleCatalogItem}
+              trigger={
                 <Button type="button" variant="outline" className="mt-1.5 h-auto w-full flex-wrap justify-between gap-2 px-3 py-2">
                   {catalogItemIds.length === 0 ? (
                     <span className="py-0.5 text-sm font-normal text-muted-foreground">Selecione os produtos…</span>
@@ -229,35 +269,8 @@ function RuleForm({
                   )}
                   <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
                 </Button>
-              </DrawerTrigger>
-              <DrawerContent>
-                <DrawerHeader>
-                  <DrawerTitle>Vincular produto/serviço</DrawerTitle>
-                  <DrawerDescription>Selecione um ou mais produtos que esta regra irá vincular ao lead.</DrawerDescription>
-                </DrawerHeader>
-                <div className="max-h-[50vh] space-y-2 overflow-y-auto px-4 pb-2">
-                  {catalogItems.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Nenhum produto/serviço no catálogo. Adicione itens em Catálogo de Produtos.</p>
-                  ) : (
-                    catalogItems.map((ci) => {
-                      const checked = catalogItemIds.includes(ci.id)
-                      return (
-                        <label key={ci.id} className={`flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors ${checked ? 'bg-muted' : 'hover:bg-muted/60'}`}>
-                          <Checkbox checked={checked} onCheckedChange={(v) => toggleCatalogItem(ci.id, v === true)} aria-label={`Vincular ${ci.name}`} />
-                          <Target className="h-4 w-4 shrink-0 text-muted-foreground" />
-                          <span className="font-medium">{ci.name}</span>
-                        </label>
-                      )
-                    })
-                  )}
-                </div>
-                <DrawerFooter>
-                  <DrawerClose asChild>
-                    <Button>Concluir ({catalogItemIds.length} selecionado{catalogItemIds.length === 1 ? '' : 's'})</Button>
-                  </DrawerClose>
-                </DrawerFooter>
-              </DrawerContent>
-            </Drawer>
+              }
+            />
           </div>
           <div>
             <Label>Mensagens automáticas (uma ou mais)</Label>
