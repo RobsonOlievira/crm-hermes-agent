@@ -10,6 +10,11 @@ function parseKeywords(input: any): string[] {
   return []
 }
 
+function parseStrings(input: any): string[] {
+  if (Array.isArray(input)) return input.filter((m): m is string => typeof m === 'string').map((m) => m.trim()).filter(Boolean)
+  return []
+}
+
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const user = await getCurrentUser()
   if (!user?.tenantId) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
@@ -22,8 +27,15 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if ('keywords' in body) data.keywords = parseKeywords(body.keywords)
     if (body.matchType === 'any' || body.matchType === 'all') data.matchType = body.matchType
     if ('source' in body) data.source = body.source || null
-    if ('leadTypeId' in body) data.leadTypeId = body.leadTypeId || null
+    if ('leadTypeIds' in body) {
+      const requestedIds: string[] = Array.isArray(body.leadTypeIds) ? body.leadTypeIds.filter((id: unknown): id is string => typeof id === 'string' && Boolean(id)) : []
+      const validTypes = requestedIds.length
+        ? await prisma.leadType.findMany({ where: { tenantId: user.tenantId, id: { in: requestedIds }, isActive: true }, select: { id: true } })
+        : []
+      data.leadTypes = { set: validTypes.map((t) => ({ leadTypeId: t.id })) }
+    }
     if ('catalogItemId' in body) data.catalogItemId = body.catalogItemId || null
+    if ('autoMessages' in body) data.autoMessages = parseStrings(body.autoMessages)
     if ('autoReply' in body) data.autoReply = body.autoReply?.trim() || null
     if (typeof body.isActive === 'boolean') data.isActive = body.isActive
     const updated = await prisma.classificationRule.update({ where: { id: rule.id }, data })

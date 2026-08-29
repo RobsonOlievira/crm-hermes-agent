@@ -42,11 +42,11 @@ const CATALOG_ITEMS = [
 ]
 
 const CLASSIFICATION_RULES = [
-  { id: 'rule-1', name: 'Interesse em curso', keywords: ['curso', 'aula', 'aprender', 'matrícula', 'turma'], matchType: 'any', source: 'WHATSAPP', leadTypeKey: 'aluno', catalogItemId: 'catalog-1', autoReply: 'Que ótimo! Temos turmas abrindo em breve. Posso te enviar todos os detalhes do curso?', priority: 1 },
-  { id: 'rule-2', name: 'Empresa / B2B', keywords: ['empresa', 'cnpj', 'corporativo', 'equipe', 'b2b'], matchType: 'any', source: null as string | null, leadTypeKey: 'outra_empresa', catalogItemId: 'catalog-4', autoReply: 'Perfeito! Trabalhamos com soluções corporativas. Vou te encaminhar para nosso time B2B.', priority: 2 },
-  { id: 'rule-3', name: 'Tráfego pago', keywords: ['tráfego', 'anúncio', 'ads', 'campanha', 'gestor de tráfego'], matchType: 'any', source: null as string | null, leadTypeKey: 'cliente', catalogItemId: 'catalog-3', autoReply: 'Ótimo! Podemos cuidar das suas campanhas. Qual seu investimento mensal atual?', priority: 3 },
-  { id: 'rule-4', name: 'Proposta de parceria', keywords: ['parceria', 'parceiro', 'indicação', 'comissão'], matchType: 'any', source: null as string | null, leadTypeKey: 'parceiro', catalogItemId: 'catalog-6', autoReply: 'Adoramos parcerias! Vou te apresentar nosso programa de parceiros.', priority: 4 },
-  { id: 'rule-5', name: 'Fornecedor', keywords: ['fornecedor', 'vender para vocês', 'orçamento para vocês'], matchType: 'all', source: null as string | null, leadTypeKey: 'fornecedor', catalogItemId: null as string | null, autoReply: 'Obrigado pelo contato! Encaminhamos sua proposta para o setor de compras.', priority: 5 },
+  { id: 'rule-1', name: 'Interesse em curso', keywords: ['curso', 'aula', 'aprender', 'matrícula', 'turma'], matchType: 'any', source: 'WHATSAPP', leadTypeKey: 'aluno', catalogItemId: 'catalog-1', autoMessages: ['Olá! Percebi seu interesse no curso. Posso confirmar quais turmas estão abertas para você?', 'Oi! Vi que você chamou sobre as turmas. Quer que eu te mande os detalhes do curso?'], autoReply: 'Que ótimo! Temos turmas abrindo em breve. Posso te enviar todos os detalhes do curso?', priority: 1 },
+  { id: 'rule-2', name: 'Empresa / B2B', keywords: ['empresa', 'cnpj', 'corporativo', 'equipe', 'b2b'], matchType: 'any', source: null as string | null, leadTypeKey: 'outra_empresa', catalogItemId: 'catalog-4', autoMessages: ['Fala! É uma empresa, certo? Quer que eu te apresente nossas soluções corporativas?'], autoReply: 'Perfeito! Trabalhamos com soluções corporativas. Vou te encaminhar para nosso time B2B.', priority: 2 },
+  { id: 'rule-3', name: 'Tráfego pago', keywords: ['tráfego', 'anúncio', 'ads', 'campanha', 'gestor de tráfego'], matchType: 'any', source: null as string | null, leadTypeKey: 'cliente', catalogItemId: 'catalog-3', autoMessages: ['Fala! Vi que vocês estão investindo em anúncios. Quer que eu analise quais campanhas valem a pena escalar?'], autoReply: 'Ótimo! Podemos cuidar das suas campanhas. Qual seu investimento mensal atual?', priority: 3 },
+  { id: 'rule-4', name: 'Proposta de parceria', keywords: ['parceria', 'parceiro', 'indicação', 'comissão'], matchType: 'any', source: null as string | null, leadTypeKey: 'parceiro', catalogItemId: 'catalog-6', autoMessages: [] as string[], autoReply: 'Adoramos parcerias! Vou te apresentar nosso programa de parceiros.', priority: 4 },
+  { id: 'rule-5', name: 'Fornecedor', keywords: ['fornecedor', 'vender para vocês', 'orçamento para vocês'], matchType: 'all', source: null as string | null, leadTypeKey: 'fornecedor', catalogItemId: null as string | null, autoMessages: [] as string[], autoReply: 'Obrigado pelo contato! Encaminhamos sua proposta para o setor de compras.', priority: 5 },
 ]
 
 const SOCIAL_HANDLES = ['@joaosilva', 'instagram.com/mariasantos', '@pedro.oliveira', 'linkedin.com/in/juliana', '@lucas.ferreira', null, 'instagram.com/camila', null]
@@ -167,10 +167,11 @@ async function main() {
 
   // Classification Rules
   for (const r of CLASSIFICATION_RULES) {
+    const ruleLeadTypes = [{ leadType: { connect: { id: `ltype-${r.leadTypeKey}` } } }]
     await prisma.classificationRule.upsert({
       where: { id: r.id },
-      update: { name: r.name, keywords: r.keywords, matchType: r.matchType, source: r.source, leadTypeId: `ltype-${r.leadTypeKey}`, catalogItemId: r.catalogItemId, autoReply: r.autoReply, priority: r.priority, isActive: true },
-      create: { id: r.id, tenantId: TENANT_ID, name: r.name, keywords: r.keywords, matchType: r.matchType, source: r.source, leadTypeId: `ltype-${r.leadTypeKey}`, catalogItemId: r.catalogItemId, autoReply: r.autoReply, priority: r.priority, isActive: true },
+      update: { name: r.name, keywords: r.keywords, matchType: r.matchType, source: r.source, leadTypes: { deleteMany: {}, create: ruleLeadTypes }, catalogItemId: r.catalogItemId, autoMessages: r.autoMessages, autoReply: r.autoReply, priority: r.priority, isActive: true },
+      create: { id: r.id, tenantId: TENANT_ID, name: r.name, keywords: r.keywords, matchType: r.matchType, source: r.source, leadTypes: { create: ruleLeadTypes }, catalogItemId: r.catalogItemId, autoMessages: r.autoMessages, autoReply: r.autoReply, priority: r.priority, isActive: true },
     })
   }
 

@@ -10,13 +10,18 @@ function parseKeywords(input: any): string[] {
   return []
 }
 
+function parseStrings(input: any): string[] {
+  if (Array.isArray(input)) return input.filter((m): m is string => typeof m === 'string').map((m) => m.trim()).filter(Boolean)
+  return []
+}
+
 export async function GET() {
   const user = await getCurrentUser()
   if (!user?.tenantId) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   const rules = await prisma.classificationRule.findMany({
     where: { tenantId: user.tenantId },
     orderBy: { priority: 'asc' },
-    include: { leadType: true, catalogItem: true },
+    include: { leadTypes: { include: { leadType: true } }, catalogItem: true },
   })
   return NextResponse.json({ rules })
 }
@@ -25,10 +30,14 @@ export async function POST(req: Request) {
   const user = await getCurrentUser()
   if (!user?.tenantId) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   try {
-    const { name, keywords, matchType, source, leadTypeId, catalogItemId, autoReply } = await req.json()
+    const { name, keywords, matchType, source, leadTypeIds, catalogItemId, autoMessages, autoReply } = await req.json()
     if (!name?.trim()) return NextResponse.json({ error: 'Informe um nome para a regra' }, { status: 400 })
     const kw = parseKeywords(keywords)
     if (kw.length === 0) return NextResponse.json({ error: 'Adicione ao menos uma palavra-chave' }, { status: 400 })
+    const requestedIds: string[] = Array.isArray(leadTypeIds) ? leadTypeIds.filter((id: unknown): id is string => typeof id === 'string' && Boolean(id)) : []
+    const validTypes = requestedIds.length
+      ? await prisma.leadType.findMany({ where: { tenantId: user.tenantId, id: { in: requestedIds }, isActive: true }, select: { id: true } })
+      : []
     const count = await prisma.classificationRule.count({ where: { tenantId: user.tenantId } })
     const created = await prisma.classificationRule.create({
       data: {
@@ -37,11 +46,12 @@ export async function POST(req: Request) {
         keywords: kw,
         matchType: matchType === 'all' ? 'all' : 'any',
         source: source || null,
-        leadTypeId: leadTypeId || null,
         catalogItemId: catalogItemId || null,
+        autoMessages: parseStrings(autoMessages),
         autoReply: autoReply?.trim() || null,
         isActive: true,
         priority: count + 1,
+        leadTypes: validTypes.length ? { create: validTypes.map((t) => ({ leadTypeId: t.id })) } : undefined,
       },
     })
     return NextResponse.json({ rule: created })

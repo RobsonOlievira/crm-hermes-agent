@@ -114,7 +114,7 @@ model LeadType {
 
   leads        LeadLeadType[]
   catalogItems CatalogItemLeadType[]
-  rules        ClassificationRule[]
+  rules        ClassificationRuleLeadType[]
 
   @@unique([tenantId, key])
 }
@@ -164,6 +164,18 @@ model CatalogItem {
   purchases  Purchase[]
 }
 
+// Uma regra pode classificar o lead em VÁRIOS tipos ao mesmo tempo.
+model ClassificationRuleLeadType {
+  ruleId     String
+  rule       ClassificationRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  leadTypeId String
+  leadType   LeadType           @relation(fields: [leadTypeId], references: [id], onDelete: Cascade)
+  createdAt  DateTime           @default(now())
+
+  @@id([ruleId, leadTypeId])
+  @@index([leadTypeId])
+}
+
 model ClassificationRule {
   id            String       @id @default(cuid())
   tenantId      String
@@ -172,15 +184,16 @@ model ClassificationRule {
   keywords      String[]     @default([])
   matchType     String       @default("any")
   source        String?
-  leadTypeId    String?
-  leadType      LeadType?    @relation(fields: [leadTypeId], references: [id])
   catalogItemId String?
   catalogItem   CatalogItem? @relation(fields: [catalogItemId], references: [id])
+  autoMessages  String[]     @default([])
   autoReply     String?
   isActive      Boolean      @default(true)
   priority      Int          @default(0)
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
+
+  leadTypes ClassificationRuleLeadType[]
 }
 
 model User {
@@ -399,6 +412,7 @@ model Student {
   amountPaid   Float    @default(0)
   source       String?
   enrolledAt   DateTime @default(now())
+  expiresAt    DateTime?
   lastAccessAt DateTime?
   avatarUrl    String?
   notes        String?
