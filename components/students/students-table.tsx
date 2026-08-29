@@ -23,6 +23,7 @@ export interface StudentRow {
   progress: number
   amountPaid: number
   enrolledAt: string | null
+  expiresAt: string | null
   lastAccessAt: string | null
   avatarUrl: string | null
 }
@@ -130,6 +131,7 @@ export function StudentsTable({ students }: { students: StudentRow[] }) {
               <TableHead className="w-[160px]">Progresso</TableHead>
               <TableHead className="text-right">Valor pago</TableHead>
               <TableHead>Matrícula</TableHead>
+              <TableHead>Expira</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -172,11 +174,14 @@ export function StudentsTable({ students }: { students: StudentRow[] }) {
                 <TableCell className="text-sm text-muted-foreground">
                   {mounted ? fmtDate(s.enrolledAt) : '—'}
                 </TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {mounted ? fmtDate(s.expiresAt) : '—'}
+                </TableCell>
               </TableRow>
             ))}
             {(pageItems?.length ?? 0) === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
                   Nenhum aluno encontrado.
                 </TableCell>
               </TableRow>

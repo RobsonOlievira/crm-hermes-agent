@@ -28,6 +28,7 @@ export default async function StudentsPage() {
     progress: s.progress,
     amountPaid: s.amountPaid,
     enrolledAt: s.enrolledAt ? new Date(s.enrolledAt).toISOString() : null,
+    expiresAt: s.expiresAt ? new Date(s.expiresAt).toISOString() : null,
     lastAccessAt: s.lastAccessAt ? new Date(s.lastAccessAt).toISOString() : null,
     avatarUrl: s.avatarUrl,
   }))
