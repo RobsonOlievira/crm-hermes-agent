@@ -10,6 +10,17 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
   const tenantId = user?.tenantId ?? null
   if (!tenantId) return notFound()
 
+  const [leadOptions] = await Promise.all([
+    tenantId
+      ? Promise.all([
+          prisma.leadType.findMany({ where: { tenantId, isActive: true }, orderBy: { sortOrder: 'asc' } }),
+          prisma.catalogItem.findMany({ where: { tenantId, isActive: true }, orderBy: { name: 'asc' } }),
+          prisma.user.findMany({ where: { tenantId, role: { in: ['ADMIN', 'MANAGER', 'MEMBER'] } }, orderBy: { name: 'asc' } }),
+        ])
+      : Promise.resolve([[], [], []]),
+  ])
+  const [leadTypes, catalogItems, members] = leadOptions
+
   const lead = await prisma.lead.findFirst({
     where: { id: params.id, tenantId },
     include: {
@@ -54,6 +65,8 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
     leadTypeLabels: ((lead as any).leadTypes ?? []).map((lt: any) => lt.leadType?.label),
     leadTypeColors: ((lead as any).leadTypes ?? []).map((lt: any) => lt.leadType?.color),
     leadTypeIcons: ((lead as any).leadTypes ?? []).map((lt: any) => lt.leadType?.icon),
+    leadTypeIds: ((lead as any).leadTypes ?? []).map((lt: any) => lt.leadTypeId),
+    assignedToId: (lead as any).assignedToId ?? null,
     catalogItemName: (lead as any).catalogItem?.name ?? null,
     totalPurchased: (lead as any).totalPurchased ?? 0,
     purchases: ((lead as any).purchases as any[] ?? []).map((p) => ({
@@ -64,6 +77,9 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
       catalogItemName: p.catalogItem?.name ?? null,
     })),
     timeline,
+    leadTypeOptions: (leadTypes as any[]).map((t) => ({ id: t.id, label: t.label, color: t.color, icon: t.icon })),
+    catalogOptions: (catalogItems as any[]).map((c) => ({ id: c.id, name: c.name })),
+    memberOptions: (members as any[]).map((m) => ({ id: m.id, name: m.name })),
   }
 
   return <LeadDetail data={data} />
