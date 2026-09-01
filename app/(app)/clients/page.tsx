@@ -4,7 +4,7 @@ import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/session'
 import { PageHeading } from '@/components/layout/page-heading'
 import { ClientsTable, ClientRow } from '@/components/clients/clients-table'
-import { DemoActionButton } from '@/components/shared/demo-action-button'
+import { NewClientDialog } from '@/components/clients/new-client-dialog'
 
 export default async function ClientsPage() {
   const user = await getCurrentUser()
@@ -15,6 +15,14 @@ export default async function ClientsPage() {
         where: { tenantId },
         include: { assignedTo: true },
         orderBy: { lifetimeValue: 'desc' },
+      })
+    : []
+
+  const members = tenantId
+    ? await prisma.user.findMany({
+        where: { tenantId, role: { in: ['ADMIN', 'MANAGER', 'MEMBER'] } },
+        orderBy: { name: 'asc' },
+        select: { id: true, name: true },
       })
     : []
 
@@ -36,7 +44,7 @@ export default async function ClientsPage() {
       <PageHeading
         title="Clientes"
         description="Sua base de clientes ativos e o valor gerado ao longo do relacionamento."
-        actions={<DemoActionButton label="Novo Cliente" icon="Building2" title="Cadastro de clientes" description="O cadastro e a conversão de leads em clientes serão disponibilizados na próxima etapa desta interface." />}
+        actions={<NewClientDialog members={members} />}
       />
       <ClientsTable clients={rows} />
     </div>

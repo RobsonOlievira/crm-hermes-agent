@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -28,6 +29,7 @@ export interface ClientRow {
 const PAGE_SIZE = 8
 
 export function ClientsTable({ clients }: { clients: ClientRow[] }) {
+  const router = useRouter()
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('all')
   const [page, setPage] = useState(1)
@@ -105,7 +107,7 @@ export function ClientsTable({ clients }: { clients: ClientRow[] }) {
           </TableHeader>
           <TableBody>
             {(pageItems ?? []).map((c) => (
-              <TableRow key={c.id} className="hover:bg-muted/40">
+              <TableRow key={c.id} className="cursor-pointer hover:bg-muted/40" onClick={() => router.push(`/clients/${c.id}`)}>
                 <TableCell>
                   <div className="font-medium">{c.name}</div>
                   {c.email && <div className="text-xs text-muted-foreground">{c.email}</div>}
