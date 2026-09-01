@@ -45,6 +45,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: 'classification', label: 'Classificação Automática', href: '/settings/classification', icon: 'Wand2', permission: 'settings:modules' },
       { key: 'modules', label: 'Módulos', href: '/settings/modules', icon: 'Blocks', permission: 'settings:modules' },
       { key: 'mcp', label: 'Integração IA (MCP)', href: '/settings/mcp', icon: 'Bot', permission: 'settings:modules' },
+      { key: 'email-settings', label: 'Email (envio)', href: '/settings/email', icon: 'Mail', permission: 'settings:modules' },
       { key: 'branding', label: 'Marca (Branding)', href: '/settings/branding', icon: 'Palette', permission: 'settings:branding' },
     ],
   },

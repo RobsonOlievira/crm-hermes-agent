@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { EMAIL_CATEGORIES, EMAIL_CAMPAIGN_STATUS_META } from '@/lib/crm-constants'
+import { EMAIL_CATEGORIES, EMAIL_CAMPAIGN_STATUS_META, EMAIL_RECIPIENT_STATUS_META } from '@/lib/crm-constants'
 import {
   Bold, Italic, Heading2, Heading3, Pilcrow, AlignLeft, Link2, Image as ImageIcon,
   User, AtSign, Plus, Eye, Send, RefreshCw, Trash2, Edit3, ChevronLeft, Search,
-  FileText, Users, BarChart3, Mail,
+  FileText, Users, BarChart3, Mail, TestTube2, AlertCircle, Settings,
 } from 'lucide-react'
 
 /* ─── tipos ─── */
@@ -44,6 +45,16 @@ interface LeadOption {
   id: string; name: string; email: string | null; status: string; source: string | null; tags: string[]
 }
 
+interface Recipient {
+  id: string
+  email: string
+  name: string | null
+  status: string
+  sentAt: string | null
+  errorMessage: string | null
+  externalId: string | null
+}
+
 type ToolbarItem =
   | { kind: 'wrap'; icon: any; label: string; before: string; after: string; placeholder: string }
   | { kind: 'insert'; icon: any; label: string; text: string }
@@ -70,7 +81,20 @@ const SEGMENT_TYPES = [
   { id: 'SOURCE', label: 'Por origem' },
   { id: 'LEAD_TYPE', label: 'Por tipo de lead' },
   { id: 'TAG', label: 'Por tag' },
+  { id: 'FORMULARIO', label: 'Por formulário' },
+  { id: 'COMPANY', label: 'Por empresa' },
+  { id: 'CNPJ', label: 'Por CNPJ' },
+  { id: 'CATALOG_ITEM', label: 'Por produto/serviço' },
+  { id: 'OBJECTIVE', label: 'Por objetivo' },
 ]
+
+const SEGMENT_VALUE_OPTIONS = {
+  FORMULARIO: { field: 'leadFormularios', label: 'Formulário' },
+  COMPANY: { field: 'leadCompanies', label: 'Empresa' },
+  CNPJ: { field: 'leadCnpjs', label: 'CNPJ' },
+  CATALOG_ITEM: { field: 'catalogItems', label: 'Produto/Serviço' },
+  OBJECTIVE: { field: 'leadObjectives', label: 'Objetivo' },
+} as const
 
 type View = 'list' | 'create' | 'detail'
 
@@ -81,12 +105,22 @@ export function EmailMarketingManager({
   leadSources,
   leadTypes,
   leadTags,
+  leadFormularios = [],
+  leadCompanies = [],
+  leadCnpjs = [],
+  leadObjectives = [],
+  catalogItems = [],
 }: {
   initialCampaigns: Campaign[]
   leadStatuses: string[]
   leadSources: string[]
   leadTypes: { id: string; label: string }[]
   leadTags: string[]
+  leadFormularios?: string[]
+  leadCompanies?: string[]
+  leadCnpjs?: string[]
+  leadObjectives?: string[]
+  catalogItems?: { id: string; name: string }[]
 }) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => { setMounted(true) }, [])
@@ -115,6 +149,14 @@ export function EmailMarketingManager({
   // Leads para segmentação
   const [segmentLeads, setSegmentLeads] = useState<LeadOption[]>([])
   const [loadingLeads, setLoadingLeads] = useState(false)
+
+  // Envio real
+  const [sending, setSending] = useState(false)
+  const [sendProgress, setSendProgress] = useState<{ sent: number; failed: number; total: number; done: boolean } | null>(null)
+  const [sendError, setSendError] = useState<string | null>(null)
+
+  // Destinatários (detail)
+  const [recipients, setRecipients] = useState<Recipient[]>([])
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const pendingCursor = useRef<{ start: number; end: number } | null>(null)
@@ -277,10 +319,94 @@ export function EmailMarketingManager({
       const r = await fetch(`/api/email-campaigns/${c.id}`)
       const d = await r.json()
       setSelectedCampaign(d.campaign || c)
+      setRecipients((d.campaign?.recipients as Recipient[]) || [])
       setView('detail')
+      setSendError(null)
+      setSendProgress(null)
     } catch {
       setSelectedCampaign(c)
+      setRecipients([])
       setView('detail')
+      setSendError(null)
+      setSendProgress(null)
+    }
+  }
+
+  const sendTest = async (c: Campaign) => {
+    setFeedback(null)
+    setSending(true)
+    try {
+      const r = await fetch(`/api/email-campaigns/${c.id}/test`, { method: 'POST' })
+      const d = await r.json()
+      if (!r.ok) {
+        setFeedback({ type: 'error', message: d.error || 'Falha ao enviar teste' })
+      } else {
+        setFeedback({ type: 'success', message: `Teste enviado para você! (${d.to})` })
+      }
+    } catch {
+      setFeedback({ type: 'error', message: 'Erro de conexão ao enviar teste' })
+    } finally {
+      setSending(false)
+    }
+  }
+
+  const sendCampaign = async (c: Campaign) => {
+    setSendError(null)
+    setSendProgress(null)
+    const ok = window.confirm(
+      `Disparar a campanha "${c.name}" agora para o segmento selecionado?\n\nOs envios são feitos em lotes. Emails com falha ficam registrados como FAILED.`
+    )
+    if (!ok) return
+    setSending(true)
+    setSendProgress({ sent: 0, failed: 0, total: 100, done: false })
+    try {
+      // Lote 1
+      const r = await fetch(`/api/email-campaigns/${c.id}/send`, { method: 'POST' })
+      const d = await r.json()
+      if (!r.ok) {
+        setSendError(d.error || 'Falha ao disparar campanha')
+      } else {
+        setSendProgress({ sent: d.sent || 0, failed: d.failed || 0, total: d.total || 0, done: d.done })
+        setFeedback({
+          type: 'success',
+          message: d.done
+            ? `Campanha enviada! ${d.sent} enviados, ${d.failed} falharam.`
+            : `Lote processado: ${d.processed} disparos. ${d.remaining} restantes — use "Continuar envio" para o próximo lote.`,
+        })
+        await refreshCampaigns()
+        await openDetail({ ...c })
+      }
+    } catch {
+      setSendError('Erro de conexão ao disparar campanha')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  const continueSend = async (c: Campaign) => {
+    setSendError(null)
+    setSendProgress(null)
+    setSending(true)
+    try {
+      const r = await fetch(`/api/email-campaigns/${c.id}/send`, { method: 'POST' })
+      const d = await r.json()
+      if (!r.ok) {
+        setSendError(d.error || 'Falha ao continuar envio')
+      } else {
+        setSendProgress({ sent: d.sent || 0, failed: d.failed || 0, total: d.total || 0, done: d.done })
+        setFeedback({
+          type: 'success',
+          message: d.done
+            ? `Envio concluído! ${d.sent} enviados, ${d.failed} falharam.`
+            : `${d.processed} disparos no lote. ${d.remaining} restantes.`,
+        })
+        await refreshCampaigns()
+        await openDetail({ ...c })
+      }
+    } catch {
+      setSendError('Erro de conexão')
+    } finally {
+      setSending(false)
     }
   }
 
@@ -313,6 +439,11 @@ export function EmailMarketingManager({
             <Button size="sm" variant="outline" onClick={refreshCampaigns} disabled={loading}>
               <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} /> Atualizar
             </Button>
+            <Link href="/settings/email">
+              <Button size="sm" variant="outline">
+                <Settings className="h-4 w-4 mr-1" /> Configurar envio
+              </Button>
+            </Link>
             <Button size="sm" onClick={() => { resetForm(); setView('create') }}>
               <Plus className="h-4 w-4 mr-1" /> Nova Campanha
             </Button>
@@ -454,6 +585,93 @@ export function EmailMarketingManager({
           </div>
         </div>
 
+        {/* Envio real */}
+        <div className="rounded-xl border p-5 dark:border-gray-700 dark:bg-gray-800/30">
+          <h3 className="font-semibold text-sm mb-3">Disparo</h3>
+
+          {sendError && (
+            <div className="mb-3 rounded-lg px-4 py-3 text-sm bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300 flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 mt-0.5" /> <span>{sendError}</span>
+            </div>
+          )}
+
+          {sendProgress && (
+            <div className="mb-3 bg-muted/50 dark:bg-gray-800/60 rounded-lg p-4">
+              <div className="flex justify-between text-xs mb-2">
+                <span>{sendProgress.done ? 'Envio concluído' : 'Enviando…'}</span>
+                <span>{sendProgress.sent} enviados · {sendProgress.failed} falhas</span>
+              </div>
+              <div className="w-full bg-black/10 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                <div className="h-full bg-blue-600 transition-all"
+                  style={{ width: `${sendProgress.total > 0 ? Math.min(100, ((sendProgress.sent + sendProgress.failed) / sendProgress.total) * 100) : 100}%` }} />
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-sm text-muted-foreground">
+              <Users className="inline h-4 w-4 mr-1" />
+              {c.totalRecipients || c._count?.recipients || 0} destinatário(s)
+            </span>
+            <div className="ml-auto flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => sendTest(c)} disabled={sending}>
+                <TestTube2 className="h-4 w-4 mr-1" /> Testar (vai p/ você)
+              </Button>
+              {(c.status === 'DRAFT' || c.status === 'SCHEDULED') && (
+                <Button size="sm" onClick={() => sendCampaign(c)} disabled={sending} className="bg-blue-600 hover:bg-blue-700">
+                  {sending ? <RefreshCw className="h-4 w-4 mr-1 animate-spin" /> : <Send className="h-4 w-4 mr-1" />}
+                  Disparar
+                </Button>
+              )}
+              {c.status === 'SENDING' && (
+                <Button size="sm" onClick={() => continueSend(c)} disabled={sending} className="bg-blue-600 hover:bg-blue-700">
+                  <RefreshCw className="h-4 w-4 mr-1" /> Continuar envio
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Destinatários */}
+        {recipients.length > 0 && (
+          <div className="rounded-xl border dark:border-gray-700 overflow-hidden">
+            <div className="px-4 py-2 bg-muted/50 dark:bg-gray-800/50 border-b dark:border-gray-700 flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground">Destinatários ({recipients.length} recentes)</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/50 dark:bg-gray-800/50 dark:border-gray-700">
+                    <th className="px-4 py-2 text-left font-medium text-muted-foreground">Nome</th>
+                    <th className="px-4 py-2 text-left font-medium text-muted-foreground">Email</th>
+                    <th className="px-4 py-2 text-left font-medium text-muted-foreground">Status</th>
+                    <th className="px-4 py-2 text-left font-medium text-muted-foreground hidden md:table-cell">Erro</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y dark:divide-gray-700">
+                  {recipients.map(r => {
+                    const meta = EMAIL_RECIPIENT_STATUS_META[r.status] || { label: r.status, color: 'bg-gray-100 text-gray-600' }
+                    return (
+                      <tr key={r.id}>
+                        <td className="px-4 py-2">{r.name || '—'}</td>
+                        <td className="px-4 py-2 text-muted-foreground">{r.email}</td>
+                        <td className="px-4 py-2">
+                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${meta.color}`}>
+                            {meta.label}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2 text-xs text-red-600 dark:text-red-400 hidden md:table-cell truncate max-w-[200px]" title={r.errorMessage || ''}>
+                          {r.errorMessage || '—'}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         {/* Preview HTML */}
         {c.htmlBody && (
           <div className="rounded-xl border dark:border-gray-700 overflow-hidden">
@@ -532,7 +750,7 @@ export function EmailMarketingManager({
       {segmentType !== 'ALL' && (
         <div>
           <label className="text-sm font-medium mb-1 block">
-            {segmentType === 'STATUS' ? 'Status' : segmentType === 'SOURCE' ? 'Origem' : segmentType === 'LEAD_TYPE' ? 'Tipo de lead' : 'Tag'}
+            {segmentType === 'STATUS' ? 'Status' : segmentType === 'SOURCE' ? 'Origem' : segmentType === 'LEAD_TYPE' ? 'Tipo de lead' : segmentType === 'TAG' ? 'Tag' : SEGMENT_VALUE_OPTIONS[segmentType as keyof typeof SEGMENT_VALUE_OPTIONS]?.label || 'Valor'}
           </label>
           <select value={segmentValue} onChange={e => setSegmentValue(e.target.value)}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 max-w-xs">
@@ -541,6 +759,11 @@ export function EmailMarketingManager({
             {segmentType === 'SOURCE' && leadSources.map(s => <option key={s} value={s}>{s}</option>)}
             {segmentType === 'LEAD_TYPE' && leadTypes.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
             {segmentType === 'TAG' && leadTags.map(t => <option key={t} value={t}>{t}</option>)}
+            {segmentType === 'FORMULARIO' && leadFormularios.map(s => <option key={s} value={s}>{s}</option>)}
+            {segmentType === 'COMPANY' && leadCompanies.map(s => <option key={s} value={s}>{s}</option>)}
+            {segmentType === 'CNPJ' && leadCnpjs.map(s => <option key={s} value={s}>{s}</option>)}
+            {segmentType === 'OBJECTIVE' && leadObjectives.map(s => <option key={s} value={s}>{s}</option>)}
+            {segmentType === 'CATALOG_ITEM' && catalogItems.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
           <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
             <Users className="h-3 w-3" />
