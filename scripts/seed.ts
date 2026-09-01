@@ -20,6 +20,7 @@ const MODULES = [
   { key: 'ads_tracker', displayName: 'Tráfego Pago', description: 'Meta e Google Ads, custos, CPL e ROI', category: 'marketing', isCore: false, isActive: false, sortOrder: 12 },
   { key: 'automations', displayName: 'Automações', description: 'Fluxos da jornada de compra que conversam com o Hermes Agent', category: 'sales', isCore: false, isActive: true, sortOrder: 13 },
   { key: 'catalog', displayName: 'Catálogo de Produtos', description: 'Produtos e serviços vinculados a tipos de lead e objetivos', category: 'sales', isCore: false, isActive: true, sortOrder: 14 },
+  { key: 'email_marketing', displayName: 'Email Marketing', description: 'Criação e envio de campanhas de email em massa', category: 'marketing', isCore: false, isActive: true, sortOrder: 15 },
 ]
 
 const LEAD_TYPES = [
@@ -30,6 +31,71 @@ const LEAD_TYPES = [
   { key: 'fornecedor', label: 'Fornecedor', color: '#06B6D4', icon: 'Truck', description: 'Oferece produtos ou serviços para a sua empresa.' },
   { key: 'colaborador', label: 'Colaborador', color: '#EC4899', icon: 'Users', description: 'Candidato ou membro da equipe interna.' },
   { key: 'outro', label: 'Outro', color: '#6B7280', icon: 'CircleHelp', description: 'Contato que não se encaixa nas categorias acima.' },
+]
+
+const EMAIL_TEMPLATES = [
+  {
+    id: 'etpl-1',
+    name: 'Boas-vindas',
+    subject: 'Bem-vindo(a) à {{empresa}}!',
+    category: 'broadcast',
+    variables: ['primeiro_nome', 'nome', 'email', 'empresa'],
+    htmlBody: '<p>Olá <strong>{{primeiro_nome}}</strong>,</p><p>Seja muito bem-vindo(a) à <strong>{{empresa}}</strong>! Queremos te apoiar em cada etapa da sua jornada.</p><p>Qualquer dúvida, é só responder este email.</p><p>Um abraço,<br/>Equipe</p>',
+  },
+  {
+    id: 'etpl-2',
+    name: 'Lançamento de produto',
+    subject: '🚀 Novidade: {{produto}} já está disponível!',
+    category: 'novidade',
+    variables: ['primeiro_nome', 'nome', 'email', 'produto', 'link'],
+    htmlBody: '<p>Oi <strong>{{primeiro_nome}}</strong>!</p><p>Acabamos de lançar o <strong>{{produto}}</strong> e queremos que você conheça em primeira mão.</p><p>Confira todos os detalhes: <a href="{{link}}">{{link}}</a></p><p>Nos vemos lá!</p>',
+  },
+  {
+    id: 'etpl-3',
+    name: 'Reativação de lead',
+    subject: 'Sentimos sua falta, {{primeiro_nome}}!',
+    category: 'reativacao',
+    variables: ['primeiro_nome', 'nome', 'email'],
+    htmlBody: '<p>Olá <strong>{{primeiro_nome}}</strong>,</p><p>Faz um tempo que não falamos e sentimos sua falta. Preparamos uma condição especial para você.</p><p>Que tal retomarmos a conversa?</p>',
+  },
+]
+
+const EMAIL_CAMPAIGNS = [
+  {
+    id: 'ecmp-1',
+    name: 'Boas-vindas novos leads',
+    subject: 'Bem-vindo(a) à {{empresa}}!',
+    htmlBody: EMAIL_TEMPLATES[0].htmlBody,
+    category: 'broadcast',
+    segmentType: 'ALL',
+    templateId: 'etpl-1',
+    status: 'DRAFT',
+    senderName: 'Equipe Vortex',
+    senderEmail: 'contato@vortex.com.br',
+  },
+  {
+    id: 'ecmp-2',
+    name: 'Lançamento Curso Marketing Digital',
+    subject: '🚀 Novidade: Curso de Marketing Digital já está disponível!',
+    htmlBody: EMAIL_TEMPLATES[1].htmlBody
+      .replace('{{produto}}', 'Curso de Marketing Digital')
+      .replace('{{link}}', 'https://vortex.com.br/curso'),
+    category: 'novidade',
+    segmentType: 'STATUS',
+    segmentValue: 'CONVERSA_ATIVA',
+    templateId: 'etpl-2',
+    status: 'SENT',
+    senderName: 'Equipe Vortex',
+    senderEmail: 'contato@vortex.com.br',
+    totalRecipients: 45,
+    totalSent: 43,
+    totalOpened: 28,
+    totalClicked: 12,
+    totalBounced: 2,
+    totalFailed: 0,
+    sentAt: 3,
+    createdAt: 8,
+  },
 ]
 
 const CATALOG_ITEMS = [
@@ -128,6 +194,47 @@ async function main() {
       where: { tenantId_key: { tenantId: TENANT_ID, key: m.key } },
       update: { displayName: m.displayName, description: m.description, category: m.category, isCore: m.isCore, isActive: m.isActive, sortOrder: m.sortOrder },
       create: { tenantId: TENANT_ID, ...m },
+    })
+  }
+
+  // Email Marketing — templates
+  for (const t of EMAIL_TEMPLATES) {
+    await prisma.emailTemplate.upsert({
+      where: { id: t.id },
+      update: { name: t.name, subject: t.subject, htmlBody: t.htmlBody, category: t.category, variables: t.variables, tenantId: TENANT_ID },
+      create: { id: t.id, tenantId: TENANT_ID, name: t.name, subject: t.subject, htmlBody: t.htmlBody, category: t.category, variables: t.variables },
+    })
+  }
+
+  // Email Marketing — campanhas demo
+  for (const c of EMAIL_CAMPAIGNS) {
+    const createdDays = typeof c.createdAt === 'number' ? c.createdAt : 0
+    const data: any = {
+      tenantId: TENANT_ID,
+      name: c.name,
+      subject: c.subject,
+      htmlBody: c.htmlBody,
+      category: c.category,
+      status: c.status,
+      templateId: c.templateId,
+      segmentType: c.segmentType,
+      segmentValue: c.segmentValue ?? null,
+      senderName: c.senderName ?? null,
+      senderEmail: c.senderEmail ?? null,
+      totalRecipients: c.totalRecipients ?? 0,
+      totalSent: c.totalSent ?? 0,
+      totalOpened: c.totalOpened ?? 0,
+      totalClicked: c.totalClicked ?? 0,
+      totalBounced: c.totalBounced ?? 0,
+      totalFailed: c.totalFailed ?? 0,
+      createdById: 'user-demo-admin',
+      createdAt: daysAgo(createdDays),
+    }
+    if (c.sentAt) data.sentAt = daysAgo(c.sentAt)
+    await prisma.emailCampaign.upsert({
+      where: { id: c.id },
+      update: data,
+      create: { id: c.id, ...data },
     })
   }
 

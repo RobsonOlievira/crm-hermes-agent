@@ -130,6 +130,35 @@ export const MODULE_CATEGORY_META: Record<string, { label: string }> = {
   communication: { label: 'Comunicação' },
 }
 
+export const EMAIL_CATEGORIES: Record<string, { label: string; color: string }> = {
+  broadcast: { label: 'Broadcast Geral', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
+  novidade: { label: 'Novidade / Lançamento', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' },
+  lembrete: { label: 'Lembrete', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' },
+  reativacao: { label: 'Reativação', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' },
+  venda: { label: 'Promoção / Venda', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
+  nurturing: { label: 'Nutrição', color: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300' },
+}
+
+export const EMAIL_CAMPAIGN_STATUS_META: Record<string, { label: string; color: string }> = {
+  DRAFT: { label: 'Rascunho', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
+  SCHEDULED: { label: 'Agendada', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
+  SENDING: { label: 'Enviando', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' },
+  SENT: { label: 'Enviada', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
+  PAUSED: { label: 'Pausada', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' },
+  CANCELLED: { label: 'Cancelada', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
+}
+
+export const EMAIL_RECIPIENT_STATUS_META: Record<string, { label: string; color: string }> = {
+  PENDING: { label: 'Pendente', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
+  SENT: { label: 'Enviado', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
+  DELIVERED: { label: 'Entregue', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
+  OPENED: { label: 'Aberto', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
+  CLICKED: { label: 'Clicado', color: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300' },
+  BOUNCED: { label: 'Rejeitado', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
+  FAILED: { label: 'Falhou', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' },
+  UNSUBSCRIBED: { label: 'Descadastrado', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
+}
+
 export function leadStatusLabel(s: LeadStatus | string) {
   return LEAD_STATUS_META[s]?.label ?? String(s)
 }

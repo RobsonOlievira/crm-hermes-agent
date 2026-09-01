@@ -34,6 +34,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: 'contracts', label: 'Contratos', href: '/contracts', icon: 'FileText', moduleKey: 'contracts' },
       { key: 'ads_tracker', label: 'Tráfego Pago', href: '/ads', icon: 'Megaphone', moduleKey: 'ads_tracker' },
       { key: 'automations', label: 'Automações', href: '/automations', icon: 'Workflow', moduleKey: 'automations' },
+      { key: 'email_marketing', label: 'Email Marketing', href: '/email-marketing', icon: 'Mail', moduleKey: 'email_marketing' },
     ],
   },
   {
@@ -56,4 +57,5 @@ export const PLACEHOLDER_MODULES: Record<string, { title: string; description: s
   contracts: { title: 'Gerador de Contratos', description: 'Templates com variáveis dinâmicas e assinatura eletrônica.', icon: 'FileText' },
   ads_tracker: { title: 'Tráfego Pago', description: 'Conecte Meta e Google Ads, acompanhe CPL, ROI e atribua leads às campanhas.', icon: 'Megaphone' },
   automations: { title: 'Automações / Workflows', description: 'Regras no formato gatilho, condição e ação para automatizar o funil.', icon: 'Workflow' },
+  email_marketing: { title: 'Email Marketing', description: 'Criação e envio de campanhas de email em massa com templates e segmentação.', icon: 'Mail' },
 }

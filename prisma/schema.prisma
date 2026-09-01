@@ -1,11 +1,11 @@
 generator client {
-    provider = "prisma-client-js"
-    binaryTargets = ["native", "debian-openssl-3.0.x", "debian-openssl-1.1.x"]
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "debian-openssl-1.1.x"]
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum Role {
@@ -45,6 +45,26 @@ enum CatalogKind {
   SERVICO
 }
 
+enum EmailCampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  PAUSED
+  CANCELLED
+}
+
+enum EmailRecipientStatus {
+  PENDING
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  BOUNCED
+  FAILED
+  UNSUBSCRIBED
+}
+
 enum ClientStatus {
   ATIVO
   INATIVO
@@ -69,18 +89,18 @@ enum InteractionType {
 }
 
 model Tenant {
-  id             String   @id @default(cuid())
-  name           String
-  slug           String   @unique
-  logoUrl        String?
-  primaryColor   String   @default("#3B82F6")
-  secondaryColor String   @default("#10B981")
-  mcpEnabled     Boolean  @default(false)
-  mcpToken       String?
-  mcpTokenSetAt  DateTime?
+  id                String    @id @default(cuid())
+  name              String
+  slug              String    @unique
+  logoUrl           String?
+  primaryColor      String    @default("#3B82F6")
+  secondaryColor    String    @default("#10B981")
+  mcpEnabled        Boolean   @default(false)
+  mcpToken          String?
+  mcpTokenSetAt     DateTime?
   waOutboundWebhook String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   users               User[]
   modules             Module[]
@@ -95,6 +115,8 @@ model Tenant {
   calendarEvents      CalendarEvent[]
   messages            Message[]
   students            Student[]
+  emailTemplates      EmailTemplate[]
+  emailCampaigns      EmailCampaign[]
 }
 
 model LeadType {
@@ -122,10 +144,10 @@ model LeadType {
 // Um lead pode ter VÁRIOS tipos (ex.: "Aluno" e "Cliente" ao mesmo tempo).
 model LeadLeadType {
   leadId     String
-  lead       Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  lead       Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
   leadTypeId String
-  leadType   LeadType  @relation(fields: [leadTypeId], references: [id], onDelete: Cascade)
-  createdAt  DateTime  @default(now())
+  leadType   LeadType @relation(fields: [leadTypeId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
 
   @@id([leadId, leadTypeId])
   @@index([leadTypeId])
@@ -158,10 +180,10 @@ model CatalogItem {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  leadTypes  CatalogItemLeadType[]
-  leads      Lead[]
-  rules      ClassificationRuleCatalogItem[]
-  purchases  Purchase[]
+  leadTypes CatalogItemLeadType[]
+  leads     Lead[]
+  rules     ClassificationRuleCatalogItem[]
+  purchases Purchase[]
 }
 
 // Uma regra pode classificar o lead em VÁRIOS tipos ao mesmo tempo.
@@ -220,10 +242,11 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  assignedLeads   Lead[]        @relation("LeadAssignee")
-  assignedClients Client[]      @relation("ClientAssignee")
+  assignedLeads   Lead[]          @relation("LeadAssignee")
+  assignedClients Client[]        @relation("ClientAssignee")
   interactions    Interaction[]
   calendarEvents  CalendarEvent[] @relation("EventAssignee")
+  emailCampaigns  EmailCampaign[] @relation("CampaignCreator")
 }
 
 model Module {
@@ -265,44 +288,46 @@ model Stage {
 }
 
 model Lead {
-  id              String     @id @default(cuid())
+  id              String       @id @default(cuid())
   tenantId        String
-  tenant          Tenant     @relation(fields: [tenantId], references: [id])
+  tenant          Tenant       @relation(fields: [tenantId], references: [id])
   name            String
   email           String?
   phone           String
   companyName     String?
   cnpj            String?
-  status          LeadStatus @default(PRIMEIRO_CONTATO)
-  source          LeadSource @default(MANUAL)
-  score           Int        @default(0)
-  tags            String[]   @default([])
+  status          LeadStatus   @default(PRIMEIRO_CONTATO)
+  source          LeadSource   @default(MANUAL)
+  score           Int          @default(0)
+  tags            String[]     @default([])
   dealValue       Float?
   assignedToId    String?
-  assignedTo      User?      @relation("LeadAssignee", fields: [assignedToId], references: [id])
+  assignedTo      User?        @relation("LeadAssignee", fields: [assignedToId], references: [id])
   stageId         String?
-  stage           Stage?     @relation(fields: [stageId], references: [id])
-  stagePosition   Int        @default(0)
+  stage           Stage?       @relation(fields: [stageId], references: [id])
+  stagePosition   Int          @default(0)
   catalogItemId   String?
   catalogItem     CatalogItem? @relation(fields: [catalogItemId], references: [id])
   socialMedia     String?
   objective       String?
-  firstContactAt  DateTime   @default(now())
+  firstContactAt  DateTime     @default(now())
   lastInteraction DateTime?
-  totalPurchased  Float      @default(0)
+  totalPurchased  Float        @default(0)
   lastMessageAt   DateTime?
   lastMessageText String?
-  unreadCount     Int        @default(0)
-  isArchived      Boolean    @default(false)
+  unreadCount     Int          @default(0)
+  isArchived      Boolean      @default(false)
   archivedAt      DateTime?
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  formulario      String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
-  leadTypes    LeadLeadType[]
-  interactions Interaction[]
-  purchases    Purchase[]
-  calendarEvents CalendarEvent[]
-  messages     Message[]
+  leadTypes       LeadLeadType[]
+  interactions    Interaction[]
+  purchases       Purchase[]
+  calendarEvents  CalendarEvent[]
+  messages        Message[]
+  emailRecipients EmailRecipient[]
 
   @@index([tenantId, isArchived])
   @@index([tenantId, lastMessageAt])
@@ -325,23 +350,23 @@ model Purchase {
 }
 
 model JourneyAutomation {
-  id            String   @id @default(cuid())
-  tenantId      String
-  tenant        Tenant   @relation(fields: [tenantId], references: [id])
-  name          String
-  description   String?
-  fromStatus    String?
-  toStatus      String?
-  triggerType   String   @default("no_reply")
-  delayHours    Int      @default(0)
-  action        String   @default("move_stage")
-  message       String?
-  keepChannelTag Boolean @default(true)
-  connectHermes Boolean  @default(true)
-  isActive      Boolean  @default(true)
-  sortOrder     Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             String   @id @default(cuid())
+  tenantId       String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id])
+  name           String
+  description    String?
+  fromStatus     String?
+  toStatus       String?
+  triggerType    String   @default("no_reply")
+  delayHours     Int      @default(0)
+  action         String   @default("move_stage")
+  message        String?
+  keepChannelTag Boolean  @default(true)
+  connectHermes  Boolean  @default(true)
+  isActive       Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@index([tenantId])
 }
@@ -367,28 +392,28 @@ model Client {
 }
 
 model CalendarEvent {
-  id           String    @id @default(cuid())
-  tenantId     String
-  tenant       Tenant    @relation(fields: [tenantId], references: [id])
-  title        String
-  description  String?
-  type         String    @default("MEETING")
-  status       String    @default("SCHEDULED")
-  startsAt     DateTime
-  endsAt       DateTime
-  allDay       Boolean   @default(false)
-  location     String?
-  meetingUrl   String?
-  leadId       String?
-  lead         Lead?     @relation(fields: [leadId], references: [id])
-  assignedToId String?
-  assignedTo   User?     @relation("EventAssignee", fields: [assignedToId], references: [id])
-  color        String?
+  id              String   @id @default(cuid())
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  title           String
+  description     String?
+  type            String   @default("MEETING")
+  status          String   @default("SCHEDULED")
+  startsAt        DateTime
+  endsAt          DateTime
+  allDay          Boolean  @default(false)
+  location        String?
+  meetingUrl      String?
+  leadId          String?
+  lead            Lead?    @relation(fields: [leadId], references: [id])
+  assignedToId    String?
+  assignedTo      User?    @relation("EventAssignee", fields: [assignedToId], references: [id])
+  color           String?
   reminderMinutes Int?
-  syncSource   String    @default("local")
-  googleEventId String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  syncSource      String   @default("local")
+  googleEventId   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([tenantId, startsAt])
 }
@@ -410,25 +435,25 @@ model Interaction {
 }
 
 model Student {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   tenantId     String
-  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  tenant       Tenant    @relation(fields: [tenantId], references: [id])
   name         String
   email        String?
   phone        String?
   product      String?
   plan         String?
-  status       String   @default("ATIVO")
-  progress     Int      @default(0)
-  amountPaid   Float    @default(0)
+  status       String    @default("ATIVO")
+  progress     Int       @default(0)
+  amountPaid   Float     @default(0)
   source       String?
-  enrolledAt   DateTime @default(now())
+  enrolledAt   DateTime  @default(now())
   expiresAt    DateTime?
   lastAccessAt DateTime?
   avatarUrl    String?
   notes        String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@index([tenantId])
   @@index([tenantId, enrolledAt])
@@ -453,4 +478,77 @@ model Message {
 
   @@index([tenantId, leadId])
   @@index([leadId, timestamp])
+}
+
+model EmailTemplate {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  name      String
+  subject   String
+  htmlBody  String   @db.Text
+  category  String   @default("broadcast")
+  variables String[] @default([])
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  campaigns EmailCampaign[]
+
+  @@index([tenantId])
+}
+
+model EmailCampaign {
+  id              String              @id @default(cuid())
+  tenantId        String
+  tenant          Tenant              @relation(fields: [tenantId], references: [id])
+  name            String
+  subject         String
+  htmlBody        String              @db.Text
+  category        String              @default("broadcast")
+  status          EmailCampaignStatus @default(DRAFT)
+  templateId      String?
+  template        EmailTemplate?      @relation(fields: [templateId], references: [id])
+  segmentType     String              @default("ALL")
+  segmentValue    String?
+  senderName      String?
+  senderEmail     String?
+  scheduledAt     DateTime?
+  sentAt          DateTime?
+  totalRecipients Int                 @default(0)
+  totalSent       Int                 @default(0)
+  totalOpened     Int                 @default(0)
+  totalClicked    Int                 @default(0)
+  totalBounced    Int                 @default(0)
+  totalFailed     Int                 @default(0)
+  createdById     String?
+  createdBy       User?               @relation("CampaignCreator", fields: [createdById], references: [id])
+  recipients      EmailRecipient[]
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+}
+
+model EmailRecipient {
+  id           String               @id @default(cuid())
+  tenantId     String
+  campaignId   String
+  campaign     EmailCampaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  leadId       String?
+  lead         Lead?                @relation(fields: [leadId], references: [id])
+  email        String
+  name         String?
+  status       EmailRecipientStatus @default(PENDING)
+  sentAt       DateTime?
+  openedAt     DateTime?
+  clickedAt    DateTime?
+  bouncedAt    DateTime?
+  externalId   String?
+  errorMessage String?
+  createdAt    DateTime             @default(now())
+
+  @@index([campaignId])
+  @@index([tenantId, email])
 }
