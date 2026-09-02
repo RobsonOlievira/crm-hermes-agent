@@ -24,12 +24,12 @@ export function NewClientDialog({ members }: { members: { id: string; name: stri
   const [segment, setSegment] = useState('')
   const [status, setStatus] = useState('ATIVO')
   const [lifetimeValue, setLifetimeValue] = useState('0')
-  const [assignedToId, setAssignedToId] = useState('')
+  const [assignedToId, setAssignedToId] = useState('_none_')
   const [saving, setSaving] = useState(false)
 
   const reset = () => {
     setName(''); setPhone(''); setEmail(''); setCompanyName(''); setCnpj(''); setSegment('')
-    setStatus('ATIVO'); setLifetimeValue('0'); setAssignedToId('')
+    setStatus('ATIVO'); setLifetimeValue('0'); setAssignedToId('_none_')
   }
 
   const handleCreate = async () => {
@@ -43,7 +43,7 @@ export function NewClientDialog({ members }: { members: { id: string; name: stri
         body: JSON.stringify({
           name, phone, email, companyName, cnpj, segment, status,
           lifetimeValue: lifetimeValue === '' ? 0 : Number(lifetimeValue),
-          assignedToId: assignedToId || null,
+          assignedToId: assignedToId === '_none_' ? null : assignedToId,
         }),
       })
       if (!res.ok) throw new Error()
@@ -115,7 +115,7 @@ export function NewClientDialog({ members }: { members: { id: string; name: stri
               <Select value={assignedToId} onValueChange={setAssignedToId}>
                 <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sem responsável</SelectItem>
+                  <SelectItem value="_none_">Sem responsável</SelectItem>
                   {(members ?? []).map((m) => (
                     <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                   ))}
