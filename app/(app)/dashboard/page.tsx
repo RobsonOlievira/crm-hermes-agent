@@ -80,7 +80,7 @@ export default async function DashboardPage() {
 
   const twoYearsAgo = new Date(Date.now() - 730 * MS_DAY)
 
-  const [leadsInWindow, purchasesInWindow, byStatus, bySource, members, clientsAtivos] = await Promise.all([
+  const [leadsInWindow, studentsInWindow, byStatus, bySource, members, clientsAtivos] = await Promise.all([
     tenantId
       ? prisma.lead.findMany({
           where: { tenantId, createdAt: { gte: twoYearsAgo } },
@@ -88,9 +88,9 @@ export default async function DashboardPage() {
         })
       : Promise.resolve([]),
     tenantId
-      ? prisma.purchase.findMany({
-          where: { tenantId, createdAt: { gte: twoYearsAgo } },
-          select: { createdAt: true, amount: true },
+      ? prisma.student.findMany({
+          where: { tenantId, enrolledAt: { gte: twoYearsAgo } },
+          select: { enrolledAt: true, amountPaid: true },
         })
       : Promise.resolve([]),
     tenantId ? prisma.lead.groupBy({ by: ['status'], where: { tenantId }, _count: { _all: true } }) : Promise.resolve([]),
@@ -100,7 +100,7 @@ export default async function DashboardPage() {
   ])
 
   const leadDates = (leadsInWindow as { createdAt: Date }[]).map((l) => l.createdAt)
-  const purchaseEntries = (purchasesInWindow as { createdAt: Date; amount: number }[]).map((p) => ({ at: p.createdAt, amount: p.amount }))
+  const saleEntries = (studentsInWindow as { enrolledAt: Date; amountPaid: number }[]).map((s) => ({ at: s.enrolledAt, amount: s.amountPaid }))
 
   const periods = {} as Record<PeriodKey, DashboardData['periods'][PeriodKey]>
   const rangeLen: Record<PeriodKey, number> = { today: 1, week: 7, month: 30, year: 365 }
@@ -109,17 +109,16 @@ export default async function DashboardPage() {
     const len = rangeLen[key] * MS_DAY
     const curStart = Date.now() - len
     const prevStart = curStart - len
-    const curLeads = leadsInWindow.filter((l) => l.createdAt.getTime() >= curStart)
-    const prevLeads = leadsInWindow.filter((l) => l.createdAt.getTime() >= prevStart && l.createdAt.getTime() < curStart)
-    const curPurchases = purchaseEntries.filter((p) => p.at.getTime() >= curStart)
-    const prevPurchases = purchaseEntries.filter((p) => p.at.getTime() >= prevStart && p.at.getTime() < curStart)
+    const curLedCount = leadsInWindow.filter((l) => l.createdAt.getTime() >= curStart).length
+    const prevLedCount = leadsInWindow.filter((l) => l.createdAt.getTime() >= prevStart && l.createdAt.getTime() < curStart).length
+    const curSales = saleEntries.filter((s) => s.at.getTime() >= curStart && s.amount > 0)
+    const prevSales = saleEntries.filter((s) => s.at.getTime() >= prevStart && s.at.getTime() < curStart && s.amount > 0)
 
-    const inWindow = (l: { status: string }) => CONVERSION_STATUSES.includes(l.status)
-    const curConversions = curLeads.filter(inWindow).length
-    const prevConversions = prevLeads.filter(inWindow).length
-    const curRevenue = curPurchases.reduce((a, p) => a + p.amount, 0)
-    const prevRevenue = prevPurchases.reduce((a, p) => a + p.amount, 0)
-    const newLeads = curLeads.length
+    const curRevenue = curSales.reduce((a, s) => a + s.amount, 0)
+    const prevRevenue = prevSales.reduce((a, s) => a + s.amount, 0)
+    const curConversions = curSales.length
+    const prevConversions = prevSales.length
+    const newLeads = curLedCount
 
     periods[key] = {
       newLeads,
@@ -127,13 +126,13 @@ export default async function DashboardPage() {
       revenue: curRevenue,
       ticket: curConversions > 0 ? Math.round(curRevenue / curConversions) : 0,
       deltas: [
-        delta(newLeads, prevLeads.length),
+        delta(newLeads, prevLedCount),
         delta(curConversions, prevConversions),
         delta(curRevenue, prevRevenue),
         delta(curConversions > 0 ? Math.round(curRevenue / curConversions) : 0, prevConversions > 0 ? Math.round(prevRevenue / prevConversions) : 0),
       ],
       leadsSeries: countInWindows(leadDates, windowsFor(key)).map((w) => ({ label: w.label, leads: w.count })),
-      revenueSeries: sumInWindows(purchaseEntries, windowsFor(key)).map((w) => ({ label: w.label, receita: w.total })),
+      revenueSeries: sumInWindows(saleEntries, windowsFor(key)).map((w) => ({ label: w.label, receita: w.total })),
     }
   })
 
