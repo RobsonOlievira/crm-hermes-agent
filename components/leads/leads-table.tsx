@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -12,7 +11,7 @@ import { LeadStatusBadge } from '@/components/status-badge'
 import { Icon } from '@/components/layout/icon'
 import { LEAD_STATUS_META, LEAD_SOURCE_META } from '@/lib/crm-constants'
 import { formatCurrency, formatDate, initials } from '@/lib/format'
-import { Search, ChevronLeft, ChevronRight, Filter } from 'lucide-react'
+import { Search, Filter, Loader2 } from 'lucide-react'
 import { useViewRole } from '@/components/providers/view-role-provider'
 
 export interface LeadRow {
@@ -34,7 +33,8 @@ export interface LeadRow {
   createdAt: string
 }
 
-const PAGE_SIZE = 8
+const INITIAL_COUNT = 20
+const LOAD_MORE = 20
 
 export function LeadsTable({ leads, members, currentUserId }: { leads: LeadRow[]; members: { id: string; name: string }[]; currentUserId: string }) {
   const router = useRouter()
@@ -44,7 +44,8 @@ export function LeadsTable({ leads, members, currentUserId }: { leads: LeadRow[]
   const [source, setSource] = useState('all')
   const [leadType, setLeadType] = useState('all')
   const [assignee, setAssignee] = useState('all')
-  const [page, setPage] = useState(1)
+  const [visibleCount, setVisibleCount] = useState(INITIAL_COUNT)
+  const sentinelRef = useRef<HTMLDivElement>(null)
 
   const leadTypeOptions = useMemo(() => {
     const map = new Map<string, string>()
@@ -54,7 +55,6 @@ export function LeadsTable({ leads, members, currentUserId }: { leads: LeadRow[]
 
   const filtered = useMemo(() => {
     let list = leads ?? []
-    // RBAC: MEMBER only sees own leads
     if (viewRole === 'MEMBER') list = list.filter((l) => l.assignedToId === currentUserId)
     if (search.trim()) {
       const q = search.toLowerCase()
@@ -67,12 +67,26 @@ export function LeadsTable({ leads, members, currentUserId }: { leads: LeadRow[]
     return list
   }, [leads, search, status, source, leadType, assignee, viewRole, currentUserId])
 
-  const totalPages = Math.max(Math.ceil(filtered.length / PAGE_SIZE), 1)
-  const safePage = Math.min(page, totalPages)
-  const pageItems = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+  const visible = filtered.slice(0, visibleCount)
+  const hasMore = visibleCount < filtered.length
 
-  function resetPage<T>(setter: (v: T) => void) {
-    return (v: T) => { setter(v); setPage(1) }
+  const loadMore = useCallback(() => setVisibleCount((p) => p + LOAD_MORE), [])
+
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el || !hasMore) return
+    const obs = new IntersectionObserver((entries) => { if (entries[0].isIntersecting) loadMore() }, { rootMargin: '200px' })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [hasMore, loadMore])
+
+  function resetFilters() {
+    setSearch('')
+    setStatus('all')
+    setSource('all')
+    setLeadType('all')
+    setAssignee('all')
+    setVisibleCount(INITIAL_COUNT)
   }
 
   return (
@@ -82,10 +96,10 @@ export function LeadsTable({ leads, members, currentUserId }: { leads: LeadRow[]
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={search} onChange={(e) => resetPage(setSearch)(e.target.value)} placeholder="Buscar por nome, email ou empresa..." className="pl-10" />
+            <Input value={search} onChange={(e) => { setSearch(e.target.value); setVisibleCount(INITIAL_COUNT) }} placeholder="Buscar por nome, email ou empresa..." className="pl-10" />
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Select value={status} onValueChange={resetPage(setStatus)}>
+            <Select value={status} onValueChange={(v) => { setStatus(v); setVisibleCount(INITIAL_COUNT) }}>
               <SelectTrigger className="w-[170px]"><SelectValue placeholder="Status" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos os status</SelectItem>
@@ -94,7 +108,7 @@ export function LeadsTable({ leads, members, currentUserId }: { leads: LeadRow[]
                 ))}
               </SelectContent>
             </Select>
-            <Select value={source} onValueChange={resetPage(setSource)}>
+            <Select value={source} onValueChange={(v) => { setSource(v); setVisibleCount(INITIAL_COUNT) }}>
               <SelectTrigger className="w-[150px]"><SelectValue placeholder="Origem" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas origens</SelectItem>
@@ -104,7 +118,7 @@ export function LeadsTable({ leads, members, currentUserId }: { leads: LeadRow[]
               </SelectContent>
             </Select>
             {leadTypeOptions.length > 0 && (
-              <Select value={leadType} onValueChange={resetPage(setLeadType)}>
+              <Select value={leadType} onValueChange={(v) => { setLeadType(v); setVisibleCount(INITIAL_COUNT) }}>
                 <SelectTrigger className="w-[160px]"><SelectValue placeholder="Tipo" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os tipos</SelectItem>
@@ -115,7 +129,7 @@ export function LeadsTable({ leads, members, currentUserId }: { leads: LeadRow[]
               </Select>
             )}
             {viewRole !== 'MEMBER' && (
-              <Select value={assignee} onValueChange={resetPage(setAssignee)}>
+              <Select value={assignee} onValueChange={(v) => { setAssignee(v); setVisibleCount(INITIAL_COUNT) }}>
                 <SelectTrigger className="w-[160px]"><SelectValue placeholder="Responsável" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos responsáveis</SelectItem>
@@ -147,7 +161,7 @@ export function LeadsTable({ leads, members, currentUserId }: { leads: LeadRow[]
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pageItems.map((l) => (
+              {visible.map((l) => (
                 <TableRow key={l.id} className="cursor-pointer" onClick={() => router.push(`/leads/${l.id}`)}>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -188,7 +202,16 @@ export function LeadsTable({ leads, members, currentUserId }: { leads: LeadRow[]
                   <TableCell className="hidden sm:table-cell text-xs text-muted-foreground">{formatDate(l.createdAt)}</TableCell>
                 </TableRow>
               ))}
-              {pageItems.length === 0 && (
+              {hasMore && (
+                <TableRow>
+                  <TableCell colSpan={9}>
+                    <div ref={sentinelRef} className="flex items-center justify-center py-4 text-sm text-muted-foreground">
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Carregando mais...
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+              {visible.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={9} className="py-12 text-center text-muted-foreground">
                     <Filter className="mx-auto mb-2 h-8 w-8 opacity-40" />
@@ -199,15 +222,11 @@ export function LeadsTable({ leads, members, currentUserId }: { leads: LeadRow[]
             </TableBody>
           </Table>
         </div>
-        {/* Pagination */}
-        <div className="flex items-center justify-between border-t px-4 py-3">
+        {/* Summary */}
+        <div className="border-t px-4 py-3">
           <p className="text-sm text-muted-foreground">
-            {filtered.length} {filtered.length === 1 ? 'lead' : 'leads'} · Página {safePage} de {totalPages}
+            {filtered.length} {filtered.length === 1 ? 'lead' : 'leads'}
           </p>
-          <div className="flex items-center gap-1">
-            <Button variant="outline" size="icon-sm" disabled={safePage <= 1} onClick={() => setPage((p) => p - 1)}><ChevronLeft className="h-4 w-4" /></Button>
-            <Button variant="outline" size="icon-sm" disabled={safePage >= totalPages} onClick={() => setPage((p) => p + 1)}><ChevronRight className="h-4 w-4" /></Button>
-          </div>
         </div>
       </Card>
     </div>

@@ -1,16 +1,15 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { STUDENT_STATUS_META } from '@/lib/crm-constants'
 import { formatCurrency, initials } from '@/lib/format'
-import { Search, ChevronLeft, ChevronRight, GraduationCap } from 'lucide-react'
+import { Search, GraduationCap, Loader2 } from 'lucide-react'
 
 export interface StudentRow {
   id: string
@@ -28,7 +27,8 @@ export interface StudentRow {
   avatarUrl: string | null
 }
 
-const PAGE_SIZE = 8
+const INITIAL_COUNT = 20
+const LOAD_MORE = 20
 
 function StudentStatusBadge({ status }: { status: string }) {
   const meta = STUDENT_STATUS_META[status]
@@ -55,12 +55,10 @@ function fmtDate(v: string | null): string {
 export function StudentsTable({ students }: { students: StudentRow[] }) {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('all')
-  const [page, setPage] = useState(1)
+  const [visibleCount, setVisibleCount] = useState(INITIAL_COUNT)
+  const sentinelRef = useRef<HTMLDivElement>(null)
   const [mounted, setMounted] = useState(false)
-  // avoid hydration mismatch on dates
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  useEffect(() => { setMounted(true) }, [])
 
   const filtered = useMemo(() => {
     let list = students ?? []
@@ -79,9 +77,18 @@ export function StudentsTable({ students }: { students: StudentRow[] }) {
 
   const totalPaid = useMemo(() => (filtered ?? []).reduce((s, x) => s + (x.amountPaid ?? 0), 0), [filtered])
 
-  const totalPages = Math.max(Math.ceil(filtered.length / PAGE_SIZE), 1)
-  const safePage = Math.min(page, totalPages)
-  const pageItems = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+  const visible = filtered.slice(0, visibleCount)
+  const hasMore = visibleCount < filtered.length
+
+  const loadMore = useCallback(() => setVisibleCount((p) => p + LOAD_MORE), [])
+
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el || !hasMore) return
+    const obs = new IntersectionObserver((entries) => { if (entries[0].isIntersecting) loadMore() }, { rootMargin: '200px' })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [hasMore, loadMore])
 
   return (
     <Card className="overflow-hidden">
@@ -90,10 +97,7 @@ export function StudentsTable({ students }: { students: StudentRow[] }) {
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
-            onChange={(e) => {
-              setSearch(e.target.value)
-              setPage(1)
-            }}
+            onChange={(e) => { setSearch(e.target.value); setVisibleCount(INITIAL_COUNT) }}
             placeholder="Buscar por nome, e-mail ou produto..."
             className="pl-9"
           />
@@ -101,10 +105,7 @@ export function StudentsTable({ students }: { students: StudentRow[] }) {
         <div className="flex items-center gap-2">
           <Select
             value={status}
-            onValueChange={(v) => {
-              setStatus(v)
-              setPage(1)
-            }}
+            onValueChange={(v) => { setStatus(v); setVisibleCount(INITIAL_COUNT) }}
           >
             <SelectTrigger className="w-[170px]">
               <SelectValue placeholder="Status" />
@@ -135,7 +136,7 @@ export function StudentsTable({ students }: { students: StudentRow[] }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {(pageItems ?? []).map((s) => (
+            {visible.map((s) => (
               <TableRow key={s.id} className="hover:bg-muted/40">
                 <TableCell>
                   <div className="flex items-center gap-2.5">
@@ -179,7 +180,16 @@ export function StudentsTable({ students }: { students: StudentRow[] }) {
                 </TableCell>
               </TableRow>
             ))}
-            {(pageItems?.length ?? 0) === 0 && (
+            {hasMore && (
+              <TableRow>
+                <TableCell colSpan={7}>
+                  <div ref={sentinelRef} className="flex items-center justify-center py-4 text-sm text-muted-foreground">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Carregando mais...
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+            {visible.length === 0 && (
               <TableRow>
                 <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
                   Nenhum aluno encontrado.
@@ -190,27 +200,11 @@ export function StudentsTable({ students }: { students: StudentRow[] }) {
         </Table>
       </div>
 
-      <div className="flex flex-col gap-3 border-t p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="border-t p-4">
         <p className="text-sm text-muted-foreground">
           {filtered.length} aluno(s) · Total recebido{' '}
           <span className="font-semibold text-foreground">{formatCurrency(totalPaid)}</span>
         </p>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" disabled={safePage <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            {safePage} / {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={safePage >= totalPages}
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
       </div>
     </Card>
   )
