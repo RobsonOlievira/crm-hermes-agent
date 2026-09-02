@@ -1,17 +1,16 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ClientStatusBadge } from '@/components/status-badge'
 import { CLIENT_STATUS_META } from '@/lib/crm-constants'
 import { formatCurrency, initials } from '@/lib/format'
-import { Search, ChevronLeft, ChevronRight, Building2 } from 'lucide-react'
+import { Search, Building2, Loader2 } from 'lucide-react'
 
 export interface ClientRow {
   id: string
@@ -26,13 +25,15 @@ export interface ClientRow {
   assignedToAvatar: string | null
 }
 
-const PAGE_SIZE = 8
+const INITIAL_COUNT = 20
+const LOAD_MORE = 20
 
 export function ClientsTable({ clients }: { clients: ClientRow[] }) {
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('all')
-  const [page, setPage] = useState(1)
+  const [visibleCount, setVisibleCount] = useState(INITIAL_COUNT)
+  const sentinelRef = useRef<HTMLDivElement>(null)
 
   const filtered = useMemo(() => {
     let list = clients ?? []
@@ -51,9 +52,25 @@ export function ClientsTable({ clients }: { clients: ClientRow[] }) {
 
   const totalLifetime = useMemo(() => (filtered ?? []).reduce((s, c) => s + (c.lifetimeValue ?? 0), 0), [filtered])
 
-  const totalPages = Math.max(Math.ceil(filtered.length / PAGE_SIZE), 1)
-  const safePage = Math.min(page, totalPages)
-  const pageItems = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+  const visible = filtered.slice(0, visibleCount)
+  const hasMore = visibleCount < filtered.length
+
+  const loadMore = useCallback(() => {
+    setVisibleCount((prev) => prev + LOAD_MORE)
+  }, [])
+
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el || !hasMore) return
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMore()
+      },
+      { rootMargin: '200px' }
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [hasMore, loadMore])
 
   return (
     <Card className="overflow-hidden">
@@ -64,7 +81,7 @@ export function ClientsTable({ clients }: { clients: ClientRow[] }) {
             value={search}
             onChange={(e) => {
               setSearch(e.target.value)
-              setPage(1)
+              setVisibleCount(INITIAL_COUNT)
             }}
             placeholder="Buscar por nome, empresa ou CNPJ..."
             className="pl-9"
@@ -75,7 +92,7 @@ export function ClientsTable({ clients }: { clients: ClientRow[] }) {
             value={status}
             onValueChange={(v) => {
               setStatus(v)
-              setPage(1)
+              setVisibleCount(INITIAL_COUNT)
             }}
           >
             <SelectTrigger className="w-[170px]">
@@ -106,7 +123,7 @@ export function ClientsTable({ clients }: { clients: ClientRow[] }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {(pageItems ?? []).map((c) => (
+            {visible.map((c) => (
               <TableRow key={c.id} className="cursor-pointer hover:bg-muted/40" onClick={() => router.push(`/clients/${c.id}`)}>
                 <TableCell>
                   <div className="font-medium">{c.name}</div>
@@ -135,7 +152,16 @@ export function ClientsTable({ clients }: { clients: ClientRow[] }) {
                 </TableCell>
               </TableRow>
             ))}
-            {(pageItems?.length ?? 0) === 0 && (
+            {hasMore && (
+              <TableRow>
+                <TableCell colSpan={6}>
+                  <div ref={sentinelRef} className="flex items-center justify-center py-4 text-sm text-muted-foreground">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Carregando mais...
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+            {visible.length === 0 && (
               <TableRow>
                 <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
                   Nenhum cliente encontrado.
@@ -151,22 +177,6 @@ export function ClientsTable({ clients }: { clients: ClientRow[] }) {
           {filtered.length} cliente(s) · Valor total{' '}
           <span className="font-semibold text-foreground">{formatCurrency(totalLifetime)}</span>
         </p>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" disabled={safePage <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            {safePage} / {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={safePage >= totalPages}
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
       </div>
     </Card>
   )
