@@ -24,10 +24,20 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if ('lifetimeValue' in body) data.lifetimeValue = body.lifetimeValue == null || body.lifetimeValue === '' ? 0 : Number(body.lifetimeValue) || 0
     if ('assignedToId' in body) data.assignedToId = body.assignedToId || null
 
+    if (Array.isArray(body.leadTypeIds)) {
+      data.leadTypes = {
+        deleteMany: {},
+        create: body.leadTypeIds.filter((id: any) => typeof id === 'string').map((id: string) => ({ leadTypeId: id })),
+      }
+    }
+
     const updated = await prisma.client.update({
       where: { id: params.id },
       data,
-      include: { assignedTo: true },
+      include: {
+        assignedTo: true,
+        leadTypes: { include: { leadType: true } },
+      },
     })
     return NextResponse.json({ client: updated })
   } catch (e) {

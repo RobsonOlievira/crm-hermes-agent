@@ -21,6 +21,7 @@ const MODULES = [
   { key: 'automations', displayName: 'Automações', description: 'Fluxos da jornada de compra que conversam com o Hermes Agent', category: 'sales', isCore: false, isActive: true, sortOrder: 13 },
   { key: 'catalog', displayName: 'Catálogo de Produtos', description: 'Produtos e serviços vinculados a tipos de lead e objetivos', category: 'sales', isCore: false, isActive: true, sortOrder: 14 },
   { key: 'email_marketing', displayName: 'Email Marketing', description: 'Criação e envio de campanhas de email em massa', category: 'marketing', isCore: false, isActive: true, sortOrder: 15 },
+  { key: 'prospecting', displayName: 'Prospecção AI', description: 'Busca ativa de prospects B2B por nicho e cidade com inteligência AIsa', category: 'sales', isCore: false, isActive: true, sortOrder: 16 },
 ]
 
 const LEAD_TYPES = [
@@ -119,23 +120,31 @@ const SOCIAL_HANDLES = ['@joaosilva', 'instagram.com/mariasantos', '@pedro.olive
 
 const STAGES = [
   { id: 'stage-1', name: 'Primeiro Contato', color: '#3B82F6', position: 0, status: 'PRIMEIRO_CONTATO' },
-  { id: 'stage-2', name: 'Conversa Ativa', color: '#8B5CF6', position: 1, status: 'CONVERSA_ATIVA' },
+  { id: 'stage-2', name: 'Conversa Ativa', color: '#10B981', position: 1, status: 'CONVERSA_ATIVA' },
   { id: 'stage-3', name: 'Follow-up', color: '#F59E0B', position: 2, status: 'FOLLOW_UP' },
-  { id: 'stage-4', name: 'Banco de 7 dias', color: '#EF4444', position: 3, status: 'BANCO_7_DIAS' },
-  { id: 'stage-5', name: 'Serviço Fechado', color: '#10B981', position: 4, status: 'SERVICO_FECHADO' },
-  { id: 'stage-6', name: 'Novas Mensagens', color: '#06B6D4', position: 5, status: 'NOVAS_MENSAGENS' },
+  { id: 'stage-4', name: 'Banco de 7 dias', color: '#8B5CF6', position: 3, status: 'BANCO_7_DIAS' },
+  { id: 'stage-5', name: 'Novas Mensagens', color: '#06B6D4', position: 4, status: 'NOVAS_MENSAGENS' },
+  { id: 'stage-6', name: 'Reunião Agendada', color: '#EC4899', position: 5, status: 'REUNIAO_AGENDADA' },
+  { id: 'stage-7', name: 'Proposta Enviada', color: '#F97316', position: 6, status: 'PROPOSTA_ENVIADA' },
+  { id: 'stage-8', name: 'Serviço Fechado', color: '#22C55E', position: 7, status: 'SERVICO_FECHADO' },
+  { id: 'stage-9', name: 'Pagamento Confirmado', color: '#16A34A', position: 8, status: 'PAGAMENTO_CONFIRMADO' },
+  { id: 'stage-10', name: 'Inativo', color: '#6B7280', position: 9, status: 'INATIVO' },
+  { id: 'stage-11', name: 'Sem Resposta', color: '#EF4444', position: 10, status: 'SEM_RESPOSTA' },
+  { id: 'stage-12', name: 'Conversas em Off', color: '#6B7280', position: 11, status: 'CONVERSAS_OFF' },
 ]
 
 // Fluxos de automação da jornada de compra (conversam com o Hermes Agent)
 const JOURNEY_AUTOMATIONS = [
   { id: 'journey-1', name: 'Primeiro Contato → Conversa Ativa', description: 'Quando o sistema responde e o lead envia uma tréplica, ele entra em Conversa Ativa mantendo a tag do canal de origem.', fromStatus: 'PRIMEIRO_CONTATO', toStatus: 'CONVERSA_ATIVA', triggerType: 'reply', delayHours: 0, action: 'move_stage', message: null as string | null, keepChannelTag: true, connectHermes: true, sortOrder: 1 },
-  { id: 'journey-2', name: 'Conversa Ativa → Follow-up (2 dias sem resposta)', description: 'Passados 2 dias sem resposta, o lead sai de Conversa Ativa e entra em Follow-up. Aciona o cron-job do Hermes para puxar os detalhes da conversa, avaliar uma tentativa de contato e reativar com uma pergunta, atualização ou oferta.', fromStatus: 'CONVERSA_ATIVA', toStatus: 'FOLLOW_UP', triggerType: 'no_reply', delayHours: 48, action: 'run_cronjob', message: 'Oi! Vi que nossa conversa parou por aqui. Posso te ajudar com mais alguma informação ou tirar alguma dúvida?', keepChannelTag: true, connectHermes: true, sortOrder: 2 },
-  { id: 'journey-3', name: 'Follow-up → Conversa Ativa (respondeu)', description: 'Se o lead responder ao follow-up, ele volta para Conversa Ativa.', fromStatus: 'FOLLOW_UP', toStatus: 'CONVERSA_ATIVA', triggerType: 'reply', delayHours: 0, action: 'move_stage', message: null, keepChannelTag: true, connectHermes: true, sortOrder: 3 },
-  { id: 'journey-4', name: 'Follow-up → Banco de 7 dias (24h sem resposta)', description: 'Se após 24h o lead não responder ao follow-up, consideramos que esfriou e ele vai para o Banco de 7 dias.', fromStatus: 'FOLLOW_UP', toStatus: 'BANCO_7_DIAS', triggerType: 'no_reply', delayHours: 24, action: 'move_stage', message: null, keepChannelTag: true, connectHermes: true, sortOrder: 4 },
-  { id: 'journey-5', name: 'Banco de 7 dias → Follow-up agressivo', description: 'Após 7 dias sem resposta, um novo follow-up é lançado, desta vez mais agressivo (perguntas definidas no escopo do projeto). Se responder, volta para Conversa Ativa.', fromStatus: 'BANCO_7_DIAS', toStatus: 'FOLLOW_UP', triggerType: 'no_reply', delayHours: 168, action: 'run_cronjob', message: 'Última chamada! Estamos com uma condição especial que pode ser exatamente o que você precisa. Quer que eu te mostre agora?', keepChannelTag: true, connectHermes: true, sortOrder: 5 },
-  { id: 'journey-6', name: 'Banco de 7 dias → Conversa Ativa (respondeu)', description: 'Se o lead do banco responder ao follow-up agressivo, volta para Conversa Ativa.', fromStatus: 'BANCO_7_DIAS', toStatus: 'CONVERSA_ATIVA', triggerType: 'reply', delayHours: 0, action: 'move_stage', message: null, keepChannelTag: true, connectHermes: true, sortOrder: 6 },
-  { id: 'journey-7', name: 'Compra fechada → Serviço Fechado', description: 'Quando o webhook detecta uma compra ou serviço fechado, o lead vai para Serviço Fechado e o valor é registrado e empilhado no total gasto do cliente.', fromStatus: null as string | null, toStatus: 'SERVICO_FECHADO', triggerType: 'purchase', delayHours: 0, action: 'register_purchase', message: null, keepChannelTag: true, connectHermes: true, sortOrder: 7 },
-  { id: 'journey-8', name: 'Cliente antigo chamou → Novas Mensagens', description: 'Leads que já estavam no banco e voltaram a chamar após 7+ dias entram em Novas Mensagens. São pessoas que já ocupam a base de clientes (ativos ou inativos, alunos que já compraram).', fromStatus: null, toStatus: 'NOVAS_MENSAGENS', triggerType: 'inbound_message', delayHours: 0, action: 'move_stage', message: null, keepChannelTag: true, connectHermes: true, sortOrder: 8 },
+  { id: 'journey-2', name: 'Follow-up 24h genérico (Conversa Ativa → Follow-up)', description: 'Lead classificado como interessado em curso sem responder há 24h: envia mensagem utilitária e move para Follow-up.', fromStatus: 'CONVERSA_ATIVA', toStatus: 'FOLLOW_UP', triggerType: 'no_reply', delayHours: 24, action: 'run_cronjob', message: 'E aí, {{nome}}, beleza? Você ainda ficou com dúvidas sobre o curso?\n\nVocê viu que a gente só tem até hoje 23h59 pra finalizar antes das vagas encerrarem, né?', keepChannelTag: true, connectHermes: true, sortOrder: 2 },
+  { id: 'journey-3', name: 'Follow-up → Conversa Ativa (respondeu)', description: 'Se o lead responder ao follow-up, ele volta para Conversa Ativa.', fromStatus: 'FOLLOW_UP', toStatus: 'CONVERSA_ATIVA', triggerType: 'reply', delayHours: 0, action: 'move_stage', message: null as string | null, keepChannelTag: true, connectHermes: true, sortOrder: 3 },
+  { id: 'journey-4', name: 'Follow-up 168h genérico (Follow-up → Banco de 7 dias)', description: 'Lead em Follow-up sem responder há 7 dias: envia mensagem utilitária e move para Banco de 7 dias.', fromStatus: 'FOLLOW_UP', toStatus: 'BANCO_7_DIAS', triggerType: 'no_reply', delayHours: 168, action: 'move_stage', message: 'Então, {{nome}}, eu achei que você quizesse garantir sua vaga para faturar mais de 10 mil por mês, do conforto de casa.\n\nVou precisar passar sua vaga pra outra pessoa.\n\nAinda tem interesse em prosseguir? Melhor aproveitar e entrar agora no curso!', keepChannelTag: true, connectHermes: true, sortOrder: 4 },
+  { id: 'journey-5', name: 'Banco de 7 dias → Conversas em Off (follow-up agressivo)', description: 'Após 7 dias sem resposta, um follow-up agressivo é disparado e o lead estaciona em Conversas em Off (etapa terminal). Se responder, volta para Conversa Ativa pela regra "Conversas em Off → Conversa Ativa".', fromStatus: 'BANCO_7_DIAS', toStatus: 'CONVERSAS_OFF', triggerType: 'no_reply', delayHours: 168, action: 'run_cronjob', message: 'Última chamada! Estamos com uma condição especial que pode ser exatamente o que você precisa. Quer que eu te mostre agora?', keepChannelTag: true, connectHermes: true, sortOrder: 5 },
+  { id: 'journey-6', name: 'Banco de 7 dias → Conversa Ativa (respondeu)', description: 'Se o lead do banco responder ao follow-up agressivo, volta para Conversa Ativa.', fromStatus: 'BANCO_7_DIAS', toStatus: 'CONVERSA_ATIVA', triggerType: 'reply', delayHours: 0, action: 'move_stage', message: null as string | null, keepChannelTag: true, connectHermes: true, sortOrder: 6 },
+  { id: 'journey-off-1', name: 'Conversas em Off → Conversa Ativa (respondeu)', description: 'Se o lead estacionado em Conversas em Off responder a qualquer mensagem, volta para Conversa Ativa e o fluxo reinicia normalmente.', fromStatus: 'CONVERSAS_OFF', toStatus: 'CONVERSA_ATIVA', triggerType: 'reply', delayHours: 0, action: 'move_stage', message: null as string | null, keepChannelTag: true, connectHermes: true, sortOrder: 7 },
+  { id: 'journey-7', name: 'Compra fechada → Serviço Fechado', description: 'Quando o webhook detecta uma compra ou serviço fechado, o lead vai para Serviço Fechado e o valor é registrado e empilhado no total gasto do cliente.', fromStatus: null as string | null, toStatus: 'SERVICO_FECHADO', triggerType: 'purchase', delayHours: 0, action: 'register_purchase', message: null as string | null, keepChannelTag: true, connectHermes: true, sortOrder: 8 },
+  { id: 'journey-8', name: 'Cliente antigo chamou → Novas Mensagens', description: 'Leads antigos (qualquer status) que mandam mensagem espontanea entram em Novas Mensagens. PRECEDENCIA: nao captura lead em BANCO_7_DIAS respondendo ao follow-up agressivo nem lead em CONVERSAS_OFF — esses casos sao resolvidos antes pelas regras de reply (sortOrder 6 e 7).', fromStatus: null as string | null, toStatus: 'NOVAS_MENSAGENS', triggerType: 'inbound_message', delayHours: 0, action: 'move_stage', message: null as string | null, keepChannelTag: true, connectHermes: true, sortOrder: 9 },
+  { id: 'journey-9', name: 'Entrada no Banco de 7 dias (24h sem resposta)', description: 'O lead já foi reativado uma vez através de follow up, a mensagem foi reativada, porém ele não respondeu novamente por mais 24h e agora entra no nosso banco de 7 dias', fromStatus: 'CONVERSA_ATIVA', toStatus: 'BANCO_7_DIAS', triggerType: 'no_reply', delayHours: 24, action: 'run_cronjob', message: null as string | null, keepChannelTag: true, connectHermes: true, sortOrder: 10 },
 ]
 
 const USERS = [
@@ -645,6 +654,7 @@ async function main() {
       where: { id: conv.leadId },
       data: {
         lastMessageAt: lastAt,
+        lastReplyAt: lastAt,
         lastMessageText: lastText.slice(0, 160),
         unreadCount: conv.unread,
         lastInteraction: lastAt,
@@ -691,6 +701,370 @@ async function main() {
   }
   console.log(`Alunos semeados: ${STUDENTS.length}.`)
 
+  // ---------- Tráfego Pago (Meta Ads & Google Ads) ----------
+  // Conta Meta demo
+  const metaAccountData = {
+    tenantId: TENANT_ID,
+    platform: 'META' as const,
+    externalId: 'act_demo_meta_123',
+    name: 'Agência Vortex - Meta Ads',
+    currency: 'BRL',
+    timezone: 'America/Sao_Paulo',
+    isActive: true,
+    lastSyncAt: daysAgo(0),
+  }
+  await prisma.adAccount.upsert({
+    where: { tenantId_platform_externalId: { tenantId: TENANT_ID, platform: 'META', externalId: 'act_demo_meta_123' } },
+    update: metaAccountData,
+    create: { id: 'adacc-meta-1', ...metaAccountData },
+  })
+
+  // Conta Google demo
+  const googleAccountData = {
+    tenantId: TENANT_ID,
+    platform: 'GOOGLE' as const,
+    externalId: '987-654-3210',
+    name: 'Agência Vortex - Google Ads',
+    currency: 'BRL',
+    timezone: 'America/Sao_Paulo',
+    isActive: true,
+    lastSyncAt: daysAgo(0),
+  }
+  await prisma.adAccount.upsert({
+    where: { tenantId_platform_externalId: { tenantId: TENANT_ID, platform: 'GOOGLE', externalId: '987-654-3210' } },
+    update: googleAccountData,
+    create: { id: 'adacc-google-1', ...googleAccountData },
+  })
+
+  // Campanhas Meta & Google
+  const DEMO_CAMPAIGNS = [
+    {
+      id: 'adcamp-1',
+      accountId: 'adacc-meta-1',
+      platform: 'META' as const,
+      externalId: '23856789001',
+      name: 'Black Friday - Curso Marketing Digital',
+      status: 'ACTIVE' as const,
+      objective: 'OUTCOME_LEADS',
+      dailyBudget: 150,
+      totalSpend: 3247.5,
+      totalImpressions: 185420,
+      totalClicks: 4218,
+      totalLeads: 89,
+      totalConversions: 12,
+      totalRevenue: 23964,
+    },
+    {
+      id: 'adcamp-2',
+      accountId: 'adacc-meta-1',
+      platform: 'META' as const,
+      externalId: '23856789002',
+      name: 'Remarketing - Mentoria Individual',
+      status: 'ACTIVE' as const,
+      objective: 'OUTCOME_SALES',
+      dailyBudget: 80,
+      totalSpend: 1680,
+      totalImpressions: 92300,
+      totalClicks: 1845,
+      totalLeads: 34,
+      totalConversions: 5,
+      totalRevenue: 12500,
+    },
+    {
+      id: 'adcamp-3',
+      accountId: 'adacc-google-1',
+      platform: 'GOOGLE' as const,
+      externalId: '9876543201',
+      name: 'Google Pesquisa - Gestão de Tráfego B2B',
+      status: 'ACTIVE' as const,
+      objective: 'SEARCH',
+      dailyBudget: 120,
+      totalSpend: 2450,
+      totalImpressions: 48900,
+      totalClicks: 2100,
+      totalLeads: 42,
+      totalConversions: 8,
+      totalRevenue: 28000,
+    },
+    {
+      id: 'adcamp-4',
+      accountId: 'adacc-google-1',
+      platform: 'GOOGLE' as const,
+      externalId: '9876543202',
+      name: 'Performance Max - Lançamento E-commerce',
+      status: 'PAUSED' as const,
+      objective: 'PERFORMANCE_MAX',
+      dailyBudget: 60,
+      totalSpend: 940,
+      totalImpressions: 34100,
+      totalClicks: 980,
+      totalLeads: 15,
+      totalConversions: 2,
+      totalRevenue: 5000,
+    },
+  ]
+
+  for (const c of DEMO_CAMPAIGNS) {
+    const data = {
+      tenantId: TENANT_ID,
+      accountId: c.accountId,
+      platform: c.platform,
+      externalId: c.externalId,
+      name: c.name,
+      status: c.status,
+      objective: c.objective,
+      dailyBudget: c.dailyBudget,
+      totalSpend: c.totalSpend,
+      totalImpressions: c.totalImpressions,
+      totalClicks: c.totalClicks,
+      totalLeads: c.totalLeads,
+      totalConversions: c.totalConversions,
+      totalRevenue: c.totalRevenue,
+    }
+    await prisma.adCampaign.upsert({ where: { id: c.id }, update: data, create: { id: c.id, ...data } })
+  }
+
+  // Métricas diárias demo (últimos 7 dias)
+  for (let d = 6; d >= 0; d--) {
+    const date = daysAgo(d)
+    const id = `adm-meta-${d}`
+    const data = {
+      tenantId: TENANT_ID,
+      campaignId: 'adcamp-1',
+      platform: 'META' as const,
+      date,
+      spend: 140 + (d * 5) % 30,
+      impressions: 24000 + (d * 1200),
+      clicks: 550 + (d * 30),
+      ctr: 2.3,
+      cpc: 0.26,
+      cpm: 7.8,
+      reach: 18000,
+      frequency: 1.3,
+      leads: 12 + (d % 5),
+      conversions: d % 2 === 0 ? 2 : 1,
+      costPerResult: 12.5,
+    }
+    await prisma.adMetricDaily.upsert({ where: { id }, update: data, create: { id, ...data } })
+  }
+
+  // Alertas de exemplo
+  await prisma.adBudgetAlert.upsert({
+    where: { id: 'adalert-1' },
+    update: {},
+    create: {
+      id: 'adalert-1',
+      tenantId: TENANT_ID,
+      campaignId: 'adcamp-1',
+      type: 'BUDGET_80',
+      message: '"Black Friday - Curso Marketing Digital" consumiu 87% do orçamento diário',
+      severity: 'warning',
+      triggeredAt: daysAgo(1),
+    },
+  })
+
+  await prisma.adBudgetAlert.upsert({
+    where: { id: 'adalert-2' },
+    update: {},
+    create: {
+      id: 'adalert-2',
+      tenantId: TENANT_ID,
+      campaignId: 'adcamp-4',
+      type: 'NO_LEADS_24H',
+      message: '"Performance Max - Lançamento E-commerce" está pausada sem novos leads nas últimas 24h',
+      severity: 'info',
+      triggeredAt: daysAgo(0),
+    },
+  })
+
+  // Seed de Pagamentos (Gateways, Cobranças e Assinaturas)
+  const GATEWAY_CONFIGS = [
+    {
+      id: 'pgw-stripe',
+      tenantId: TENANT_ID,
+      provider: 'STRIPE' as const,
+      displayName: 'Stripe (Sandbox)',
+      isActive: true,
+      isSandbox: true,
+      encApiKey: 'demo_encrypted_stripe_key',
+      encSecretKey: 'demo_encrypted_stripe_secret',
+      defaultCurrency: 'BRL',
+      pixEnabled: true,
+      creditEnabled: true,
+      boletoEnabled: false,
+    },
+    {
+      id: 'pgw-mp',
+      tenantId: TENANT_ID,
+      provider: 'MERCADO_PAGO' as const,
+      displayName: 'Mercado Pago',
+      isActive: true,
+      isSandbox: true,
+      encAccessToken: 'demo_encrypted_mp_token',
+      defaultCurrency: 'BRL',
+      pixEnabled: true,
+      creditEnabled: true,
+      boletoEnabled: true,
+    },
+  ]
+
+  for (const gw of GATEWAY_CONFIGS) {
+    await prisma.paymentGatewayConfig.upsert({
+      where: { id: gw.id },
+      create: gw,
+      update: gw,
+    })
+  }
+
+  const PAYMENT_ORDERS = [
+    {
+      id: 'po-1',
+      tenantId: TENANT_ID,
+      leadId: 'lead-1',
+      gatewayConfigId: 'pgw-mp',
+      provider: 'MERCADO_PAGO' as const,
+      description: 'Mentoria Tráfego Pago — Módulo 1',
+      amount: 497.00,
+      method: 'PIX' as const,
+      status: 'CONFIRMED' as const,
+      paidAt: daysAgo(5),
+      externalId: 'mp_pay_demo_001',
+    },
+    {
+      id: 'po-2',
+      tenantId: TENANT_ID,
+      leadId: 'lead-3',
+      gatewayConfigId: 'pgw-stripe',
+      provider: 'STRIPE' as const,
+      description: 'Curso Gestão de Agências',
+      amount: 1297.00,
+      method: 'CREDIT_CARD' as const,
+      status: 'CONFIRMED' as const,
+      installments: 6,
+      paidAt: daysAgo(3),
+      externalId: 'pi_demo_002',
+    },
+    {
+      id: 'po-3',
+      tenantId: TENANT_ID,
+      leadId: 'lead-5',
+      gatewayConfigId: 'pgw-mp',
+      provider: 'MERCADO_PAGO' as const,
+      description: 'Consultoria SEO',
+      amount: 350.00,
+      method: 'BOLETO' as const,
+      status: 'PENDING' as const,
+      expiresAt: new Date(Date.now() + 2 * 86400000),
+      externalId: 'mp_pay_demo_003',
+    },
+    {
+      id: 'po-4',
+      tenantId: TENANT_ID,
+      leadId: 'lead-7',
+      gatewayConfigId: 'pgw-stripe',
+      provider: 'STRIPE' as const,
+      description: 'Imersão Escala 7 Dígitos',
+      amount: 2497.00,
+      method: 'CREDIT_CARD' as const,
+      status: 'FAILED' as const,
+      failedAt: daysAgo(1),
+      failReason: 'Cartão recusado — saldo insuficiente',
+      externalId: 'pi_demo_004',
+    },
+    {
+      id: 'po-5',
+      tenantId: TENANT_ID,
+      leadId: 'lead-2',
+      gatewayConfigId: 'pgw-mp',
+      provider: 'MERCADO_PAGO' as const,
+      description: 'Pacote Social Media Mensal',
+      amount: 890.00,
+      method: 'PIX' as const,
+      status: 'OVERDUE' as const,
+      expiresAt: daysAgo(2),
+      externalId: 'mp_pay_demo_005',
+    },
+  ]
+
+  for (const po of PAYMENT_ORDERS) {
+    await prisma.paymentOrder.upsert({
+      where: { id: po.id },
+      create: po,
+      update: po,
+    })
+  }
+
+  const SUBSCRIPTIONS = [
+    {
+      id: 'sub-1',
+      tenantId: TENANT_ID,
+      leadId: 'lead-1',
+      gatewayConfigId: 'pgw-stripe',
+      provider: 'STRIPE' as const,
+      planName: 'Mentoria Premium Mensal',
+      amount: 497.00,
+      intervalType: 'MONTHLY',
+      status: 'ACTIVE' as const,
+      totalCollected: 2485.00,
+      paymentCount: 5,
+      externalId: 'sub_demo_001',
+    },
+    {
+      id: 'sub-2',
+      tenantId: TENANT_ID,
+      leadId: 'lead-3',
+      gatewayConfigId: 'pgw-mp',
+      provider: 'MERCADO_PAGO' as const,
+      planName: 'Gestão de Tráfego Recorrente',
+      amount: 1500.00,
+      intervalType: 'MONTHLY',
+      status: 'ACTIVE' as const,
+      totalCollected: 4500.00,
+      paymentCount: 3,
+      externalId: 'mp_sub_demo_002',
+    },
+    {
+      id: 'sub-3',
+      tenantId: TENANT_ID,
+      leadId: 'lead-8',
+      gatewayConfigId: 'pgw-stripe',
+      provider: 'STRIPE' as const,
+      planName: 'Plano Anual Copywriting',
+      amount: 3997.00,
+      intervalType: 'YEARLY',
+      status: 'PAST_DUE' as const,
+      totalCollected: 3997.00,
+      paymentCount: 1,
+      failedPayments: 2,
+      externalId: 'sub_demo_003',
+    },
+    {
+      id: 'sub-4',
+      tenantId: TENANT_ID,
+      leadId: 'lead-6',
+      gatewayConfigId: 'pgw-mp',
+      provider: 'MERCADO_PAGO' as const,
+      planName: 'Acompanhamento Semanal',
+      amount: 150.00,
+      intervalType: 'WEEKLY',
+      status: 'CANCELLED' as const,
+      cancelledAt: daysAgo(10),
+      cancelReason: 'Pedido do cliente',
+      totalCollected: 600.00,
+      paymentCount: 4,
+      externalId: 'mp_sub_demo_004',
+    },
+  ]
+
+  for (const sub of SUBSCRIPTIONS) {
+    await prisma.subscription.upsert({
+      where: { id: sub.id },
+      create: sub,
+      update: sub,
+    })
+  }
+
+  console.log('Pagamentos semeados com sucesso.')
   console.log('Seed concluído com sucesso.')
 }
 

@@ -3,42 +3,31 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/session'
-
-type LeadStatus =
-  | 'PRIMEIRO_CONTATO'
-  | 'CONVERSA_ATIVA'
-  | 'FOLLOW_UP'
-  | 'BANCO_7_DIAS'
-  | 'NOVAS_MENSAGENS'
-  | 'REUNIAO_AGENDADA'
-  | 'PROPOSTA_ENVIADA'
-  | 'SERVICO_FECHADO'
-  | 'PAGAMENTO_CONFIRMADO'
-  | 'INATIVO'
-  | 'SEM_RESPOSTA';
-
-const STAGE_STATUS: Record<string, LeadStatus> = {
-  'stage-1': 'PRIMEIRO_CONTATO',
-  'stage-2': 'CONVERSA_ATIVA',
-  'stage-3': 'FOLLOW_UP',
-  'stage-4': 'BANCO_7_DIAS',
-  'stage-5': 'SERVICO_FECHADO',
-  'stage-6': 'NOVAS_MENSAGENS',
-}
+import { deriveLeadStatus } from '@/lib/lead-stages'
+import { resolveTenantStage } from '@/lib/stage-resolver'
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const user = await getCurrentUser()
   if (!user?.tenantId) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   try {
     const { stageId } = await req.json()
-    const data: any = { stageId }
-    if (STAGE_STATUS[stageId]) data.status = STAGE_STATUS[stageId]
+    if (!stageId || typeof stageId !== 'string') {
+      return NextResponse.json({ error: 'Etapa inválida' }, { status: 400 })
+    }
+    const stage = await resolveTenantStage(user.tenantId, stageId)
+    if (!stage) return NextResponse.json({ error: 'Etapa não encontrada' }, { status: 404 })
+
+    const data: any = { stageId: stage.id }
+    const status = deriveLeadStatus(stage)
+    if (status) data.status = status
+
     const lead = await prisma.lead.update({
       where: { id: params.id },
       data,
     })
     return NextResponse.json({ lead })
   } catch (e) {
+    console.error('[leads stage PATCH]', params.id, e)
     return NextResponse.json({ error: 'Erro ao mover lead' }, { status: 500 })
   }
 }

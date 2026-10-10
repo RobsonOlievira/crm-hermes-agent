@@ -10,19 +10,26 @@ export default async function ClientDetailPage({ params }: { params: { id: strin
   const tenantId = user?.tenantId ?? null
   if (!tenantId) return notFound()
 
-  const members = await prisma.user.findMany({
-    where: { tenantId, role: { in: ['ADMIN', 'MANAGER', 'MEMBER'] } },
-    orderBy: { name: 'asc' },
-    select: { id: true, name: true },
-  })
-
-  const client = await prisma.client.findFirst({
-    where: { id: params.id, tenantId },
-    include: {
-      assignedTo: true,
-      interactions: { orderBy: { createdAt: 'desc' }, include: { user: true } },
-    },
-  })
+  const [client, members, leadTypes] = await Promise.all([
+    prisma.client.findFirst({
+      where: { id: params.id, tenantId },
+      include: {
+        assignedTo: true,
+        leadTypes: { select: { leadType: { select: { id: true, label: true, color: true } } } },
+        interactions: { orderBy: { createdAt: 'desc' }, include: { user: true } },
+      },
+    }),
+    prisma.user.findMany({
+      where: { tenantId, role: { in: ['ADMIN', 'MANAGER', 'MEMBER'] } },
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true },
+    }),
+    prisma.leadType.findMany({
+      where: { tenantId },
+      select: { id: true, label: true, color: true },
+      orderBy: { label: 'asc' },
+    }),
+  ])
 
   if (!client) return notFound()
 
@@ -49,10 +56,14 @@ export default async function ClientDetailPage({ params }: { params: { id: strin
     assignedToName: client.assignedTo?.name ?? null,
     assignedToAvatar: client.assignedTo?.avatarUrl ?? null,
     assignedToId: (client as any).assignedToId ?? null,
+    leadTypeIds: ((client as any).leadTypes ?? []).map((lt: any) => lt.leadType?.id).filter(Boolean),
+    leadTypeLabels: ((client as any).leadTypes ?? []).map((lt: any) => lt.leadType?.label).filter(Boolean),
+    leadTypeColors: ((client as any).leadTypes ?? []).map((lt: any) => lt.leadType?.color).filter(Boolean),
     createdAt: client.createdAt?.toISOString?.() ?? '',
     updatedAt: client.updatedAt?.toISOString?.() ?? '',
     timeline,
     memberOptions: members.map((m) => ({ id: m.id, name: m.name })),
+    leadTypesOptions: leadTypes,
   }
 
   return <ClientDetail data={data} />

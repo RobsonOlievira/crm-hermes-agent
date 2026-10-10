@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
@@ -28,6 +28,9 @@ import {
   Video,
   MapPin,
   ChevronLeft,
+  Filter,
+  RotateCcw,
+  Megaphone,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -35,6 +38,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { initials, formatCurrency } from '@/lib/format'
 import { LEAD_STATUS_META, LEAD_SOURCE_META } from '@/lib/crm-constants'
@@ -87,11 +91,23 @@ interface LeadDetail {
   messageCount: number
 }
 
+export interface LeadTypeOption {
+  id: string
+  label: string
+  color: string
+}
+
 interface Props {
   initialConversations: ConversationRow[]
   currentUserName: string
   webhookConfigured: boolean
+  leadTypesOptions?: LeadTypeOption[]
 }
+
+const STATUS_OPTIONS = Object.entries(LEAD_STATUS_META).map(([key, val]) => ({
+  value: key,
+  label: val.label,
+}))
 
 // ---------- Helpers ----------
 function statusMeta(status: string) {
@@ -146,11 +162,20 @@ function dayDivider(iso: string, mounted: boolean) {
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
 }
 
-export function InboxBoard({ initialConversations, currentUserName, webhookConfigured }: Props) {
+export function InboxBoard({ initialConversations, currentUserName, webhookConfigured, leadTypesOptions }: Props) {
   const [mounted, setMounted] = useState(false)
   const [conversations, setConversations] = useState<ConversationRow[]>(initialConversations)
   const [tab, setTab] = useState<'todas' | 'nao_lidas'>('todas')
   const [search, setSearch] = useState('')
+
+  // Filtros avançados
+  const [showFilters, setShowFilters] = useState(false)
+  const [selectedLeadTypeId, setSelectedLeadTypeId] = useState<string>('')
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('')
+  const [selectedStatus, setSelectedStatus] = useState<string>('')
+  const [startDate, setStartDate] = useState<string>('')
+  const [endDate, setEndDate] = useState<string>('')
+
   const [activeLeadId, setActiveLeadId] = useState<string | null>(null)
   const [messages, setMessages] = useState<MessageRow[]>([])
   const [activeLead, setActiveLead] = useState<LeadDetail | null>(null)
@@ -164,11 +189,37 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
 
   useEffect(() => setMounted(true), [])
 
+  const activeFilterCount = useMemo(() => {
+    let count = 0
+    if (selectedLeadTypeId) count++
+    if (selectedPeriod) count++
+    if (selectedStatus) count++
+    return count
+  }, [selectedLeadTypeId, selectedPeriod, selectedStatus])
+
+  const clearFilters = () => {
+    setSelectedLeadTypeId('')
+    setSelectedPeriod('')
+    setSelectedStatus('')
+    setStartDate('')
+    setEndDate('')
+  }
+
   // -------- Carregar lista de conversas --------
   const loadConversations = useCallback(async () => {
     try {
       const params = new URLSearchParams()
       if (search.trim()) params.set('search', search.trim())
+      if (selectedLeadTypeId) params.set('leadTypeId', selectedLeadTypeId)
+      if (selectedStatus) params.set('status', selectedStatus)
+      if (selectedPeriod) {
+        if (selectedPeriod === 'custom') {
+          if (startDate) params.set('startDate', startDate)
+          if (endDate) params.set('endDate', endDate)
+        } else {
+          params.set('period', selectedPeriod)
+        }
+      }
       const res = await fetch(`/api/conversations?${params.toString()}`, { cache: 'no-store' })
       if (!res.ok) return
       const data = await res.json()
@@ -176,7 +227,8 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
     } catch {
       /* silencioso — polling */
     }
-  }, [search])
+  }, [search, selectedLeadTypeId, selectedStatus, selectedPeriod, startDate, endDate])
+
 
   // Recarrega quando a busca muda (com debounce leve)
   useEffect(() => {
@@ -321,7 +373,96 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
         </div>
       )}
 
-      <div className="relative grid min-h-0 flex-1 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm grid-cols-1 md:grid-cols-[320px_1fr] lg:grid-cols-[330px_1fr_300px] dark:border-gray-800 dark:bg-gray-950">
+      {/* Barra de Filtros Elegante no Topo (Sempre Visível) */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+        <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[280px]">
+          <div className="relative min-w-[200px] flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por nome ou telefone..."
+              className="pl-9 h-9 text-xs"
+            />
+          </div>
+
+          <Select
+            value={selectedLeadTypeId || 'all'}
+            onValueChange={(v) => setSelectedLeadTypeId(v === 'all' ? '' : v)}
+          >
+            <SelectTrigger className="w-[150px] h-9 text-xs">
+              <SelectValue placeholder="Tipo de Lead" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os tipos</SelectItem>
+              {(leadTypesOptions ?? []).map((lt) => (
+                <SelectItem key={lt.id} value={lt.id}>
+                  {lt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={selectedPeriod || 'all'}
+            onValueChange={(v) => setSelectedPeriod(v === 'all' ? '' : v)}
+          >
+            <SelectTrigger className="w-[140px] h-9 text-xs">
+              <SelectValue placeholder="Período" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Qualquer período</SelectItem>
+              <SelectItem value="today">Hoje</SelectItem>
+              <SelectItem value="week">Últimos 7 dias</SelectItem>
+              <SelectItem value="month">Este Mês</SelectItem>
+              <SelectItem value="year">Este Ano</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={selectedStatus || 'all'}
+            onValueChange={(v) => setSelectedStatus(v === 'all' ? '' : v)}
+          >
+            <SelectTrigger className="w-[150px] h-9 text-xs">
+              <SelectValue placeholder="Status do Lead" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os status</SelectItem>
+              {STATUS_OPTIONS.map((st) => (
+                <SelectItem key={st.value} value={st.value}>
+                  {st.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {activeFilterCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearFilters}
+              className="h-9 gap-1 text-xs text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/40"
+            >
+              <RotateCcw className="h-3.5 w-3.5" /> Limpar
+            </Button>
+          )}
+        </div>
+
+        <Link
+          href="/whatsapp/promotions"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500 shrink-0"
+        >
+          <Megaphone className="h-4 w-4" /> Disparo de Promoções
+        </Link>
+      </div>
+
+      <div
+        className={cn(
+          'relative grid min-h-0 flex-1 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-950 transition-all',
+          'grid-cols-1 md:grid-cols-[320px_1fr]',
+          showInfo ? 'lg:grid-cols-[330px_1fr_320px]' : 'lg:grid-cols-[330px_1fr]',
+        )}
+      >
         {/* ---------- Coluna 1: lista de conversas ---------- */}
         <aside
           className={cn(
@@ -336,15 +477,7 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
                 <Badge className="bg-emerald-500 text-white hover:bg-emerald-500">{totalUnread} não lidas</Badge>
               )}
             </div>
-            <div className="relative mt-3">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar por nome ou telefone"
-                className="pl-9"
-              />
-            </div>
+
             <div className="mt-3 flex gap-2">
               <button
                 onClick={() => setTab('todas')}
@@ -352,7 +485,7 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
                   'rounded-full px-3 py-1 text-xs font-medium transition',
                   tab === 'todas'
                     ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'
-                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-700',
                 )}
               >
                 Todas
@@ -363,7 +496,7 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
                   'rounded-full px-3 py-1 text-xs font-medium transition',
                   tab === 'nao_lidas'
                     ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'
-                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-700',
                 )}
               >
                 Não lidas {totalUnread > 0 && `(${totalUnread})`}
@@ -387,13 +520,15 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
                       <button
                         onClick={() => selectConversation(c.leadId)}
                         className={cn(
-                          'flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-white dark:hover:bg-gray-800/60',
-                          isActive && 'bg-white dark:bg-gray-800/60',
+                          'relative flex w-full items-center gap-3 px-4 py-3.5 text-left transition-all border-l-4',
+                          isActive
+                            ? 'bg-emerald-100/90 text-emerald-950 font-semibold border-l-emerald-600 dark:bg-emerald-950/80 dark:text-emerald-50 dark:border-l-emerald-400 shadow-sm'
+                            : 'border-l-transparent hover:bg-gray-100/80 dark:hover:bg-gray-800/60 text-gray-700 dark:text-gray-300',
                         )}
                       >
                         <div className="relative shrink-0">
                           <Avatar className="h-11 w-11">
-                            <AvatarFallback className="bg-emerald-100 text-sm font-medium text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300">
+                            <AvatarFallback className="bg-emerald-200 text-sm font-semibold text-emerald-800 dark:bg-emerald-900/80 dark:text-emerald-200">
                               {initials(c.name)}
                             </AvatarFallback>
                           </Avatar>
@@ -405,13 +540,15 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{c.name}</span>
-                            <span className="shrink-0 text-[11px] text-gray-400 dark:text-gray-500">
+                            <span className={cn('truncate text-sm', isActive ? 'text-emerald-950 dark:text-emerald-50 font-bold' : 'text-gray-900 dark:text-gray-100 font-medium')}>
+                              {c.name}
+                            </span>
+                            <span className={cn('shrink-0 text-[11px]', isActive ? 'text-emerald-800 dark:text-emerald-300 font-medium' : 'text-gray-400 dark:text-gray-500')}>
                               {timeLabel(c.lastMessageAt, mounted)}
                             </span>
                           </div>
                           <div className="mt-0.5 flex items-center justify-between gap-2">
-                            <span className="truncate text-xs text-gray-500 dark:text-gray-400">
+                            <span className={cn('truncate text-xs', isActive ? 'text-emerald-900/90 dark:text-emerald-200/90 font-medium' : 'text-gray-500 dark:text-gray-400')}>
                               {c.lastMessageText || 'Sem mensagens'}
                             </span>
                             {c.unreadCount > 0 && (
@@ -458,24 +595,32 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </button>
-                <Avatar className="h-10 w-10">
-                  <AvatarFallback className="bg-emerald-100 text-sm font-medium text-emerald-700">
-                    {initials(activeLead.name)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{activeLead.name}</p>
-                  <p className="truncate text-xs text-gray-500 dark:text-gray-400">{activeLead.phone || 'Sem telefone'}</p>
+                <div
+                  onClick={() => setShowInfo((s) => !s)}
+                  className="flex min-w-0 flex-1 items-center gap-3 cursor-pointer rounded-lg p-1 transition hover:bg-gray-200/60 dark:hover:bg-gray-800/60"
+                  title="Clique para ver/ocultar detalhes do lead"
+                >
+                  <Avatar className="h-10 w-10 shrink-0">
+                    <AvatarFallback className="bg-emerald-100 text-sm font-medium text-emerald-700">
+                      {initials(activeLead.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{activeLead.name}</p>
+                    <p className="truncate text-xs text-gray-500 dark:text-gray-400">{activeLead.phone || 'Sem telefone'}</p>
+                  </div>
                 </div>
-                <Badge variant="secondary" className={cn(statusMeta(activeLead.status).bg, statusMeta(activeLead.status).text, 'border-0')}>
+
+                <Badge variant="secondary" className={cn(statusMeta(activeLead.status).bg, statusMeta(activeLead.status).text, 'border-0 shrink-0')}>
                   {statusMeta(activeLead.status).label}
                 </Badge>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="lg:hidden"
+                  className={cn('shrink-0', showInfo && 'bg-gray-200 dark:bg-gray-900')}
                   onClick={() => setShowInfo((s) => !s)}
                   aria-label="Informações do lead"
+                  title="Informações do lead"
                 >
                   <Info className="h-5 w-5" />
                 </Button>
@@ -508,7 +653,7 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
                       <div key={m.id}>
                         {showDay && (
                           <div className="my-3 flex justify-center">
-                            <span className="rounded-full bg-white/80 px-3 py-1 text-[11px] font-medium text-gray-500 shadow-sm dark:bg-gray-800/80 dark:text-gray-300">
+                            <span className="rounded-full bg-white/80 px-3 py-1 text-[11px] font-medium text-gray-500 shadow-sm dark:bg-gray-900/80 dark:text-gray-300">
                               {dayDivider(m.timestamp, mounted)}
                             </span>
                           </div>
@@ -519,7 +664,7 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
                               'max-w-[75%] rounded-lg px-3 py-2 text-sm shadow-sm',
                               outbound
                                 ? 'bg-[#d9fdd3] text-gray-800 dark:bg-emerald-800 dark:text-gray-50'
-                                : 'bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-50',
+                                : 'bg-white text-gray-800 dark:bg-gray-900 dark:text-gray-50',
                             )}
                           >
                             {outbound && m.isFromBot && (
@@ -570,7 +715,7 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
                   }}
                   placeholder="Digite uma mensagem…"
                   rows={1}
-                  className="max-h-32 min-h-[44px] flex-1 resize-none rounded-xl bg-white dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500"
+                  className="max-h-32 min-h-[44px] flex-1 resize-none rounded-xl bg-white dark:bg-gray-900 dark:text-gray-100 dark:placeholder:text-gray-500"
                 />
                 <Button
                   onClick={sendMessage}
@@ -591,14 +736,17 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
           <aside
             className={cn(
               'min-h-0 flex-col overflow-y-auto border-l border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900',
-              // lg+: coluna fixa sempre visível. Abaixo de lg: overlay sobre o card, controlado por showInfo.
               'absolute inset-0 z-10 lg:static lg:z-auto',
-              showInfo ? 'flex' : 'hidden lg:flex',
+              showInfo ? 'flex' : 'hidden',
             )}
           >
-            <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-800 lg:hidden">
+            <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-800">
               <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">Informações do lead</span>
-              <button onClick={() => setShowInfo(false)} className="rounded-md p-1 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800">
+              <button
+                onClick={() => setShowInfo(false)}
+                className="rounded-md p-1 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                title="Fechar detalhes"
+              >
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -684,7 +832,7 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {activeLead.tags.map((t) => (
-                      <span key={t} className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                      <span key={t} className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-600 dark:bg-gray-900 dark:text-gray-300">
                         {t}
                       </span>
                     ))}
@@ -710,7 +858,7 @@ function InfoRow({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+      <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500 dark:bg-gray-900 dark:text-gray-400">
         <Icon className="h-3.5 w-3.5" />
       </div>
       <div className="min-w-0 flex-1">

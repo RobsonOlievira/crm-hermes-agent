@@ -12,12 +12,35 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!user) redirect('/login')
 
   const tenantId = user.tenantId ?? undefined
-  const [modules, tenant] = await Promise.all([
+  let [modules, tenant] = await Promise.all([
     tenantId
       ? prisma.module.findMany({ where: { tenantId }, orderBy: { sortOrder: 'asc' } })
       : Promise.resolve([]),
     tenantId ? prisma.tenant.findUnique({ where: { id: tenantId } }) : Promise.resolve(null),
   ])
+
+  // Se o tenant não possui o módulo prospecting cadastrado no banco, registra automaticamente como ativo
+  if (tenantId && !modules.some((m) => m.key === 'prospecting')) {
+    try {
+      const newMod = await prisma.module.upsert({
+        where: { tenantId_key: { tenantId, key: 'prospecting' } },
+        update: { isActive: true },
+        create: {
+          tenantId,
+          key: 'prospecting',
+          displayName: 'Prospecção AI',
+          description: 'Busca ativa de prospects B2B por nicho e cidade com inteligência AIsa',
+          category: 'sales',
+          isCore: false,
+          isActive: true,
+          sortOrder: 16,
+        },
+      })
+      modules = [...modules, newMod as any]
+    } catch (e) {
+      console.error('Erro ao auto-registrar módulo prospecting:', e)
+    }
+  }
 
   const branding = {
     tenantName: tenant?.name ?? 'NexusCRM',

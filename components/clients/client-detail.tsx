@@ -48,6 +48,10 @@ export interface ClientDetailData {
   updatedAt: string
   timeline: ClientTimelineItem[]
   memberOptions: { id: string; name: string }[]
+  leadTypeIds?: string[]
+  leadTypeLabels?: string[]
+  leadTypeColors?: string[]
+  leadTypesOptions?: { id: string; label: string; color: string }[]
 }
 
 function whatsappDigits(phone: string): string {
@@ -97,8 +101,15 @@ export function ClientEditDialog({ data, trigger }: { data: ClientDetailData; tr
   const [segment, setSegment] = useState(data.segment ?? '')
   const [status, setStatus] = useState(data.status)
   const [lifetimeValue, setLifetimeValue] = useState(data.lifetimeValue != null ? String(data.lifetimeValue) : '0')
-  const [assignedToId, setAssignedToId] = useState(data.assignedToId ?? '')
+  const [assignedToId, setAssignedToId] = useState(data.assignedToId ?? '_none_')
+  const [selectedLeadTypeIds, setSelectedLeadTypeIds] = useState<string[]>(data.leadTypeIds ?? [])
   const [saving, setSaving] = useState(false)
+
+  const toggleLeadType = (id: string) => {
+    setSelectedLeadTypeIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    )
+  }
 
   const handleSave = async () => {
     if (!name.trim()) { toast.error('Informe o nome do cliente.'); return }
@@ -111,7 +122,8 @@ export function ClientEditDialog({ data, trigger }: { data: ClientDetailData; tr
         body: JSON.stringify({
           name, email, phone, companyName, cnpj, segment, status,
           lifetimeValue: lifetimeValue === '' ? 0 : Number(lifetimeValue),
-          assignedToId: assignedToId || null,
+          assignedToId: assignedToId === '_none_' ? null : assignedToId,
+          leadTypeIds: selectedLeadTypeIds,
         }),
       })
       if (!res.ok) throw new Error()
@@ -177,7 +189,7 @@ export function ClientEditDialog({ data, trigger }: { data: ClientDetailData; tr
               <Select value={assignedToId} onValueChange={setAssignedToId}>
                 <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sem responsável</SelectItem>
+                  <SelectItem value="_none_">Sem responsável</SelectItem>
                   {(data.memberOptions ?? []).map((m) => (
                     <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                   ))}
@@ -185,6 +197,35 @@ export function ClientEditDialog({ data, trigger }: { data: ClientDetailData; tr
               </Select>
             </div>
           </div>
+
+          {(data.leadTypesOptions ?? []).length > 0 && (
+            <div className="space-y-1.5">
+              <Label>Tipos de Lead</Label>
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {(data.leadTypesOptions ?? []).map((lt) => {
+                  const isSelected = selectedLeadTypeIds.includes(lt.id)
+                  return (
+                    <button
+                      key={lt.id}
+                      type="button"
+                      onClick={() => toggleLeadType(lt.id)}
+                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all ${
+                        isSelected
+                          ? 'bg-primary text-primary-foreground shadow-sm'
+                          : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                      }`}
+                    >
+                      <span
+                        className="h-2 w-2 rounded-full"
+                        style={{ backgroundColor: lt.color || '#6B7280' }}
+                      />
+                      {lt.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
         <DialogFooter>
           <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
@@ -226,6 +267,26 @@ export function ClientDetail({ data }: { data: ClientDetailData }) {
                       <Tag className="h-3 w-3" /> {data.segment}
                     </span>
                   )}
+                  {(data.leadTypeLabels ?? []).map((label, idx) => {
+                    const color = data.leadTypeColors?.[idx] || '#6B7280'
+                    return (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium"
+                        style={{
+                          backgroundColor: `${color}15`,
+                          borderColor: `${color}40`,
+                          color: color,
+                        }}
+                      >
+                        <span
+                          className="h-1.5 w-1.5 rounded-full"
+                          style={{ backgroundColor: color }}
+                        />
+                        {label}
+                      </span>
+                    )
+                  })}
                 </div>
               </div>
             </div>

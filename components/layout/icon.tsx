@@ -7,7 +7,8 @@ import {
   GraduationCap, UserCheck, Handshake, Truck, CircleHelp, Tag, Package, Wrench,
   Star, Heart, Briefcase, Rocket, Target, Crown, Gem, ShoppingCart, Store, Contact,
   PhoneCall, Sparkles, Wand2, Tags, DollarSign, Percent, Award, Flame, ThumbsUp, Globe,
-  Bot, Clock,
+  Bot, Clock, Wallet, Receipt, QrCode, FileBarChart, HandCoins, Banknote, ArrowUpDown,
+  TrendingUp, TrendingDown, PiggyBank, BadgeDollarSign, CircleDollarSign,
 } from 'lucide-react'
 import { ComponentType } from 'react'
 
@@ -18,7 +19,8 @@ const ICONS: Record<string, ComponentType<LucideProps>> = {
   GraduationCap, UserCheck, Handshake, Truck, CircleHelp, Tag, Package, Wrench,
   Star, Heart, Briefcase, Rocket, Target, Crown, Gem, ShoppingCart, Store, Contact,
   PhoneCall, Sparkles, Wand2, Tags, DollarSign, Percent, Award, Flame, ThumbsUp, Globe,
-  Bot, Clock,
+  Bot, Clock, Wallet, Receipt, QrCode, FileBarChart, HandCoins, Banknote, ArrowUpDown,
+  TrendingUp, TrendingDown, PiggyBank, BadgeDollarSign, CircleDollarSign,
 }
 
 // Lista de \u00edcones dispon\u00edveis para o seletor de \u00edcones (tipos de lead)

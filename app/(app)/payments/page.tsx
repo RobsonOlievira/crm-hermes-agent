@@ -1,19 +1,21 @@
-import { ModulePlaceholder } from '@/components/shared/module-placeholder'
+import { PaymentsManager } from '@/components/payments/payments-manager'
+
+export const metadata = {
+  title: 'Pagamentos | CRM Nexus',
+  description: 'Gestão de cobranças, assinaturas recorrentes e gateways de pagamento.',
+}
 
 export default function PaymentsPage() {
   return (
-    <ModulePlaceholder
-      title="Pagamentos"
-      description="Cobranças, assinaturas e confirmações automáticas em um só lugar."
-      icon="CreditCard"
-      features={[
-        'Integração com Stripe, Mercado Pago e Asaas',
-        'Geração de links de cobrança e PIX',
-        'Assinaturas recorrentes e planos',
-        'Confirmação automática muda status do lead',
-        'Controle de inadimplência',
-        'Relatórios de receita e projeção',
-      ]}
-    />
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Módulo de Pagamentos</h1>
+        <p className="text-sm text-muted-foreground">
+          Gerencie cobranças avulsas, assinaturas recorrentes, métricas financeiras e gateways integrados.
+        </p>
+      </div>
+
+      <PaymentsManager />
+    </div>
   )
 }

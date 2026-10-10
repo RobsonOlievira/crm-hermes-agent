@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import Link from 'next/link'
@@ -430,7 +430,7 @@ export function EmailMarketingManager({
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-              className="rounded-md border border-input bg-background px-3 py-2 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100">
+              className="rounded-md border border-input bg-background px-3 py-2 text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100">
               <option value="ALL">Todos os status</option>
               {Object.entries(EMAIL_CAMPAIGN_STATUS_META).map(([k, v]) => (
                 <option key={k} value={k}>{v.label}</option>
@@ -463,7 +463,7 @@ export function EmailMarketingManager({
           <div className="overflow-x-auto rounded-xl border dark:border-gray-700">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-muted/50 dark:bg-gray-800/50 dark:border-gray-700">
+                <tr className="border-b bg-muted/50 dark:bg-gray-900/50 dark:border-gray-700">
                   <th className="px-4 py-3 text-left font-medium text-muted-foreground">Campanha</th>
                   <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden md:table-cell">Categoria</th>
                   <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
@@ -560,7 +560,7 @@ export function EmailMarketingManager({
               { label: 'Cliques', value: `${c.totalClicked} (${clickRate}%)`, icon: BarChart3, color: 'text-violet-600 dark:text-violet-400' },
               { label: 'Bounces', value: c.totalBounced + c.totalFailed, icon: RefreshCw, color: 'text-red-600 dark:text-red-400' },
             ].map(s => (
-              <div key={s.label} className="rounded-xl border p-4 dark:border-gray-700 dark:bg-gray-800/40">
+              <div key={s.label} className="rounded-xl border p-4 dark:border-gray-700 dark:bg-gray-900/40">
                 <div className="flex items-center gap-2 mb-1">
                   <s.icon className={`h-4 w-4 ${s.color}`} />
                   <span className="text-xs text-muted-foreground">{s.label}</span>
@@ -572,7 +572,7 @@ export function EmailMarketingManager({
         )}
 
         {/* Info */}
-        <div className="rounded-xl border p-5 space-y-3 dark:border-gray-700 dark:bg-gray-800/30">
+        <div className="rounded-xl border p-5 space-y-3 dark:border-gray-700 dark:bg-gray-900/30">
           <h3 className="font-semibold text-sm">Detalhes</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm">
             <InfoRow label="Categoria" value={catLabel} />
@@ -586,7 +586,7 @@ export function EmailMarketingManager({
         </div>
 
         {/* Envio real */}
-        <div className="rounded-xl border p-5 dark:border-gray-700 dark:bg-gray-800/30">
+        <div className="rounded-xl border p-5 dark:border-gray-700 dark:bg-gray-900/30">
           <h3 className="font-semibold text-sm mb-3">Disparo</h3>
 
           {sendError && (
@@ -596,7 +596,7 @@ export function EmailMarketingManager({
           )}
 
           {sendProgress && (
-            <div className="mb-3 bg-muted/50 dark:bg-gray-800/60 rounded-lg p-4">
+            <div className="mb-3 bg-muted/50 dark:bg-gray-900/60 rounded-lg p-4">
               <div className="flex justify-between text-xs mb-2">
                 <span>{sendProgress.done ? 'Envio concluído' : 'Enviando…'}</span>
                 <span>{sendProgress.sent} enviados · {sendProgress.failed} falhas</span>
@@ -635,13 +635,13 @@ export function EmailMarketingManager({
         {/* Destinatários */}
         {recipients.length > 0 && (
           <div className="rounded-xl border dark:border-gray-700 overflow-hidden">
-            <div className="px-4 py-2 bg-muted/50 dark:bg-gray-800/50 border-b dark:border-gray-700 flex items-center justify-between">
+            <div className="px-4 py-2 bg-muted/50 dark:bg-gray-900/50 border-b dark:border-gray-700 flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground">Destinatários ({recipients.length} recentes)</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b bg-muted/50 dark:bg-gray-800/50 dark:border-gray-700">
+                  <tr className="border-b bg-muted/50 dark:bg-gray-900/50 dark:border-gray-700">
                     <th className="px-4 py-2 text-left font-medium text-muted-foreground">Nome</th>
                     <th className="px-4 py-2 text-left font-medium text-muted-foreground">Email</th>
                     <th className="px-4 py-2 text-left font-medium text-muted-foreground">Status</th>
@@ -675,7 +675,7 @@ export function EmailMarketingManager({
         {/* Preview HTML */}
         {c.htmlBody && (
           <div className="rounded-xl border dark:border-gray-700 overflow-hidden">
-            <div className="px-4 py-2 bg-muted/50 dark:bg-gray-800/50 border-b dark:border-gray-700">
+            <div className="px-4 py-2 bg-muted/50 dark:bg-gray-900/50 border-b dark:border-gray-700">
               <span className="text-xs font-medium text-muted-foreground">Preview do conteúdo</span>
             </div>
             <div className="p-4 bg-white dark:bg-gray-900 prose prose-sm max-w-none dark:prose-invert"
@@ -705,7 +705,7 @@ export function EmailMarketingManager({
 
       {/* Templates rápidos */}
       {templates.length > 0 && (
-        <div className="rounded-xl border p-4 dark:border-gray-700 dark:bg-gray-800/30">
+        <div className="rounded-xl border p-4 dark:border-gray-700 dark:bg-gray-900/30">
           <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
             <FileText className="h-4 w-4 text-muted-foreground" /> Templates disponíveis
           </h3>
@@ -733,14 +733,14 @@ export function EmailMarketingManager({
         <div>
           <label className="text-sm font-medium mb-1 block">Categoria</label>
           <select value={category} onChange={e => setCategory(e.target.value)}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100">
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100">
             {Object.entries(EMAIL_CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
           </select>
         </div>
         <div>
           <label className="text-sm font-medium mb-1 block">Segmento</label>
           <select value={segmentType} onChange={e => { setSegmentType(e.target.value); setSegmentValue('') }}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100">
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100">
             {SEGMENT_TYPES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
           </select>
         </div>
@@ -753,7 +753,7 @@ export function EmailMarketingManager({
             {segmentType === 'STATUS' ? 'Status' : segmentType === 'SOURCE' ? 'Origem' : segmentType === 'LEAD_TYPE' ? 'Tipo de lead' : segmentType === 'TAG' ? 'Tag' : SEGMENT_VALUE_OPTIONS[segmentType as keyof typeof SEGMENT_VALUE_OPTIONS]?.label || 'Valor'}
           </label>
           <select value={segmentValue} onChange={e => setSegmentValue(e.target.value)}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 max-w-xs">
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 max-w-xs">
             <option value="">Selecione...</option>
             {segmentType === 'STATUS' && leadStatuses.map(s => <option key={s} value={s}>{s}</option>)}
             {segmentType === 'SOURCE' && leadSources.map(s => <option key={s} value={s}>{s}</option>)}
@@ -786,7 +786,7 @@ export function EmailMarketingManager({
 
       {/* Editor HTML */}
       <div className="rounded-xl border dark:border-gray-700 overflow-hidden">
-        <div className="flex items-center gap-1 flex-wrap px-3 py-2 bg-muted/50 dark:bg-gray-800/50 border-b dark:border-gray-700">
+        <div className="flex items-center gap-1 flex-wrap px-3 py-2 bg-muted/50 dark:bg-gray-900/50 border-b dark:border-gray-700">
           {TOOLBAR.map((item, i) => (
             <button key={i} onClick={() => handleToolbar(item)} title={item.label}
               className="p-1.5 rounded hover:bg-muted dark:hover:bg-gray-700 text-muted-foreground hover:text-foreground transition-colors">
@@ -809,7 +809,7 @@ export function EmailMarketingManager({
 
       {showPreview && htmlBody.trim() && (
         <div className="rounded-xl border dark:border-gray-700 overflow-hidden">
-          <div className="px-4 py-2 bg-muted/50 dark:bg-gray-800/50 border-b dark:border-gray-700">
+          <div className="px-4 py-2 bg-muted/50 dark:bg-gray-900/50 border-b dark:border-gray-700">
             <span className="text-xs font-medium text-muted-foreground">Preview</span>
           </div>
           <div className="p-4 bg-white dark:bg-gray-900 prose prose-sm max-w-none dark:prose-invert"

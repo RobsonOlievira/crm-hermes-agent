@@ -10,6 +10,7 @@ import {
 import { Icon } from '@/components/layout/icon'
 import { formatCurrency, formatCurrencyShort, initials } from '@/lib/format'
 import { LEAD_SOURCE_META } from '@/lib/crm-constants'
+import { isClosedStage } from '@/lib/lead-stages'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import {
@@ -485,7 +486,7 @@ export function KanbanBoard({
       >
         {(columns ?? []).map((col) => {
           const visibleCards = (col.cards ?? []).filter(matches)
-          const isClosedColumn = col.id === 'stage-5'
+          const isClosedColumn = isClosedStage({ id: col.id, name: col.name })
           const total = visibleCards.reduce(
             (sum, c) => sum + (isClosedColumn ? c.totalPurchased ?? 0 : c.dealValue ?? 0),
             0

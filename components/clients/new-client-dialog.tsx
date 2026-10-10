@@ -13,7 +13,13 @@ import { CLIENT_STATUS_META } from '@/lib/crm-constants'
 import { toast } from 'sonner'
 import { Building2, Loader2, UserPlus } from 'lucide-react'
 
-export function NewClientDialog({ members }: { members: { id: string; name: string }[] }) {
+export function NewClientDialog({
+  members,
+  leadTypesOptions,
+}: {
+  members: { id: string; name: string }[]
+  leadTypesOptions?: { id: string; label: string; color: string }[]
+}) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
@@ -25,11 +31,18 @@ export function NewClientDialog({ members }: { members: { id: string; name: stri
   const [status, setStatus] = useState('ATIVO')
   const [lifetimeValue, setLifetimeValue] = useState('0')
   const [assignedToId, setAssignedToId] = useState('_none_')
+  const [selectedLeadTypeIds, setSelectedLeadTypeIds] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
 
   const reset = () => {
     setName(''); setPhone(''); setEmail(''); setCompanyName(''); setCnpj(''); setSegment('')
-    setStatus('ATIVO'); setLifetimeValue('0'); setAssignedToId('_none_')
+    setStatus('ATIVO'); setLifetimeValue('0'); setAssignedToId('_none_'); setSelectedLeadTypeIds([])
+  }
+
+  const toggleLeadType = (id: string) => {
+    setSelectedLeadTypeIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    )
   }
 
   const handleCreate = async () => {
@@ -44,6 +57,7 @@ export function NewClientDialog({ members }: { members: { id: string; name: stri
           name, phone, email, companyName, cnpj, segment, status,
           lifetimeValue: lifetimeValue === '' ? 0 : Number(lifetimeValue),
           assignedToId: assignedToId === '_none_' ? null : assignedToId,
+          leadTypeIds: selectedLeadTypeIds,
         }),
       })
       if (!res.ok) throw new Error()
@@ -94,6 +108,33 @@ export function NewClientDialog({ members }: { members: { id: string; name: stri
               <Input id="n-segment" value={segment} onChange={(e) => setSegment(e.target.value)} placeholder="Ex.: Gestor de Tráfego | Curitiba - PR" className="mt-1.5" />
             </div>
           </div>
+
+          {/* Tipos de Lead */}
+          {leadTypesOptions && leadTypesOptions.length > 0 && (
+            <div>
+              <Label className="mb-1.5 block">Tipos de Lead</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {leadTypesOptions.map((lt) => {
+                  const isSelected = selectedLeadTypeIds.includes(lt.id)
+                  return (
+                    <button
+                      key={lt.id}
+                      type="button"
+                      onClick={() => toggleLeadType(lt.id)}
+                      className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium border transition ${
+                        isSelected
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-muted/40 text-muted-foreground border-transparent hover:bg-muted'
+                      }`}
+                    >
+                      {lt.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="grid gap-3 sm:grid-cols-3">
             <div>
               <Label>Status</Label>

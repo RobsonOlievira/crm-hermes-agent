@@ -38,19 +38,17 @@ export default function BrandingSettingsPage() {
     if (!file) return
     setUploading(true)
     try {
-      const res = await fetch('/api/upload/presigned', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName: file.name, contentType: file.type }),
-      })
-      const { uploadUrl, publicUrl } = await res.json()
-      if (!uploadUrl) throw new Error('sem url')
-      await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file })
-      setBranding({ logoUrl: publicUrl })
-      await saveBranding({ logoUrl: publicUrl })
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/upload/logo', { method: 'POST', body: fd })
+      const data = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(data?.detail || data?.error || 'Falha no upload')
+      if (!data?.publicUrl) throw new Error('Resposta inválida do servidor')
+      setBranding({ logoUrl: data.publicUrl })
+      await saveBranding({ logoUrl: data.publicUrl })
       toast.success('Logo atualizado com sucesso!')
     } catch (e) {
-      toast.error('Não foi possível enviar o logo.')
+      toast.error(e instanceof Error ? e.message : 'Não foi possível enviar o logo.')
     } finally {
       setUploading(false)
     }

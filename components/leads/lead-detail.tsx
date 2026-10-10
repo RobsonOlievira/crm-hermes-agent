@@ -116,10 +116,10 @@ export function LeadEditDialog({ data, trigger }: { data: LeadDetailData; trigge
   const [socialMedia, setSocialMedia] = useState(data.socialMedia ?? '')
   const [objective, setObjective] = useState(data.objective ?? '')
   const [tags, setTags] = useState((data.tags ?? []).join(', '))
-  const [assignedToId, setAssignedToId] = useState(data.assignedToId ?? '')
+  const [assignedToId, setAssignedToId] = useState(data.assignedToId ?? '_none_')
   const [catalogItemId, setCatalogItemId] = useState(() => {
     const match = (data.catalogOptions ?? []).find((c) => c.name === data.catalogItemName)
-    return match ? match.id : ''
+    return match ? match.id : '_none_'
   })
   const [leadTypeIds, setLeadTypeIds] = useState<string[]>(data.leadTypeIds ?? [])
   const [saving, setSaving] = useState(false)
@@ -142,8 +142,8 @@ export function LeadEditDialog({ data, trigger }: { data: LeadDetailData; trigge
           dealValue: dealValue === '' ? null : Number(dealValue),
           socialMedia, objective,
           tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
-          assignedToId: assignedToId || null,
-          catalogItemId: catalogItemId || null,
+          assignedToId: assignedToId === '_none_' ? null : assignedToId,
+          catalogItemId: catalogItemId === '_none_' ? null : catalogItemId,
           leadTypeIds,
         }),
       })
@@ -229,7 +229,7 @@ export function LeadEditDialog({ data, trigger }: { data: LeadDetailData; trigge
               <Select value={assignedToId} onValueChange={setAssignedToId}>
                 <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sem responsável</SelectItem>
+                  <SelectItem value="_none_">Sem responsável</SelectItem>
                   {(data.memberOptions ?? []).map((m) => (
                     <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                   ))}
@@ -241,7 +241,7 @@ export function LeadEditDialog({ data, trigger }: { data: LeadDetailData; trigge
               <Select value={catalogItemId} onValueChange={setCatalogItemId}>
                 <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sem vínculo</SelectItem>
+                  <SelectItem value="_none_">Sem vínculo</SelectItem>
                   {(data.catalogOptions ?? []).map((c) => (
                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}

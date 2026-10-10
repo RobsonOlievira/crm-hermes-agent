@@ -4,8 +4,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {
@@ -27,6 +28,7 @@ enum LeadStatus {
   PAGAMENTO_CONFIRMADO
   INATIVO
   SEM_RESPOSTA
+  CONVERSAS_OFF
 }
 
 enum LeadSource {
@@ -38,6 +40,7 @@ enum LeadSource {
   IMPORT
   INDICACAO
   ORGANICO
+  PROSPEC_AI
 }
 
 enum CatalogKind {
@@ -65,6 +68,18 @@ enum EmailRecipientStatus {
   UNSUBSCRIBED
 }
 
+enum AdPlatform {
+  META
+  GOOGLE
+}
+
+enum AdCampaignStatus {
+  ACTIVE
+  PAUSED
+  DELETED
+  ARCHIVED
+}
+
 enum ClientStatus {
   ATIVO
   INATIVO
@@ -77,8 +92,11 @@ enum InteractionType {
   WHATSAPP_SENT
   WHATSAPP_RECEIVED
   EMAIL_SENT
+  EMAIL_RECEIVED
   PHONE_CALL
   MEETING
+  MEETING_SCHEDULED
+  MEETING_CANCELED
   PAYMENT_RECEIVED
   STATUS_CHANGE
   NOTE
@@ -86,6 +104,53 @@ enum InteractionType {
   CONTRACT_SIGNED
   TASK_CREATED
   SYSTEM_EVENT
+}
+
+enum ProjectStatus {
+  PROPOSAL     // Proposta/negociação — contato em negociação, ainda não aprovado
+  ENTRY        // Entrada — projeto registrado, ainda sem início
+  IN_PROGRESS  // Em andamento — trabalho ativo
+  CLOSED       // Entregue — entrega concluída
+  PAID         // Pago — todas as parcelas confirmadas
+  CANCELLED    // Cancelado
+}
+
+enum ReferralModel {
+  PERCENTAGE   // Comissão percentual
+  FIXED        // Valor fixo
+}
+
+enum InvoiceStatus {
+  ISSUED       // Emitida
+  PAID         // Paga
+  CANCELLED    // Cancelada
+}
+
+enum TransactionType {
+  INCOME              // Entrada de dinheiro (parcela paga, venda direta, extra)
+  EXPENSE             // Saída de dinheiro (despesa operacional, imposto, fornecedor)
+  TRANSFER            // Transferência entre contas (não afeta saldo total)
+  PROVISION           // Receita provisionada (parcela futura, ainda não paga)
+  PROVISION_REALIZED  // Provisão realizada (quando a parcela é paga)
+  INVESTMENT          // Investimento (capex, equipamento, formação)
+  TAX                 // Imposto/tributo (DAS, IRPJ, ISS, etc.)
+  REFUND              // Reembolso/estorno
+  COMMISSION          // Comissão de indicação paga
+}
+
+enum TransactionOrigin {
+  INSTALLMENT_PAID    // Parcela de projeto paga
+  INSTALLMENT_DUE     // Parcela de projeto provisionada (auto)
+  PRODUCT_SALE        // Venda de produto (CatalogItem)
+  MANUAL_INCOME       // Receita extra manual
+  MANUAL_EXPENSE      // Despesa manual (aluguel, ferramentas, etc.)
+  FIXED_EXPENSE       // Despesa fixa propagada
+  INVOICE_ISSUED      // NF emitida
+  TAX_CALCULATED      // Imposto calculado automaticamente
+  COMMISSION_PAID     // Comissão de indicação paga
+  REFUND_ISSUED       // Estorno emitido
+  BANK_SYNC           // Importado via API bancária (futuro)
+  INVESTMENT          // Investimento registrado
 }
 
 model Tenant {
@@ -104,25 +169,245 @@ model Tenant {
   resendFrom        String?
   resendReplyTo     String?
   resendSetAt       DateTime?
+  aisaApiKey        String?
+  niche             String?
+
+  // >>> Dados jurídicos da empresa (para contratos)
+  legalName        String?   
+  companyCnpj      String?   
+  companyEmail     String?
+  companyPhone     String?
+  addressStreet    String?   
+  addressComplement String?
+  addressDistrict  String?   
+  addressCity      String?
+  addressState     String?   
+  addressZip       String?   
+  legalRepName     String?   
+  legalRepCpf      String?   
+  legalRepRole     String?   
+  signatureImageUrl String?  
+
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  users               User[]
-  modules             Module[]
-  pipelines           Pipeline[]
-  leads               Lead[]
-  clients             Client[]
-  leadTypes           LeadType[]
-  catalogItems        CatalogItem[]
-  classificationRules ClassificationRule[]
-  purchases           Purchase[]
-  journeyAutomations  JourneyAutomation[]
-  calendarEvents      CalendarEvent[]
-  messages            Message[]
-  students            Student[]
-  emailTemplates      EmailTemplate[]
-  emailCampaigns      EmailCampaign[]
+  users                 User[]
+  modules               Module[]
+  pipelines             Pipeline[]
+  leads                 Lead[]
+  clients               Client[]
+  leadTypes             LeadType[]
+  catalogItems          CatalogItem[]
+  classificationRules   ClassificationRule[]
+  purchases             Purchase[]
+  journeyAutomations    JourneyAutomation[]
+  calendarEvents        CalendarEvent[]
+  messages              Message[]
+  students              Student[]
+  emailTemplates        EmailTemplate[]
+  emailCampaigns        EmailCampaign[]
+  adAccounts            AdAccount[]
+  adCampaigns           AdCampaign[]
+  paymentGatewayConfigs PaymentGatewayConfig[]
+  paymentOrders         PaymentOrder[]
+  subscriptions         Subscription[]
+  waTemplates           WaTemplate[]
+  waBroadcasts          WaBroadcast[]
+  // Novos módulos financeiros
+  projects              Project[]
+  projectChecklistStages ProjectChecklistStage[]
+  monthlyCashFlows      MonthlyCashFlow[]
+  bankAccounts          BankAccount[]
+  invoices              Invoice[]
+  cashFlowTransactions  CashFlowTransaction[]
+  defaultExpenses       TenantDefaultExpense[]
+  revenueSources        RevenueSource[]
+  contractTemplates     ContractTemplate[]
+  contracts             Contract[]
+  emailAccounts         EmailAccount[]
+  emailMessages         EmailMessage[]
+  proposals             Proposal[]
+
+  workingDays           Int[]     @default([1, 2, 3, 4, 5])
+  workingHourFrom       String    @default("09:00")
+  workingHourTo         String    @default("18:00")
+  slotDuration          Int       @default(60)
+  bookingTimezone       String    @default("America/Sao_Paulo")
 }
+
+enum PaymentProvider {
+  STRIPE
+  MERCADO_PAGO
+  ASAAS
+  MANUAL
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  CONFIRMED
+  FAILED
+  REFUNDED
+  CANCELLED
+  EXPIRED
+  OVERDUE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  PAUSED
+  TRIALING
+  EXPIRED
+}
+
+enum PaymentMethod {
+  PIX
+  CREDIT_CARD
+  DEBIT_CARD
+  BOLETO
+  BANK_TRANSFER
+  OTHER
+}
+
+model PaymentGatewayConfig {
+  id               String          @id @default(cuid())
+  tenantId         String
+  tenant           Tenant          @relation(fields: [tenantId], references: [id])
+  provider         PaymentProvider
+  displayName      String?
+  isActive         Boolean         @default(true)
+  isSandbox        Boolean         @default(false)
+
+  encApiKey        String?         @db.Text
+  encSecretKey     String?         @db.Text
+  encWebhookSecret String?         @db.Text
+  encAccessToken   String?         @db.Text
+
+  defaultCurrency  String          @default("BRL")
+  pixEnabled       Boolean         @default(true)
+  boletoEnabled    Boolean         @default(false)
+  creditEnabled    Boolean         @default(true)
+
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  paymentOrders    PaymentOrder[]
+  subscriptions    Subscription[]
+
+  @@unique([tenantId, provider])
+  @@index([tenantId])
+}
+
+model PaymentOrder {
+  id              String               @id @default(cuid())
+  tenantId        String
+  tenant          Tenant               @relation(fields: [tenantId], references: [id])
+
+  leadId          String
+  lead            Lead                 @relation(fields: [leadId], references: [id])
+  catalogItemId   String?
+  catalogItem     CatalogItem?         @relation(fields: [catalogItemId], references: [id])
+  purchaseId      String?              @unique
+  purchase        Purchase?            @relation(fields: [purchaseId], references: [id])
+
+  gatewayConfigId String
+  gatewayConfig   PaymentGatewayConfig @relation(fields: [gatewayConfigId], references: [id])
+  provider        PaymentProvider
+  externalId      String?
+  externalUrl     String?
+
+  description     String
+  amount          Float
+  currency        String               @default("BRL")
+  method          PaymentMethod?
+  installments    Int                  @default(1)
+
+  status          PaymentStatus        @default(PENDING)
+  paidAt          DateTime?
+  refundedAt      DateTime?
+  failedAt        DateTime?
+  failReason      String?
+  expiresAt       DateTime?
+
+  pixQrCode       String?              @db.Text
+  pixCopyPaste    String?              @db.Text
+  boletoUrl       String?
+  boletoBarcode   String?
+
+  metadata        String?              @db.Text
+  createdById     String?
+  createdBy       User?                @relation("PaymentOrderCreator", fields: [createdById], references: [id])
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  subscriptionId  String?
+  subscription    Subscription?        @relation(fields: [subscriptionId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, leadId])
+  @@index([provider, externalId])
+}
+
+model Subscription {
+  id                 String               @id @default(cuid())
+  tenantId           String
+  tenant             Tenant               @relation(fields: [tenantId], references: [id])
+
+  leadId             String
+  lead               Lead                 @relation(fields: [leadId], references: [id])
+  catalogItemId      String?
+  catalogItem        CatalogItem?         @relation(fields: [catalogItemId], references: [id])
+
+  gatewayConfigId    String
+  gatewayConfig      PaymentGatewayConfig @relation(fields: [gatewayConfigId], references: [id])
+  provider           PaymentProvider
+  externalId         String?
+
+  planName           String
+  amount             Float
+  currency           String               @default("BRL")
+  intervalType       String               @default("MONTHLY")
+  intervalCount      Int                  @default(1)
+
+  status             SubscriptionStatus   @default(ACTIVE)
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  cancelledAt        DateTime?
+  cancelReason       String?
+  trialEnd           DateTime?
+
+  totalCollected     Float                @default(0)
+  paymentCount       Int                  @default(0)
+  failedPayments     Int                  @default(0)
+
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  paymentOrders      PaymentOrder[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([provider, externalId])
+}
+
+model PaymentWebhookLog {
+  id         String          @id @default(cuid())
+  tenantId   String?
+  provider   PaymentProvider
+  eventType  String
+  externalId String?
+  payload    String          @db.Text
+  processed  Boolean         @default(false)
+  errorMsg   String?
+  createdAt  DateTime        @default(now())
+
+  @@index([provider, externalId])
+  @@index([tenantId])
+}
+
 
 model LeadType {
   id          String   @id @default(cuid())
@@ -140,6 +425,7 @@ model LeadType {
   updatedAt   DateTime @updatedAt
 
   leads        LeadLeadType[]
+  clients      ClientLeadType[]
   catalogItems CatalogItemLeadType[]
   rules        ClassificationRuleLeadType[]
 
@@ -158,6 +444,18 @@ model LeadLeadType {
   @@index([leadTypeId])
 }
 
+// Um cliente pode ter VÁRIOS tipos de lead (ex.: "Aluno" e "Cliente VIP").
+model ClientLeadType {
+  clientId   String
+  client     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  leadTypeId String
+  leadType   LeadType @relation(fields: [leadTypeId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@id([clientId, leadTypeId])
+  @@index([leadTypeId])
+}
+
 // Um item do catálogo pode ter VÁRIOS tipos de lead alvo
 // (leads diferentes podem se interessar pelo mesmo produto/serviço).
 model CatalogItemLeadType {
@@ -172,23 +470,29 @@ model CatalogItemLeadType {
 }
 
 model CatalogItem {
-  id          String      @id @default(cuid())
-  tenantId    String
-  tenant      Tenant      @relation(fields: [tenantId], references: [id])
-  name        String
-  kind        CatalogKind @default(PRODUTO)
-  description String?
-  price       Float?
-  objective   String?
-  isActive    Boolean     @default(true)
-  sortOrder   Int         @default(0)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id                String      @id @default(cuid())
+  tenantId          String
+  tenant            Tenant      @relation(fields: [tenantId], references: [id])
+  productExternalId String?     @db.VarChar(255)
+  name              String
+  kind              CatalogKind @default(PRODUTO)
+  description       String?
+  price             Float?
+  objective         String?
+  isActive          Boolean     @default(true)
+  sortOrder         Int         @default(0)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 
-  leadTypes CatalogItemLeadType[]
-  leads     Lead[]
-  rules     ClassificationRuleCatalogItem[]
-  purchases Purchase[]
+  @@unique([tenantId, productExternalId])
+
+  leadTypes    CatalogItemLeadType[]
+  leads        Lead[]
+  rules        ClassificationRuleCatalogItem[]
+  purchases    Purchase[]
+  paymentOrders PaymentOrder[]
+  subscriptions Subscription[]
+  projects     Project[]
 }
 
 // Uma regra pode classificar o lead em VÁRIOS tipos ao mesmo tempo.
@@ -247,11 +551,15 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  assignedLeads   Lead[]          @relation("LeadAssignee")
-  assignedClients Client[]        @relation("ClientAssignee")
-  interactions    Interaction[]
-  calendarEvents  CalendarEvent[] @relation("EventAssignee")
-  emailCampaigns  EmailCampaign[] @relation("CampaignCreator")
+  assignedLeads        Lead[]          @relation("LeadAssignee")
+  assignedClients      Client[]        @relation("ClientAssignee")
+  interactions         Interaction[]
+  calendarEvents       CalendarEvent[] @relation("EventAssignee")
+  emailCampaigns       EmailCampaign[] @relation("CampaignCreator")
+  createdPaymentOrders PaymentOrder[]  @relation("PaymentOrderCreator")
+  assignedProjects     Project[]       @relation("ProjectAssignee")
+  contracts            Contract[]      @relation("ContractCreator")
+  emailAccounts        EmailAccount[]
 }
 
 model Module {
@@ -318,21 +626,46 @@ model Lead {
   firstContactAt  DateTime     @default(now())
   lastInteraction DateTime?
   totalPurchased  Float        @default(0)
+  lastReplyAt     DateTime?
   lastMessageAt   DateTime?
   lastMessageText String?
   unreadCount     Int          @default(0)
   isArchived      Boolean      @default(false)
   archivedAt      DateTime?
   formulario      String?
+  utmSource       String?
+  utmMedium       String?
+  utmCampaign     String?
+  utmTerm         String?
+  utmContent      String?
+  adId            String?
+  adName          String?
+  referrerUrl     String?
+  landingPageUrl  String?
+  deviceType      String?
+  city            String?
+  region          String?
+  country         String?
+  ipAddress       String?
+  userAgent       String?
+  externalId      String?
+  customFields    String?      @db.Text
+  adCampaignId    String?
+  adCampaign      AdCampaign?  @relation("CampaignLeads", fields: [adCampaignId], references: [id])
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
-  leadTypes       LeadLeadType[]
-  interactions    Interaction[]
-  purchases       Purchase[]
-  calendarEvents  CalendarEvent[]
-  messages        Message[]
-  emailRecipients EmailRecipient[]
+  leadTypes            LeadLeadType[]
+  interactions         Interaction[]
+  purchases            Purchase[]
+  calendarEvents       CalendarEvent[]
+  messages             Message[]
+  emailRecipients      EmailRecipient[]
+  paymentOrders        PaymentOrder[]
+  subscriptions        Subscription[]
+  cashFlowTransactions CashFlowTransaction[]
+  emailMessages        EmailMessage[]
+  proposals            Proposal[]
 
   @@index([tenantId, isArchived])
   @@index([tenantId, lastMessageAt])
@@ -349,6 +682,9 @@ model Purchase {
   catalogItemId String?
   catalogItem   CatalogItem? @relation(fields: [catalogItemId], references: [id])
   createdAt     DateTime     @default(now())
+
+  paymentOrder        PaymentOrder?
+  cashFlowTransactions CashFlowTransaction[]
 
   @@index([tenantId])
   @@index([leadId])
@@ -393,32 +729,47 @@ model Client {
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
-  interactions Interaction[]
+  leadTypes            ClientLeadType[]
+  interactions         Interaction[]
+  // Novos módulos financeiros
+  projects             Project[]
+  invoices             Invoice[]
+  cashFlowTransactions CashFlowTransaction[]
+  contracts            Contract[]
+  calendarEvents       CalendarEvent[]
+  emailMessages        EmailMessage[]
+  proposals            Proposal[]
 }
 
 model CalendarEvent {
-  id              String   @id @default(cuid())
-  tenantId        String
-  tenant          Tenant   @relation(fields: [tenantId], references: [id])
-  title           String
-  description     String?
-  type            String   @default("MEETING")
-  status          String   @default("SCHEDULED")
-  startsAt        DateTime
-  endsAt          DateTime
-  allDay          Boolean  @default(false)
-  location        String?
-  meetingUrl      String?
-  leadId          String?
-  lead            Lead?    @relation(fields: [leadId], references: [id])
-  assignedToId    String?
-  assignedTo      User?    @relation("EventAssignee", fields: [assignedToId], references: [id])
-  color           String?
-  reminderMinutes Int?
-  syncSource      String   @default("local")
-  googleEventId   String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  tenantId           String
+  tenant             Tenant   @relation(fields: [tenantId], references: [id])
+  title              String
+  description        String?
+  type               String   @default("MEETING")
+  status             String   @default("SCHEDULED")
+  startsAt           DateTime
+  endsAt             DateTime
+  allDay             Boolean  @default(false)
+  location           String?
+  meetingUrl         String?
+  leadId             String?
+  lead               Lead?    @relation(fields: [leadId], references: [id])
+  clientId           String?
+  client             Client?  @relation(fields: [clientId], references: [id])
+  assignedToId       String?
+  assignedTo         User?    @relation("EventAssignee", fields: [assignedToId], references: [id])
+  color              String?
+  reminderMinutes    Int?
+  syncSource         String   @default("local")
+  googleEventId      String?
+  externalCalendarId String?
+  attendeesJson      String?  @db.Text
+  syncStatus         String   @default("synced")
+  icsUid             String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   @@index([tenantId, startsAt])
 }
@@ -557,3 +908,688 @@ model EmailRecipient {
   @@index([campaignId])
   @@index([tenantId, email])
 }
+
+model AdAccount {
+  id              String      @id @default(cuid())
+  tenantId        String
+  tenant          Tenant      @relation(fields: [tenantId], references: [id])
+  platform        AdPlatform
+  externalId      String
+  name            String
+  currency        String      @default("BRL")
+  timezone        String      @default("America/Sao_Paulo")
+  accessToken     String?     @db.Text
+  refreshToken    String?     @db.Text
+  tokenExpiresAt  DateTime?
+  isActive        Boolean     @default(true)
+  lastSyncAt      DateTime?
+  syncError       String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  campaigns       AdCampaign[]
+
+  @@unique([tenantId, platform, externalId])
+  @@index([tenantId])
+}
+
+model AdCampaign {
+  id               String            @id @default(cuid())
+  tenantId         String
+  tenant           Tenant            @relation(fields: [tenantId], references: [id])
+  accountId        String
+  account          AdAccount         @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  platform         AdPlatform
+  externalId       String
+  name             String
+  status           AdCampaignStatus  @default(ACTIVE)
+  objective        String?
+  dailyBudget      Float?
+  lifetimeBudget   Float?
+  startDate        DateTime?
+  endDate          DateTime?
+  totalSpend       Float             @default(0)
+  totalImpressions  Int               @default(0)
+  totalClicks      Int               @default(0)
+  totalLeads       Int               @default(0)
+  totalConversions  Int               @default(0)
+  totalRevenue     Float             @default(0)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  adSets           AdSet[]
+  metrics          AdMetricDaily[]
+  leads            Lead[]            @relation("CampaignLeads")
+  budgetAlerts     AdBudgetAlert[]
+
+  @@unique([tenantId, platform, externalId])
+  @@index([tenantId])
+  @@index([tenantId, platform])
+  @@index([tenantId, status])
+}
+
+model AdSet {
+  id              String            @id @default(cuid())
+  tenantId        String
+  campaignId      String
+  campaign        AdCampaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  platform        AdPlatform
+  externalId      String
+  name            String
+  status          AdCampaignStatus  @default(ACTIVE)
+  dailyBudget     Float?
+  targeting       String?           @db.Text
+  totalSpend      Float             @default(0)
+  totalClicks     Int               @default(0)
+  totalLeads      Int               @default(0)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  metrics         AdMetricDaily[]
+
+  @@unique([tenantId, platform, externalId])
+  @@index([campaignId])
+}
+
+model AdMetricDaily {
+  id              String      @id @default(cuid())
+  tenantId        String
+  campaignId      String
+  campaign        AdCampaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  adSetId         String?
+  adSet           AdSet?      @relation(fields: [adSetId], references: [id], onDelete: Cascade)
+  platform        AdPlatform
+  date            DateTime    @db.Date
+  spend           Float       @default(0)
+  impressions     Int         @default(0)
+  clicks          Int         @default(0)
+  ctr             Float       @default(0)
+  cpc             Float       @default(0)
+  cpm             Float       @default(0)
+  conversions     Int         @default(0)
+  costPerResult   Float       @default(0)
+  reach           Int         @default(0)
+  frequency       Float       @default(0)
+  videoViews      Int         @default(0)
+  leads           Int         @default(0)
+  createdAt       DateTime    @default(now())
+
+  @@unique([campaignId, adSetId, date])
+  @@index([tenantId, date])
+  @@index([campaignId, date])
+}
+
+model AdBudgetAlert {
+  id           String      @id @default(cuid())
+  tenantId     String
+  campaignId   String
+  campaign     AdCampaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  type         String
+  message      String
+  severity     String      @default("warning")
+  isRead       Boolean     @default(false)
+  triggeredAt  DateTime    @default(now())
+  resolvedAt   DateTime?
+
+  @@index([tenantId, isRead])
+  @@index([campaignId])
+}
+
+model WaTemplate {
+  id             String   @id @default(cuid())
+  tenantId       String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id])
+  name           String
+  language       String   @default("pt_BR")
+  category       String   @default("MARKETING")
+  bodyText       String   @db.Text
+  variablesCount Int      @default(0)
+  headerType     String?
+  headerText     String?
+  footerText     String?
+  status         String   @default("APPROVED")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  broadcasts     WaBroadcast[]
+
+  @@unique([tenantId, name, language])
+  @@index([tenantId])
+}
+
+model WaBroadcast {
+  id              String      @id @default(cuid())
+  tenantId        String
+  tenant          Tenant      @relation(fields: [tenantId], references: [id])
+  title           String
+  templateId      String
+  template        WaTemplate  @relation(fields: [templateId], references: [id])
+  targetFilters   String?     @db.Text
+  variableMapping String?     @db.Text
+  status          String      @default("PENDING")
+  totalRecipients Int         @default(0)
+  totalSent       Int         @default(0)
+  totalFailed     Int         @default(0)
+  scheduledAt     DateTime?
+  sentAt          DateTime?
+  errorMessage    String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MÓDULOS FINANCEIROS — Projetos, Fluxo de Caixa, Cobranças
+// ═══════════════════════════════════════════════════════════════
+
+model Project {
+  id              String        @id @default(cuid())
+  tenantId        String
+  tenant          Tenant        @relation(fields: [tenantId], references: [id])
+
+  clientId        String
+  client          Client        @relation(fields: [clientId], references: [id])
+
+  name            String
+  description     String?       @db.Text
+  status          ProjectStatus @default(ENTRY)
+  startDate       DateTime
+  deadline        DateTime?
+  totalValue      Float
+  projectLink     String?
+
+  // >>> Proposta/negociação (status = PROPOSAL até ser iniciado)
+  proposalDate    DateTime?     // data de entrada do contato/proposta
+  plannedDate     DateTime?     // data planejada de execução
+  checklist       String?       @db.Text // JSON: [{ stageId, label, done, doneAt }]
+
+  referralName    String?
+  referralModel   ReferralModel?
+  referralValue   Float?
+  referralPaid    Boolean       @default(false)
+
+  catalogItemId   String?
+  catalogItem     CatalogItem?  @relation(fields: [catalogItemId], references: [id])
+
+  assignedToId    String?
+  assignedTo      User?         @relation("ProjectAssignee", fields: [assignedToId], references: [id])
+
+  proposalId      String?
+  proposal        Proposal?     @relation(fields: [proposalId], references: [id])
+  contractId      String?
+  contract        Contract?     @relation("ProjectsFromContract", fields: [contractId], references: [id])
+  contracts       Contract[]    @relation("ContractLinkedProject")
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  installments    ProjectInstallment[]
+  credentials     ProjectCredential[]
+  invoices        Invoice[]
+  transactions    CashFlowTransaction[]
+
+  @@index([tenantId])
+  @@index([tenantId, clientId])
+  @@index([tenantId, status])
+}
+
+model ProjectInstallment {
+  id            String    @id @default(cuid())
+  tenantId      String
+  projectId     String
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  number        Int
+  amount        Float
+  dueDate       DateTime
+  paid          Boolean   @default(false)
+  paidAt        DateTime?
+  paidAmount    Float?
+  paymentMethod String?
+  notes         String?
+
+  createdAt     DateTime  @default(now())
+
+  transactions  CashFlowTransaction[]
+
+  @@unique([projectId, number])
+  @@index([projectId])
+  @@index([tenantId, dueDate])
+  @@index([tenantId, paid])
+}
+
+// Etapas configuráveis do checklist de projeto (por tenant).
+// Cada proposta/projeto recebe um snapshot destas etapas no campo Project.checklist.
+model ProjectChecklistStage {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  label     String
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  isSystem  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+model ProjectCredential {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  label     String
+  url       String?
+  username  String?
+  email     String?
+  password  String?  @db.Text
+  notes     String?
+
+  createdAt DateTime @default(now())
+
+  @@index([projectId])
+}
+
+model MonthlyCashFlow {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  year        Int
+  month       Int
+  observation String?  @db.Text
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  expenses        CashFlowExpense[]
+  extraRevenues   CashFlowExtraRevenue[]
+  revenueEntries  MonthlyRevenueEntry[]
+
+  @@unique([tenantId, year, month])
+  @@index([tenantId, year])
+}
+
+model CashFlowExpense {
+  id         String          @id @default(cuid())
+  cashFlowId String
+  cashFlow   MonthlyCashFlow @relation(fields: [cashFlowId], references: [id], onDelete: Cascade)
+
+  category    String
+  description String?
+  amount      Float
+  isFixed     Boolean @default(false)
+
+  @@index([cashFlowId])
+}
+
+model CashFlowExtraRevenue {
+  id         String          @id @default(cuid())
+  cashFlowId String
+  cashFlow   MonthlyCashFlow @relation(fields: [cashFlowId], references: [id], onDelete: Cascade)
+
+  description String
+  amount      Float
+
+  @@index([cashFlowId])
+}
+
+model BankAccount {
+  id       String   @id @default(cuid())
+  tenantId String
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+
+  name     String
+  balance  Float    @default(0)
+  color    String?
+  isActive Boolean  @default(true)
+
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  transactions CashFlowTransaction[]
+
+  @@index([tenantId])
+}
+
+model TenantDefaultExpense {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  category    String
+  description String
+  amount      Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+model RevenueSource {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  name        String
+  icon        String?
+  isRecurring Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  entries     MonthlyRevenueEntry[]
+
+  @@index([tenantId])
+}
+
+model MonthlyRevenueEntry {
+  id         String          @id @default(cuid())
+  cashFlowId String
+  cashFlow   MonthlyCashFlow @relation(fields: [cashFlowId], references: [id], onDelete: Cascade)
+  sourceId   String
+  source     RevenueSource   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  amount     Float
+  createdAt  DateTime        @default(now())
+
+  @@unique([cashFlowId, sourceId])
+  @@index([cashFlowId])
+  @@index([sourceId])
+}
+
+model Invoice {
+  id       String        @id @default(cuid())
+  tenantId String
+  tenant   Tenant        @relation(fields: [tenantId], references: [id])
+
+  clientId  String?
+  client    Client?       @relation(fields: [clientId], references: [id])
+  projectId String?
+  project   Project?      @relation(fields: [projectId], references: [id])
+
+  number      String
+  issueDate   DateTime
+  amount      Float
+  status      InvoiceStatus @default(ISSUED)
+  description String?
+  fileUrl     String?
+
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  transactions CashFlowTransaction[]
+
+  @@index([tenantId])
+  @@index([tenantId, issueDate])
+  @@index([tenantId, clientId])
+}
+
+model CashFlowTransaction {
+  id       String   @id @default(cuid())
+  tenantId String
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+
+  type        TransactionType
+  origin      TransactionOrigin
+  category    String
+  subcategory String?
+
+  amount  Float
+  isDebit Boolean
+
+  competenceDate DateTime
+  cashDate       DateTime?
+
+  description String
+  notes       String?  @db.Text
+
+  projectId     String?
+  project       Project?            @relation(fields: [projectId], references: [id])
+  installmentId String?
+  installment   ProjectInstallment? @relation(fields: [installmentId], references: [id])
+  clientId      String?
+  client        Client?             @relation(fields: [clientId], references: [id])
+  leadId        String?
+  lead          Lead?               @relation(fields: [leadId], references: [id])
+  invoiceId     String?
+  invoice       Invoice?            @relation(fields: [invoiceId], references: [id])
+  purchaseId    String?
+  purchase      Purchase?           @relation(fields: [purchaseId], references: [id])
+  bankAccountId String?
+  bankAccount   BankAccount?        @relation(fields: [bankAccountId], references: [id])
+
+  paymentMethod  String?
+  isReconciled   Boolean  @default(false)
+  isAutomatic    Boolean  @default(true)
+  externalRef    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, cashDate])
+  @@index([tenantId, competenceDate])
+  @@index([tenantId, type])
+  @@index([tenantId, origin])
+  @@index([tenantId, category])
+  @@index([projectId])
+  @@index([installmentId])
+  @@index([bankAccountId])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MÓDULO DE CONTRATOS
+// ═══════════════════════════════════════════════════════════════
+
+enum ContractStatus {
+  DRAFT              // rascunho, ainda editável
+  PENDING_PROVIDER   // aguardando assinatura do prestador (você)
+  PENDING_CLIENT     // você assinou, aguardando o cliente
+  SIGNED             // ambos assinaram
+  CANCELLED          // cancelado
+  EXPIRED            // link expirou sem assinatura
+}
+
+model ContractTemplate {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  name        String
+  description String?
+  body        String   @db.Text
+  isDefault   Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  contracts   Contract[]
+
+  @@index([tenantId])
+}
+
+model Contract {
+  id             String   @id @default(cuid())
+  tenantId       String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id])
+  templateId     String?
+  template       ContractTemplate? @relation(fields: [templateId], references: [id])
+
+  clientId       String?
+  client         Client?  @relation(fields: [clientId], references: [id])
+  leadId         String?
+  createdById    String?
+  createdBy      User?    @relation("ContractCreator", fields: [createdById], references: [id])
+
+  title          String
+  status         ContractStatus @default(DRAFT)
+
+  bodyRendered   String   @db.Text
+  contentHash    String?
+  version        String   @default("v1")
+
+  providerSnapshot String? @db.Text
+  clientSnapshot   String? @db.Text
+
+  totalValue     Float?
+  paymentTerms   String?  @db.Text
+  installmentCount Int    @default(1)
+
+  proposalId     String?   @unique
+  proposal       Proposal? @relation("ContractProposal", fields: [proposalId], references: [id])
+  projectId      String?
+  project        Project?  @relation("ContractLinkedProject", fields: [projectId], references: [id])
+
+  publicToken    String?  @unique
+  expiresAt      DateTime?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  projects       Project[] @relation("ProjectsFromContract")
+  proposals      Proposal[] @relation("ProposalContract")
+
+  services       ContractService[]
+  signatures     ContractSignature[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([clientId])
+}
+
+model ContractService {
+  id            String   @id @default(cuid())
+  contractId    String
+  contract      Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  catalogItemId String?
+  description   String
+  quantity      Int      @default(1)
+  unitPrice     Float    @default(0)
+  createdAt     DateTime @default(now())
+
+  @@index([contractId])
+}
+
+model ContractSignature {
+  id             String   @id @default(cuid())
+  contractId     String
+  contract       Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  signerRole     String
+  signerName     String
+  signerDocument String?
+  signerEmail    String?
+  signerUserId   String?
+
+  contractVersion String
+  contentHash     String
+  ipAddress       String
+  userAgent       String   @db.Text
+  acceptedTerms   Boolean  @default(true)
+  signedAt        DateTime @default(now())
+
+  @@index([contractId])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MÓDULO DE EMAIL 1:1 E CAIXA CONECTADA
+// ═══════════════════════════════════════════════════════════════
+
+model EmailAccount {
+  id             String   @id @default(cuid())
+  tenantId       String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id])
+  userId         String?
+  user           User?    @relation(fields: [userId], references: [id])
+  provider       String   // "google" | "microsoft" | "imap"
+  emailAddress   String
+  displayName    String?
+  status         String   @default("active") // active | error | disconnected
+
+  // OAuth (google/microsoft) — Criptografados
+  accessToken    String?  @db.Text
+  refreshToken   String?  @db.Text
+  tokenExpiresAt DateTime?
+  scopes         String[] @default([])
+
+  // IMAP/SMTP (provider = imap)
+  imapHost       String?
+  imapPort       Int?
+  smtpHost       String?
+  smtpPort       Int?
+  smtpSecure     Boolean? @default(true)
+  authUser       String?
+  authPassEnc    String?  @db.Text // senha de app criptografada
+
+  // Sync
+  historyId      String?
+  lastSyncedAt   DateTime?
+  watchExpiresAt DateTime?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  messages       EmailMessage[]
+
+  @@unique([tenantId, emailAddress])
+  @@index([tenantId])
+}
+
+model EmailMessage {
+  id              String       @id @default(cuid())
+  tenantId        String
+  tenant          Tenant       @relation(fields: [tenantId], references: [id])
+  accountId       String
+  account         EmailAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  leadId          String?
+  lead            Lead?        @relation(fields: [leadId], references: [id])
+  clientId        String?
+  client          Client?      @relation(fields: [clientId], references: [id])
+
+  direction       String       // "inbound" | "outbound"
+  externalId      String?
+  threadId        String?
+  fromAddress     String
+  toAddresses     String[]     @default([])
+  ccAddresses     String[]     @default([])
+  subject         String?
+  snippet         String?
+  bodyHtml        String?      @db.Text
+  bodyText        String?      @db.Text
+  hasAttachments  Boolean      @default(false)
+  attachmentsMeta String?      @db.Text
+  isRead          Boolean      @default(false)
+  sentAt          DateTime?
+  receivedAt      DateTime?
+  createdAt       DateTime     @default(now())
+
+  @@unique([accountId, externalId])
+  @@index([tenantId, leadId])
+  @@index([accountId, threadId])
+}
+
+model Proposal {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  
+  clientId  String?
+  client    Client?  @relation(fields: [clientId], references: [id])
+  leadId    String?
+  lead      Lead?    @relation(fields: [leadId], references: [id])
+  
+  title     String?
+  status    String   @default("DRAFT") // DRAFT, SENT, ACCEPTED, REJECTED
+  data      String   @db.Text // JSON string containing the proposal data
+
+  contractId String?
+  contract   Contract? @relation("ContractProposal")
+
+  contracts  Contract[] @relation("ProposalContract")
+  projects   Project[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([tenantId])
+  @@index([clientId])
+  @@index([leadId])
+}
+

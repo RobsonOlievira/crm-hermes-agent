@@ -11,6 +11,7 @@ import { ClientStatusBadge } from '@/components/status-badge'
 import { CLIENT_STATUS_META } from '@/lib/crm-constants'
 import { formatCurrency, initials } from '@/lib/format'
 import { Search, Building2, Loader2 } from 'lucide-react'
+import { SortState, SortableHeader, toggleSort } from '@/components/ui/sortable-header'
 
 export interface ClientRow {
   id: string
@@ -18,20 +19,50 @@ export interface ClientRow {
   companyName: string | null
   cnpj: string | null
   email: string | null
+  phone?: string | null
   status: string
   lifetimeValue: number
   segment: string | null
   assignedToName: string | null
   assignedToAvatar: string | null
+  leadTypeIds?: string[]
+  leadTypeLabels?: string[]
+  leadTypeColors?: string[]
+}
+
+export interface LeadTypeOption {
+  id: string
+  label: string
+  color: string
 }
 
 const INITIAL_COUNT = 20
 const LOAD_MORE = 20
 
-export function ClientsTable({ clients }: { clients: ClientRow[] }) {
+type SortKey = 'name' | 'company' | 'status' | 'lifetimeValue' | 'assignedTo'
+
+const SORTERS: Record<SortKey, (c: ClientRow) => string | number | null | undefined> = {
+  name: (c) => c.name,
+  company: (c) => c.companyName,
+  status: (c) => c.status,
+  lifetimeValue: (c) => c.lifetimeValue,
+  assignedTo: (c) => c.assignedToName,
+}
+
+export function ClientsTable({
+  clients,
+  leadTypesOptions,
+  members,
+}: {
+  clients: ClientRow[]
+  leadTypesOptions?: LeadTypeOption[]
+  members?: { id: string; name: string }[]
+}) {
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('all')
+  const [selectedLeadTypeId, setSelectedLeadTypeId] = useState('all')
+  const [sort, setSort] = useState<SortState<SortKey>>({ key: 'name', direction: 'asc' })
   const [visibleCount, setVisibleCount] = useState(INITIAL_COUNT)
   const sentinelRef = useRef<HTMLDivElement>(null)
 
@@ -47,8 +78,26 @@ export function ClientsTable({ clients }: { clients: ClientRow[] }) {
       )
     }
     if (status !== 'all') list = list.filter((c) => c.status === status)
-    return list
-  }, [clients, search, status])
+    if (selectedLeadTypeId !== 'all') {
+      list = list.filter((c) => (c.leadTypeIds ?? []).includes(selectedLeadTypeId))
+    }
+
+    const getter = SORTERS[sort.key]
+    const dir = sort.direction
+    return [...list].sort((a, b) => {
+      const av = getter(a)
+      const bv = getter(b)
+      const bothNull = (av == null || av === '') && (bv == null || bv === '')
+      if (bothNull) return 0
+      if (av == null || av === '') return 1
+      if (bv == null || bv === '') return -1
+      const cmp =
+        typeof av === 'number' && typeof bv === 'number'
+          ? av - bv
+          : String(av).localeCompare(String(bv), 'pt-BR', { sensitivity: 'base' })
+      return dir === 'asc' ? cmp : -cmp
+    })
+  }, [clients, search, status, selectedLeadTypeId, sort])
 
   const totalLifetime = useMemo(() => (filtered ?? []).reduce((s, c) => s + (c.lifetimeValue ?? 0), 0), [filtered])
 
@@ -75,38 +124,66 @@ export function ClientsTable({ clients }: { clients: ClientRow[] }) {
   return (
     <Card className="overflow-hidden">
       <div className="flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative w-full sm:max-w-xs">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value)
-              setVisibleCount(INITIAL_COUNT)
-            }}
-            placeholder="Buscar por nome, empresa ou CNPJ..."
-            className="pl-9"
-          />
+        <div className="flex items-center gap-4">
+          <p className="text-sm text-muted-foreground whitespace-nowrap">
+            <span className="font-medium text-foreground">{filtered.length}</span> cliente(s) · Valor total{' '}
+            <span className="font-semibold text-foreground">{formatCurrency(totalLifetime)}</span>
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Select
-            value={status}
-            onValueChange={(v) => {
-              setStatus(v)
-              setVisibleCount(INITIAL_COUNT)
-            }}
-          >
-            <SelectTrigger className="w-[170px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os status</SelectItem>
-              {Object.entries(CLIENT_STATUS_META).map(([key, meta]) => (
-                <SelectItem key={key} value={key}>
-                  {meta.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative w-full sm:w-[240px]">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setVisibleCount(INITIAL_COUNT)
+              }}
+              placeholder="Buscar por nome, empresa ou CNPJ..."
+              className="pl-9"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Select
+              value={selectedLeadTypeId}
+              onValueChange={(v) => {
+                setSelectedLeadTypeId(v)
+                setVisibleCount(INITIAL_COUNT)
+              }}
+            >
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Tipo de Lead" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os tipos</SelectItem>
+                {(leadTypesOptions ?? []).map((lt) => (
+                  <SelectItem key={lt.id} value={lt.id}>
+                    {lt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={status}
+              onValueChange={(v) => {
+                setStatus(v)
+                setVisibleCount(INITIAL_COUNT)
+              }}
+            >
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os status</SelectItem>
+                {Object.entries(CLIENT_STATUS_META).map(([key, meta]) => (
+                  <SelectItem key={key} value={key}>
+                    {meta.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
@@ -114,12 +191,12 @@ export function ClientsTable({ clients }: { clients: ClientRow[] }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead>Empresa</TableHead>
+              <SortableHeader active={sort.key === 'name'} direction={sort.direction} onClick={() => { setSort((s) => toggleSort(s, 'name')); setVisibleCount(INITIAL_COUNT) }}>Nome</SortableHeader>
+              <SortableHeader active={sort.key === 'company'} direction={sort.direction} onClick={() => { setSort((s) => toggleSort(s, 'company')); setVisibleCount(INITIAL_COUNT) }}>Empresa</SortableHeader>
               <TableHead>CNPJ</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Valor Lifetime</TableHead>
-              <TableHead>Responsável</TableHead>
+              <SortableHeader active={sort.key === 'status'} direction={sort.direction} onClick={() => { setSort((s) => toggleSort(s, 'status')); setVisibleCount(INITIAL_COUNT) }}>Status</SortableHeader>
+              <SortableHeader align="right" active={sort.key === 'lifetimeValue'} direction={sort.direction} onClick={() => { setSort((s) => toggleSort(s, 'lifetimeValue')); setVisibleCount(INITIAL_COUNT) }}>Valor Lifetime</SortableHeader>
+              <SortableHeader active={sort.key === 'assignedTo'} direction={sort.direction} onClick={() => { setSort((s) => toggleSort(s, 'assignedTo')); setVisibleCount(INITIAL_COUNT) }}>Responsável</SortableHeader>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -128,6 +205,23 @@ export function ClientsTable({ clients }: { clients: ClientRow[] }) {
                 <TableCell>
                   <div className="font-medium">{c.name}</div>
                   {c.email && <div className="text-xs text-muted-foreground">{c.email}</div>}
+                  {c.leadTypeLabels && c.leadTypeLabels.length > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {c.leadTypeLabels.map((lbl, idx) => (
+                        <span
+                          key={idx}
+                          className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium border"
+                          style={{
+                            borderColor: c.leadTypeColors?.[idx] || '#e5e7eb',
+                            color: c.leadTypeColors?.[idx] || '#6b7280',
+                            backgroundColor: `${c.leadTypeColors?.[idx] || '#6b7280'}15`,
+                          }}
+                        >
+                          {lbl}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1.5 text-sm">
@@ -170,13 +264,6 @@ export function ClientsTable({ clients }: { clients: ClientRow[] }) {
             )}
           </TableBody>
         </Table>
-      </div>
-
-      <div className="flex flex-col gap-3 border-t p-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-muted-foreground">
-          {filtered.length} cliente(s) · Valor total{' '}
-          <span className="font-semibold text-foreground">{formatCurrency(totalLifetime)}</span>
-        </p>
       </div>
     </Card>
   )

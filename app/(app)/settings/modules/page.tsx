@@ -18,7 +18,7 @@ const MODULE_ICONS: Record<string, string> = {
   interactions: 'Activity', team: 'UserCog', notifications: 'Activity',
   whatsapp: 'MessageCircle', calendar: 'CalendarDays', payments: 'CreditCard',
   contracts: 'FileText', ads_tracker: 'Megaphone', automations: 'Workflow',
-  catalog: 'Package',
+  catalog: 'Package', prospecting: 'Target',
 }
 
 export default function ModulesSettingsPage() {

@@ -32,21 +32,26 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       const validTypes = requestedIds.length
         ? await prisma.leadType.findMany({ where: { tenantId: user.tenantId, id: { in: requestedIds }, isActive: true }, select: { id: true } })
         : []
-      data.leadTypes = { set: validTypes.map((t) => ({ leadTypeId: t.id })) }
+      data.leadTypes = { deleteMany: {}, create: validTypes.map((t) => ({ leadTypeId: t.id })) }
     }
     if ('catalogItemIds' in body) {
       const requestedCatalogIds: string[] = Array.isArray(body.catalogItemIds) ? body.catalogItemIds.filter((id: unknown): id is string => typeof id === 'string' && Boolean(id)) : []
       const validCatalogItems = requestedCatalogIds.length
         ? await prisma.catalogItem.findMany({ where: { tenantId: user.tenantId, id: { in: requestedCatalogIds }, isActive: true }, select: { id: true } })
         : []
-      data.catalogItems = { set: validCatalogItems.map((c) => ({ catalogItemId: c.id })) }
+      data.catalogItems = { deleteMany: {}, create: validCatalogItems.map((c) => ({ catalogItemId: c.id })) }
     }
     if ('autoMessages' in body) data.autoMessages = parseStrings(body.autoMessages)
     if ('autoReply' in body) data.autoReply = body.autoReply?.trim() || null
     if (typeof body.isActive === 'boolean') data.isActive = body.isActive
+    if ('priority' in body) {
+      const p = Number(body.priority)
+      if (Number.isFinite(p)) data.priority = Math.trunc(p)
+    }
     const updated = await prisma.classificationRule.update({ where: { id: rule.id }, data })
     return NextResponse.json({ rule: updated })
   } catch (e) {
+    console.error('[classification-rules PATCH]', params.id, e)
     return NextResponse.json({ error: 'Erro ao atualizar regra' }, { status: 500 })
   }
 }

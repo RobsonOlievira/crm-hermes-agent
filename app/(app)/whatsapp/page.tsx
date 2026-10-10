@@ -9,15 +9,20 @@ export default async function WhatsappPage() {
   const user = await getCurrentUser()
   const tenantId = user?.tenantId ?? null
 
-  const [leads, tenant] = tenantId
+  const [leads, tenant, leadTypes] = tenantId
     ? await Promise.all([
         listConversations(tenantId, { limit: 100 }),
         prisma.tenant.findUnique({
           where: { id: tenantId },
           select: { waOutboundWebhook: true },
         }),
+        prisma.leadType.findMany({
+          where: { tenantId },
+          select: { id: true, label: true, color: true },
+          orderBy: { label: 'asc' },
+        }),
       ])
-    : [[], null]
+    : [[], null, []]
 
   const initialConversations: ConversationRow[] = (leads as any[]).map((l) => ({
     leadId: l.id,
@@ -38,6 +43,8 @@ export default async function WhatsappPage() {
       initialConversations={initialConversations}
       currentUserName={user?.name ?? 'Atendente'}
       webhookConfigured={!!tenant?.waOutboundWebhook}
+      leadTypesOptions={leadTypes}
     />
   )
 }
+

@@ -1,11 +1,23 @@
 import { prisma } from '@/lib/db'
-import { LeadStatus, InteractionType } from '@prisma/client'
+import { InteractionType } from '@prisma/client'
 import {
   recordInboundMessage,
   recordOutboundMessage,
   findLeadByPhone,
   listConversations,
+  notifyOutboundWebhook,
 } from '@/lib/conversations'
+import { deriveLeadStatus } from '@/lib/lead-stages'
+import { resolveTenantStage, findTenantStages } from '@/lib/stage-resolver'
+import { agendaMcpTools } from '@/lib/mcp/tools/calendar-tools'
+import { emailMcpTools } from '@/lib/mcp/tools/email-tools'
+import { financeMcpTools } from '@/lib/mcp/tools/finance-tools'
+import { contractMcpTools } from '@/lib/mcp/tools/contract-tools'
+import { whatsappMcpTools } from '@/lib/mcp/tools/whatsapp-tools'
+import { adsMcpTools } from '@/lib/mcp/tools/ads-tools'
+import { getAdapter } from '@/lib/payment-gateways'
+import { decryptSecret } from '@/lib/payment-crypto'
+import { onManualSale } from '@/lib/cashflow-engine'
 
 // ---------------------------------------------------------------------------
 // Registro de ferramentas MCP expostas pelo CRM.
@@ -19,15 +31,6 @@ export interface McpTool {
   description: string
   inputSchema: Record<string, any>
   handler: (tenantId: string, args: Record<string, any>) => Promise<any>
-}
-
-const STAGE_STATUS: Record<string, LeadStatus> = {
-  'stage-1': 'PRIMEIRO_CONTATO',
-  'stage-2': 'CONVERSA_ATIVA',
-  'stage-3': 'FOLLOW_UP',
-  'stage-4': 'BANCO_7_DIAS',
-  'stage-5': 'SERVICO_FECHADO',
-  'stage-6': 'NOVAS_MENSAGENS',
 }
 
 const INTERACTION_TYPES: InteractionType[] = [
@@ -54,6 +57,7 @@ function leadView(l: any) {
     totalGasto: l.totalPurchased,
     arquivado: l.isArchived,
     ultimaInteracao: l.lastInteraction ? l.lastInteraction.toISOString() : null,
+    ultimaResposta: l.lastReplyAt ? l.lastReplyAt.toISOString() : null,
     criadoEm: l.createdAt ? l.createdAt.toISOString() : null,
   }
 }
@@ -103,7 +107,7 @@ export const MCP_TOOLS: McpTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        status: { type: 'string', description: 'Status da jornada (ex.: PRIMEIRO_CONTATO, CONVERSA_ATIVA, FOLLOW_UP, BANCO_7_DIAS, SERVICO_FECHADO, NOVAS_MENSAGENS).' },
+        status: { type: 'string', description: 'Status da jornada (ex.: PRIMEIRO_CONTATO, CONVERSA_ATIVA, FOLLOW_UP, BANCO_7_DIAS, SERVICO_FECHADO, NOVAS_MENSAGENS, CONVERSAS_OFF).' },
         busca: { type: 'string', description: 'Texto para buscar em nome, telefone ou email.' },
         arquivados: { type: 'boolean', description: 'Se true, retorna somente arquivados; se false (padrão), somente ativos.' },
         limite: { type: 'number', description: 'Máximo de leads a retornar (padrão 25, máx 100).' },
@@ -223,25 +227,31 @@ export const MCP_TOOLS: McpTool[] = [
   {
     name: 'mover_lead_no_funil',
     description:
-      'Move um lead para outra etapa do funil da jornada de compra. Etapas: stage-1 (Primeiro Contato), stage-2 (Conversa Ativa), stage-3 (Follow-up), stage-4 (Banco de 7 dias), stage-5 (Serviço Fechado), stage-6 (Novas Mensagens).',
+      'Move um lead para outra etapa do funil do tenant. Aceita o id da etapa (ex.: "stage-conversas-off"), o nome exibido ou o status (ex.: "CONVERSAS_OFF").',
     inputSchema: {
       type: 'object',
       properties: {
         leadId: { type: 'string' },
-        etapa: { type: 'string', description: 'Id da etapa: stage-1 a stage-6.' },
+        etapa: { type: 'string', description: 'Id, nome ou status da etapa do funil.' },
       },
       required: ['leadId', 'etapa'],
     },
     handler: async (tenantId, args) => {
       await requireLead(tenantId, String(args.leadId))
-      const etapa = String(args.etapa)
-      if (!STAGE_STATUS[etapa]) throw new Error(`Etapa inválida "${etapa}". Use stage-1 a stage-6.`)
+      const etapa = String(args.etapa ?? '').trim()
+      const stage = await resolveTenantStage(tenantId, etapa)
+      if (!stage) {
+        const stages = await findTenantStages(tenantId)
+        const options = stages.map((s) => `${s.id} (${s.name})`).join(', ') || 'nenhuma etapa cadastrada'
+        throw new Error(`Etapa inválida "${etapa}". Etapas disponíveis: ${options}.`)
+      }
+      const status = deriveLeadStatus(stage)
       const lead = await prisma.lead.update({
         where: { id: String(args.leadId) },
-        data: { stageId: etapa, status: STAGE_STATUS[etapa] },
+        data: { stageId: stage.id, ...(status ? { status } : {}) },
       })
       await prisma.interaction.create({
-        data: { tenantId, leadId: lead.id, type: 'STATUS_CHANGE', title: `Movido para ${etapa} pelo Hermes Agent (MCP)` },
+        data: { tenantId, leadId: lead.id, type: 'STATUS_CHANGE', title: `Movido para ${stage.name} pelo Hermes Agent (MCP)` },
       })
       return { ok: true, lead: leadView(lead) }
     },
@@ -291,12 +301,26 @@ export const MCP_TOOLS: McpTool[] = [
       const purchase = await prisma.purchase.create({
         data: { tenantId, leadId: String(args.leadId), description: String(args.descricao), amount: valor },
       })
+      // Entrada no ledger do fluxo de caixa (mantém o caixa consistente com a UI).
+      await onManualSale({
+        tenantId,
+        description: String(args.descricao),
+        amount: valor,
+        leadId: String(args.leadId),
+        purchaseId: purchase.id,
+      })
       await prisma.interaction.create({
         data: { tenantId, leadId: String(args.leadId), type: 'PAYMENT_RECEIVED', title: 'Compra registrada pelo Hermes Agent (MCP)', content: String(args.descricao), amount: valor },
       })
+      const servicoFechado = await resolveTenantStage(tenantId, 'SERVICO_FECHADO')
       const lead = await prisma.lead.update({
         where: { id: String(args.leadId) },
-        data: { totalPurchased: { increment: valor }, status: 'SERVICO_FECHADO', stageId: 'stage-5', lastInteraction: new Date() },
+        data: {
+          totalPurchased: { increment: valor },
+          status: 'SERVICO_FECHADO',
+          ...(servicoFechado ? { stageId: servicoFechado.id } : {}),
+          lastInteraction: new Date(),
+        },
       })
       return { ok: true, compraId: purchase.id, totalGasto: lead.totalPurchased }
     },
@@ -784,56 +808,23 @@ export const MCP_TOOLS: McpTool[] = [
         if (valor !== null) leadUpdate.totalPurchased = { increment: valor }
         if (args.fecharNegocio !== false) {
           leadUpdate.status = 'SERVICO_FECHADO'
-          leadUpdate.stageId = 'stage-5'
+          const servicoFechado = await resolveTenantStage(tenantId, 'SERVICO_FECHADO')
+          if (servicoFechado) leadUpdate.stageId = servicoFechado.id
         }
       }
       await prisma.lead.update({ where: { id: String(args.leadId) }, data: leadUpdate })
       return { ok: true, interacaoId: interaction.id, tipo: type }
     },
   },
-  {
-    name: 'listar_contratos',
-    description: 'Lista os contratos enviados/assinados registrados no CRM (via interações), com o lead vinculado.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        leadId: { type: 'string', description: 'Filtra por lead (opcional).' },
-        apenasAssinados: { type: 'boolean', description: 'Se true, retorna somente contratos assinados.' },
-        limite: { type: 'number', description: 'Máximo de contratos (padrão 50, máx 200).' },
-      },
-    },
-    handler: async (tenantId, args) => {
-      const limit = Math.min(Math.max(Number(args.limite) || 50, 1), 200)
-      const where: any = { tenantId, type: { in: ['CONTRACT_SENT', 'CONTRACT_SIGNED'] } }
-      if (args.leadId) {
-        await requireLead(tenantId, String(args.leadId))
-        where.leadId = String(args.leadId)
-      }
-      if (args.apenasAssinados) where.type = 'CONTRACT_SIGNED'
-      const interacoes = await prisma.interaction.findMany({
-        where,
-        include: { lead: { select: { id: true, name: true } } },
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-      })
-      return {
-        total: interacoes.length,
-        contratos: interacoes.map((i) => ({
-          id: i.id, tipo: i.type, titulo: i.title, valor: i.amount,
-          conteudo: i.content, leadId: i.leadId, lead: i.lead?.name ?? null,
-          data: i.createdAt.toISOString(),
-        })),
-      }
-    },
-  },
+  // listar_contratos (real, tabela Contract) foi movido para lib/mcp/tools/contract-tools.ts
   // -------------------------------------------------------------------------
   // Tráfego Pago — atribuição baseada na origem do lead (META_ADS, GOOGLE_ADS)
   // e no catálogo de ofertas. Não há modelo de campanhas no CRM ainda.
   // -------------------------------------------------------------------------
   {
-    name: 'resumo_trafego_pago',
+    name: 'resumo_origem_leads',
     description:
-      'Resumo de Tráfego Pago: quantos leads, negócios fechados e receita vieram de cada origem de anúncio (Meta Ads, Google Ads, etc.), com base na atribuição registrada no lead.',
+      'Resumo por ORIGEM dos leads: quantos leads e quanta receita vieram de cada canal/origem (Meta Ads, Google Ads, WhatsApp, Indicação, Orgânico, etc.), com base na atribuição registrada no lead. Para métricas reais de campanhas (gasto/CPL/ROI) use resumo_trafego_pago.',
     inputSchema: { type: 'object', properties: {} },
     handler: async (tenantId) => {
       const grouped = await prisma.lead.groupBy({
@@ -930,25 +921,40 @@ export const MCP_TOOLS: McpTool[] = [
     },
     handler: async (tenantId, args) => {
       let leadId = args.leadId ? String(args.leadId) : ''
+      let lead: { id: string; name: string; phone: string } | null = null
       if (leadId) {
-        const lead = await prisma.lead.findFirst({ where: { id: leadId, tenantId }, select: { id: true } })
+        lead = await prisma.lead.findFirst({ where: { id: leadId, tenantId }, select: { id: true, name: true, phone: true } })
         if (!lead) throw new Error(`Lead "${leadId}" não encontrado neste tenant.`)
       } else if (args.telefone) {
-        const lead = await findLeadByPhone(tenantId, String(args.telefone))
-        if (!lead) throw new Error('Nenhum lead encontrado com esse telefone. Use receber_mensagem primeiro para criar o contato.')
-        leadId = lead.id
+        const found = await findLeadByPhone(tenantId, String(args.telefone))
+        if (!found) throw new Error('Nenhum lead encontrado com esse telefone. Use receber_mensagem primeiro para criar o contato.')
+        const full = await prisma.lead.findFirst({ where: { id: found.id, tenantId }, select: { id: true, name: true, phone: true } })
+        lead = full ?? { id: found.id, name: '', phone: found.phone }
+        leadId = found.id
       } else {
         throw new Error('Informe leadId ou telefone.')
       }
+      const texto = String(args.texto ?? '')
       const r = await recordOutboundMessage(tenantId, leadId, {
-        text: String(args.texto ?? ''),
+        text: texto,
         isFromBot: true,
         senderName: 'Hermes Agent',
         waMessageId: args.waMessageId ? String(args.waMessageId) : null,
         timestamp: args.timestamp ? String(args.timestamp) : null,
         status: 'SENT',
       })
-      return { ok: true, leadId, mensagemId: r.messageId }
+
+      // Dispara o webhook de saída (best-effort) para o bot entregar no WhatsApp real.
+      const entrega = await notifyOutboundWebhook(tenantId, {
+        leadId,
+        phone: lead.phone,
+        leadName: lead.name,
+        text: texto,
+        messageId: r.messageId,
+        senderName: 'Hermes Agent',
+      })
+
+      return { ok: true, leadId, mensagemId: r.messageId, entregueAoWebhook: entrega.forwarded }
     },
   },
   {
@@ -1029,6 +1035,385 @@ export const MCP_TOOLS: McpTool[] = [
       return { ok: true }
     },
   },
+  // -------------------------------------------------------------------------
+  // Tráfego Pago — Meta Ads e Google Ads (AdAccount, AdCampaign, AdMetricDaily)
+  // -------------------------------------------------------------------------
+  {
+    name: 'listar_campanhas_ads',
+    description: 'Lista campanhas de anúncios (Meta Ads e Google Ads) do tenant, com gastos, leads e ROI.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        plataforma: { type: 'string', description: 'Filtro por plataforma: META ou GOOGLE.' },
+        status: { type: 'string', description: 'Filtro por status: ACTIVE, PAUSED, DELETED, ARCHIVED.' },
+        limite: { type: 'number', description: 'Máximo de campanhas (padrão 20).' },
+      },
+    },
+    handler: async (tenantId, args) => {
+      const where: any = { tenantId }
+      if (args.plataforma) where.platform = args.plataforma
+      if (args.status) where.status = args.status
+
+      const campaigns = await prisma.adCampaign.findMany({
+        where,
+        orderBy: { totalSpend: 'desc' },
+        take: args.limite ? Number(args.limite) : 20,
+      })
+
+      return {
+        campanhas: campaigns.map((c) => ({
+          id: c.id,
+          nome: c.name,
+          plataforma: c.platform,
+          status: c.status,
+          objetivo: c.objective,
+          orcamentoDiario: c.dailyBudget,
+          gastoTotal: round2(c.totalSpend),
+          leadsAtribuidos: c.totalLeads,
+          conversoes: c.totalConversions,
+          receitaAtribuida: round2(c.totalRevenue),
+          cpl: c.totalLeads > 0 ? round2(c.totalSpend / c.totalLeads) : null,
+          roi: c.totalSpend > 0 ? round2(((c.totalRevenue - c.totalSpend) / c.totalSpend) * 100) + '%' : null,
+        })),
+      }
+    },
+  },
+  {
+    name: 'metricas_campanha_ads',
+    description: 'Retorna métricas diárias detalhadas de uma campanha de anúncios específica.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        campanhaId: { type: 'string', description: 'ID da campanha.' },
+        dias: { type: 'number', description: 'Últimos N dias (padrão 7).' },
+      },
+      required: ['campanhaId'],
+    },
+    handler: async (tenantId, args) => {
+      const days = args.dias ? Number(args.dias) : 7
+      const since = new Date()
+      since.setDate(since.getDate() - days)
+
+      const metrics = await prisma.adMetricDaily.findMany({
+        where: { campaignId: String(args.campanhaId), tenantId, date: { gte: since } },
+        orderBy: { date: 'asc' },
+      })
+
+      return {
+        total: metrics.length,
+        metricas: metrics.map((m) => ({
+          data: m.date.toISOString().split('T')[0],
+          gasto: round2(m.spend),
+          impressoes: m.impressions,
+          cliques: m.clicks,
+          ctr: m.ctr,
+          cpc: round2(m.cpc),
+          cpm: round2(m.cpm),
+          leads: m.leads,
+          conversoes: m.conversions,
+        })),
+      }
+    },
+  },
+  {
+    name: 'resumo_trafego_pago',
+    description: 'Resumo geral de tráfego pago do tenant: gasto total, leads gerados, CPL médio, CAC e ROI global.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        periodo: { type: 'string', description: '7d, 30d, 90d (padrão 30d).' },
+      },
+    },
+    handler: async (tenantId, args) => {
+      const days = args.periodo === '7d' ? 7 : args.periodo === '90d' ? 90 : 30
+      const since = new Date()
+      since.setDate(since.getDate() - days)
+
+      const metrics = await prisma.adMetricDaily.aggregate({
+        where: { tenantId, date: { gte: since } },
+        _sum: { spend: true, impressions: true, clicks: true, leads: true, conversions: true },
+      })
+
+      const revenue = await prisma.adCampaign.aggregate({
+        where: { tenantId },
+        _sum: { totalRevenue: true },
+      })
+
+      const spend = metrics._sum.spend || 0
+      const leads = metrics._sum.leads || 0
+      const conversions = metrics._sum.conversions || 0
+      const rev = revenue._sum.totalRevenue || 0
+
+      return {
+        periodo: `${days}d`,
+        gastoTotal: round2(spend),
+        totalLeads: leads,
+        totalConversoes: conversions,
+        cplMedio: leads > 0 ? round2(spend / leads) : null,
+        cacMedio: conversions > 0 ? round2(spend / conversions) : null,
+        roiGlobal: spend > 0 ? round2(((rev - spend) / spend) * 100) + '%' : null,
+        roas: spend > 0 ? round2(rev / spend) : null,
+      }
+    },
+  },
+  // -------------------------------------------------------------------------
+  // Módulo de Pagamentos — Novas ferramentas MCP do Planejamento
+  // -------------------------------------------------------------------------
+  {
+    name: 'gerar_cobranca',
+    description:
+      'Gera uma cobrança para um lead. Retorna link de pagamento, QR code PIX e/ou boleto dependendo do método escolhido. O Hermes Agent pode enviar o link diretamente no WhatsApp.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        leadId: { type: 'string', description: 'Id do lead.' },
+        descricao: { type: 'string', description: 'Descrição da cobrança.' },
+        valor: { type: 'number', description: 'Valor em reais (ex.: 197.00).' },
+        metodo: { type: 'string', description: 'PIX, CREDIT_CARD, BOLETO ou vazio para todos.' },
+        provider: { type: 'string', description: 'STRIPE, MERCADO_PAGO, ASAAS ou MANUAL.' },
+        catalogItemId: { type: 'string', description: 'Id do produto/serviço do catálogo (opcional).' },
+      },
+      required: ['leadId', 'descricao', 'valor'],
+    },
+    handler: async (tenantId, args) => {
+      await requireLead(tenantId, String(args.leadId))
+      const provider = args.provider ? String(args.provider).toUpperCase() : 'MANUAL'
+      const metodo = args.metodo ? String(args.metodo) : undefined
+      const gatewayConfig = await prisma.paymentGatewayConfig.findFirst({
+        where: { tenantId, provider: provider as any, isActive: true },
+      })
+
+      if (!gatewayConfig && provider !== 'MANUAL') {
+        throw new Error(`Gateway ${provider} não está ativo ou configurado. Configure em Pagamentos → Gateways.`)
+      }
+
+      let configId = gatewayConfig?.id
+      if (!configId && provider === 'MANUAL') {
+        const created = await prisma.paymentGatewayConfig.create({
+          data: { tenantId, provider: 'MANUAL', displayName: 'Manual', isActive: true },
+        })
+        configId = created.id
+      }
+      if (!configId) throw new Error(`Gateway ${provider} não está ativo ou configurado.`)
+
+      const order = await prisma.paymentOrder.create({
+        data: {
+          tenantId,
+          leadId: String(args.leadId),
+          description: String(args.descricao),
+          amount: Number(args.valor),
+          method: metodo as any,
+          gatewayConfigId: configId,
+          provider: provider as any,
+          catalogItemId: args.catalogItemId ? String(args.catalogItemId) : null,
+        },
+        include: { lead: true },
+      })
+
+      // Chama o gateway real para gerar link/PIX/boleto.
+      try {
+        let gatewayResult: any
+        if (provider !== 'MANUAL' && gatewayConfig) {
+          const decrypted = {
+            id: gatewayConfig.id,
+            provider: gatewayConfig.provider,
+            apiKey: decryptSecret(gatewayConfig.encApiKey || ''),
+            secretKey: decryptSecret(gatewayConfig.encSecretKey || ''),
+            webhookSecret: decryptSecret(gatewayConfig.encWebhookSecret || ''),
+            accessToken: decryptSecret(gatewayConfig.encAccessToken || ''),
+            isSandbox: gatewayConfig.isSandbox,
+          }
+          gatewayResult = await getAdapter(provider).createCharge(decrypted, order, metodo)
+        } else {
+          gatewayResult = await getAdapter('MANUAL').createCharge({ id: 'manual', provider: 'MANUAL' }, order, metodo)
+        }
+
+        const updated = await prisma.paymentOrder.update({
+          where: { id: order.id },
+          data: {
+            externalId: gatewayResult.externalId || null,
+            externalUrl: gatewayResult.checkoutUrl || null,
+            pixQrCode: gatewayResult.pixQrCode || null,
+            pixCopyPaste: gatewayResult.pixCopyPaste || null,
+            boletoUrl: gatewayResult.boletoUrl || null,
+            boletoBarcode: gatewayResult.boletoBarcode || null,
+          },
+        })
+
+        const valor = updated.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+        let mensagemWhatsApp = `💳 *Cobrança: ${updated.description}*\n\nValor: *${valor}*\n`
+        if (updated.externalUrl) mensagemWhatsApp += `\n🔗 *Link de pagamento:*\n${updated.externalUrl}\n`
+        if (updated.pixCopyPaste) mensagemWhatsApp += `\n📋 *PIX Copia e Cola:*\n${updated.pixCopyPaste}\n`
+        if (updated.boletoUrl) mensagemWhatsApp += `\n🧾 *Boleto:*\n${updated.boletoUrl}\n`
+
+        return {
+          ok: true,
+          orderId: updated.id,
+          provider,
+          checkoutUrl: updated.externalUrl,
+          pixCopyPaste: updated.pixCopyPaste,
+          pixQrCode: updated.pixQrCode,
+          boletoUrl: updated.boletoUrl,
+          mensagemWhatsApp,
+        }
+      } catch (e: any) {
+        // A cobrança foi criada, mas o gateway falhou ao gerar o link.
+        return {
+          ok: false,
+          orderId: order.id,
+          provider,
+          erro: `Cobrança criada, mas o gateway não gerou o link: ${e?.message || 'erro desconhecido'}`,
+        }
+      }
+    },
+  },
+  {
+    name: 'listar_cobrancas',
+    description: 'Lista cobranças do CRM. Filtra por lead, status e limite.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        leadId: { type: 'string', description: 'Filtrar por lead.' },
+        status: { type: 'string', description: 'PENDING, CONFIRMED, FAILED, OVERDUE, etc.' },
+        limite: { type: 'number', description: 'Máximo de resultados (padrão 25).' },
+      },
+    },
+    handler: async (tenantId, args) => {
+      const limit = Math.min(Math.max(Number(args.limite) || 25, 1), 100)
+      const where: any = { tenantId }
+      if (args.leadId) where.leadId = String(args.leadId)
+      if (args.status) where.status = String(args.status)
+      const orders = await prisma.paymentOrder.findMany({
+        where,
+        include: { lead: { select: { id: true, name: true, phone: true } } },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+      })
+      return { total: orders.length, cobrancas: orders }
+    },
+  },
+  {
+    name: 'listar_assinaturas',
+    description: 'Lista assinaturas recorrentes do CRM. Filtra por lead e status.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        leadId: { type: 'string', description: 'Filtrar por lead.' },
+        status: { type: 'string', description: 'ACTIVE, PAST_DUE, CANCELLED, etc.' },
+        limite: { type: 'number', description: 'Máximo de resultados (padrão 25).' },
+      },
+    },
+    handler: async (tenantId, args) => {
+      const limit = Math.min(Math.max(Number(args.limite) || 25, 1), 100)
+      const where: any = { tenantId }
+      if (args.leadId) where.leadId = String(args.leadId)
+      if (args.status) where.status = String(args.status)
+      const subs = await prisma.subscription.findMany({
+        where,
+        include: { lead: { select: { id: true, name: true, phone: true } } },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+      })
+      return { total: subs.length, assinaturas: subs }
+    },
+  },
+  {
+    name: 'registrar_pagamento_manual',
+    description:
+      'Registra um pagamento recebido manualmente (dinheiro, transferência, etc.) sem usar gateway. Cria PaymentOrder já CONFIRMED + Purchase.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        leadId: { type: 'string', description: 'Id do lead.' },
+        descricao: { type: 'string', description: 'Descrição do pagamento.' },
+        valor: { type: 'number', description: 'Valor em reais.' },
+        metodo: { type: 'string', description: 'PIX, BANK_TRANSFER, OTHER, etc.' },
+        catalogItemId: { type: 'string', description: 'Id do produto/serviço (opcional).' },
+      },
+      required: ['leadId', 'descricao', 'valor'],
+    },
+    handler: async (tenantId, args) => {
+      await requireLead(tenantId, String(args.leadId))
+      let gatewayConfig = await prisma.paymentGatewayConfig.findFirst({
+        where: { tenantId, provider: 'MANUAL' },
+      })
+      if (!gatewayConfig) {
+        gatewayConfig = await prisma.paymentGatewayConfig.create({
+          data: { tenantId, provider: 'MANUAL', displayName: 'Manual', isActive: true },
+        })
+      }
+
+      const valor = Number(args.valor)
+      const order = await prisma.paymentOrder.create({
+        data: {
+          tenantId,
+          leadId: String(args.leadId),
+          description: String(args.descricao),
+          amount: valor,
+          method: args.metodo ? String(args.metodo) as any : 'OTHER',
+          gatewayConfigId: gatewayConfig.id,
+          provider: 'MANUAL',
+          status: 'CONFIRMED',
+          paidAt: new Date(),
+          catalogItemId: args.catalogItemId ? String(args.catalogItemId) : null,
+        },
+      })
+
+      const purchase = await prisma.purchase.create({
+        data: {
+          tenantId,
+          leadId: String(args.leadId),
+          description: String(args.descricao),
+          amount: valor,
+          catalogItemId: args.catalogItemId ? String(args.catalogItemId) : null,
+        },
+      })
+
+      await prisma.paymentOrder.update({
+        where: { id: order.id },
+        data: { purchaseId: purchase.id },
+      })
+
+      // Entrada no ledger do fluxo de caixa (mantém o caixa consistente com a UI).
+      await onManualSale({
+        tenantId,
+        description: String(args.descricao),
+        amount: valor,
+        leadId: String(args.leadId),
+        purchaseId: purchase.id,
+        paymentMethod: args.metodo ? String(args.metodo) : undefined,
+      })
+
+      await prisma.lead.update({
+        where: { id: String(args.leadId) },
+        data: {
+          totalPurchased: { increment: valor },
+          status: 'PAGAMENTO_CONFIRMADO',
+          lastInteraction: new Date(),
+        },
+      })
+
+      await prisma.interaction.create({
+        data: {
+          tenantId,
+          leadId: String(args.leadId),
+          type: 'PAYMENT_RECEIVED',
+          title: `Pagamento manual: ${args.descricao}`,
+          content: `R$ ${valor.toFixed(2)} via ${args.metodo || 'Outro'}`,
+          amount: valor,
+        },
+      })
+
+      return { ok: true, orderId: order.id, purchaseId: purchase.id }
+    },
+  },
+  // Módulos adicionais (Agenda, E-mail, Financeiro/Projetos/Propostas, Contratos)
+  ...agendaMcpTools,
+  ...emailMcpTools,
+  ...financeMcpTools,
+  ...contractMcpTools,
+  ...whatsappMcpTools,
+  ...adsMcpTools,
 ]
 
 export const MCP_TOOL_SUMMARY = MCP_TOOLS.map((t) => ({ nome: t.name, descricao: t.description }))

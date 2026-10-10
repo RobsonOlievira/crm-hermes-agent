@@ -104,6 +104,7 @@ export async function recordInboundMessage(tenantId: string, input: InboundInput
     where: { id: lead.id },
     data: {
       lastMessageAt: ts,
+      lastReplyAt: ts,
       lastMessageText: preview.slice(0, 240),
       unreadCount: { increment: 1 },
       lastInteraction: ts,
@@ -204,22 +205,84 @@ export async function notifyOutboundWebhook(
 }
 
 // Resumo de conversas para a lista (lado esquerdo da central).
-export async function listConversations(tenantId: string, opts?: { search?: string; onlyUnread?: boolean; limit?: number }) {
+export async function listConversations(
+  tenantId: string,
+  opts?: {
+    search?: string
+    onlyUnread?: boolean
+    leadTypeId?: string
+    status?: string
+    period?: string
+    startDate?: Date
+    endDate?: Date
+    limit?: number
+  },
+) {
+  const where: any = {
+    tenantId,
+    lastMessageAt: { not: null },
+  }
+
+  if (opts?.onlyUnread) {
+    where.unreadCount = { gt: 0 }
+  }
+
+  if (opts?.status) {
+    where.status = opts.status
+  }
+
+  if (opts?.leadTypeId) {
+    where.leadTypes = {
+      some: {
+        leadTypeId: opts.leadTypeId,
+      },
+    }
+  }
+
+  // Filtros de Período baseados em lastMessageAt
+  let dateFilter: { gte?: Date; lte?: Date } | undefined
+
+  if (opts?.period) {
+    const now = new Date()
+    if (opts.period === 'today') {
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      dateFilter = { gte: startOfDay }
+    } else if (opts.period === 'week') {
+      const sevenDaysAgo = new Date(now)
+      sevenDaysAgo.setDate(now.getDate() - 7)
+      dateFilter = { gte: sevenDaysAgo }
+    } else if (opts.period === 'month') {
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+      dateFilter = { gte: startOfMonth }
+    } else if (opts.period === 'year') {
+      const startOfYear = new Date(now.getFullYear(), 0, 1)
+      dateFilter = { gte: startOfYear }
+    }
+  } else if (opts?.startDate || opts?.endDate) {
+    dateFilter = {}
+    if (opts.startDate) dateFilter.gte = opts.startDate
+    if (opts.endDate) {
+      // Ajusta o fim do dia para a data final
+      const end = new Date(opts.endDate)
+      end.setHours(23, 59, 59, 999)
+      dateFilter.lte = end
+    }
+  }
+
+  if (dateFilter) {
+    where.lastMessageAt = { ...where.lastMessageAt, ...dateFilter }
+  }
+
+  if (opts?.search) {
+    where.OR = [
+      { name: { contains: opts.search, mode: 'insensitive' } },
+      { phone: { contains: opts.search } },
+      { lastMessageText: { contains: opts.search, mode: 'insensitive' } },
+    ]
+  }
+
   const leads = await prisma.lead.findMany({
-    where: {
-      tenantId,
-      lastMessageAt: { not: null },
-      ...(opts?.onlyUnread ? { unreadCount: { gt: 0 } } : {}),
-      ...(opts?.search
-        ? {
-            OR: [
-              { name: { contains: opts.search, mode: 'insensitive' } },
-              { phone: { contains: opts.search } },
-              { lastMessageText: { contains: opts.search, mode: 'insensitive' } },
-            ],
-          }
-        : {}),
-    },
+    where,
     orderBy: { lastMessageAt: 'desc' },
     take: opts?.limit ?? 100,
     include: {
@@ -229,3 +292,4 @@ export async function listConversations(tenantId: string, opts?: { search?: stri
   })
   return leads
 }
+

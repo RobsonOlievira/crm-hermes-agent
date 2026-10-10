@@ -10,21 +10,28 @@ export default async function ClientsPage() {
   const user = await getCurrentUser()
   const tenantId = user?.tenantId ?? null
 
-  const clients = tenantId
-    ? await prisma.client.findMany({
-        where: { tenantId },
-        include: { assignedTo: true },
-        orderBy: { lifetimeValue: 'desc' },
-      })
-    : []
-
-  const members = tenantId
-    ? await prisma.user.findMany({
-        where: { tenantId, role: { in: ['ADMIN', 'MANAGER', 'MEMBER'] } },
-        orderBy: { name: 'asc' },
-        select: { id: true, name: true },
-      })
-    : []
+  const [clients, members, leadTypes] = tenantId
+    ? await Promise.all([
+        prisma.client.findMany({
+          where: { tenantId },
+          include: {
+            assignedTo: true,
+            leadTypes: { select: { leadType: { select: { id: true, label: true, color: true } } } },
+          },
+          orderBy: { lifetimeValue: 'desc' },
+        }),
+        prisma.user.findMany({
+          where: { tenantId, role: { in: ['ADMIN', 'MANAGER', 'MEMBER'] } },
+          orderBy: { name: 'asc' },
+          select: { id: true, name: true },
+        }),
+        prisma.leadType.findMany({
+          where: { tenantId },
+          select: { id: true, label: true, color: true },
+          orderBy: { label: 'asc' },
+        }),
+      ])
+    : [[], [], []]
 
   const rows: ClientRow[] = (clients as any[]).map((c) => ({
     id: c.id,
@@ -32,11 +39,15 @@ export default async function ClientsPage() {
     companyName: c.companyName,
     cnpj: c.cnpj,
     email: c.email,
+    phone: c.phone,
     status: c.status,
     lifetimeValue: c.lifetimeValue,
     segment: c.segment,
     assignedToName: c.assignedTo?.name ?? null,
     assignedToAvatar: c.assignedTo?.avatarUrl ?? null,
+    leadTypeIds: (c.leadTypes ?? []).map((lt: any) => lt.leadType?.id).filter(Boolean),
+    leadTypeLabels: (c.leadTypes ?? []).map((lt: any) => lt.leadType?.label).filter(Boolean),
+    leadTypeColors: (c.leadTypes ?? []).map((lt: any) => lt.leadType?.color).filter(Boolean),
   }))
 
   return (
@@ -44,9 +55,9 @@ export default async function ClientsPage() {
       <PageHeading
         title="Clientes"
         description="Sua base de clientes ativos e o valor gerado ao longo do relacionamento."
-        actions={<NewClientDialog members={members} />}
+        actions={<NewClientDialog members={members} leadTypesOptions={leadTypes} />}
       />
-      <ClientsTable clients={rows} />
+      <ClientsTable clients={rows} leadTypesOptions={leadTypes} members={members} />
     </div>
   )
 }
