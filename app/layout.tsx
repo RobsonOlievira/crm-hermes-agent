@@ -11,8 +11,16 @@ const dmSans = DM_Sans({ subsets: ['latin'], variable: '--font-sans' })
 const jakartaSans = Plus_Jakarta_Sans({ subsets: ['latin'], variable: '--font-display' })
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' })
 
+// Garante URL valida em tempo de build mesmo se NEXTAUTH_URL vier sem protocolo
+// (ex.: "crm-hermes-agent.tesseractescoladesign.workers.dev/" no Cloudflare).
+function resolveMetadataBase(): string {
+  const raw = (process.env.NEXTAUTH_URL || 'http://localhost:3000').trim()
+  if (/^https?:\/\//i.test(raw)) return raw
+  return `https://${raw.replace(/^\/+/, '')}`
+}
+
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXTAUTH_URL || 'http://localhost:3000'),
+  metadataBase: new URL(resolveMetadataBase()),
   title: 'NexusCRM — CRM Whitelabel Modular',
   description: 'Plataforma de CRM whitelabel, modular e plug & play para gestão completa de leads, clientes e vendas.',
   icons: {
