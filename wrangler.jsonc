@@ -1,0 +1,19 @@
+/**
+ * Configuracao do Cloudflare Workers para o CRM Hermes Agent (Next.js + OpenNext).
+ * Deploy: `opennextjs-cloudflare build && opennextjs-cloudflare deploy`
+ * Docs: https://developers.cloudflare.com/workers/framework-guides/web-apps/opennext/
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "crm-hermes-agent",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-06",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".open-next/assets"
+  },
+  "observability": {
+    "enabled": true
+  }
+}
