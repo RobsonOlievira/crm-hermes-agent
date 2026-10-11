@@ -10,9 +10,9 @@ export const LEAD_STATUS_META: Record<string, { label: string; color: string; bg
   PROPOSTA_ENVIADA: { label: 'Proposta Enviada', color: '#EC4899', bg: 'bg-pink-100', text: 'text-pink-700' },
   SERVICO_FECHADO: { label: 'Serviço Fechado', color: '#10B981', bg: 'bg-emerald-100', text: 'text-emerald-700' },
   PAGAMENTO_CONFIRMADO: { label: 'Pagamento Confirmado', color: '#059669', bg: 'bg-green-100', text: 'text-green-700' },
-  INATIVO: { label: 'Inativo', color: '#6B7280', bg: 'bg-gray-100', text: 'text-gray-600' },
+  INATIVO: { label: 'Inativo', color: '#6B7280', bg: 'bg-neutral-100', text: 'text-neutral-600' },
   SEM_RESPOSTA: { label: 'Sem Resposta', color: '#EF4444', bg: 'bg-red-100', text: 'text-red-700' },
-  CONVERSAS_OFF: { label: 'Conversas em Off', color: '#6B7280', bg: 'bg-gray-100', text: 'text-gray-500' },
+  CONVERSAS_OFF: { label: 'Conversas em Off', color: '#6B7280', bg: 'bg-neutral-100', text: 'text-neutral-500' },
 }
 
 export const LEAD_SOURCE_META: Record<string, { label: string }> = {
@@ -28,7 +28,7 @@ export const LEAD_SOURCE_META: Record<string, { label: string }> = {
 
 export const CLIENT_STATUS_META: Record<string, { label: string; bg: string; text: string }> = {
   ATIVO: { label: 'Ativo', bg: 'bg-emerald-100', text: 'text-emerald-700' },
-  INATIVO: { label: 'Inativo', bg: 'bg-gray-100', text: 'text-gray-600' },
+  INATIVO: { label: 'Inativo', bg: 'bg-neutral-100', text: 'text-neutral-600' },
   INADIMPLENTE: { label: 'Inadimplente', bg: 'bg-red-100', text: 'text-red-700' },
   CANCELADO: { label: 'Cancelado', bg: 'bg-orange-100', text: 'text-orange-700' },
   PROSPECTADO: { label: 'Prospectado', bg: 'bg-blue-100', text: 'text-blue-700' },
@@ -37,7 +37,7 @@ export const CLIENT_STATUS_META: Record<string, { label: string; bg: string; tex
 export const STUDENT_STATUS_META: Record<string, { label: string; bg: string; text: string }> = {
   ATIVO: { label: 'Ativo', bg: 'bg-emerald-100 dark:bg-emerald-900/40', text: 'text-emerald-700 dark:text-emerald-300' },
   CONCLUIDO: { label: 'Concluído', bg: 'bg-blue-100 dark:bg-blue-900/40', text: 'text-blue-700 dark:text-blue-300' },
-  INATIVO: { label: 'Inativo', bg: 'bg-gray-100 dark:bg-gray-900', text: 'text-gray-600 dark:text-gray-300' },
+  INATIVO: { label: 'Inativo', bg: 'bg-neutral-100 dark:bg-neutral-900', text: 'text-neutral-600 dark:text-neutral-300' },
   CANCELADO: { label: 'Cancelado', bg: 'bg-orange-100 dark:bg-orange-900/40', text: 'text-orange-700 dark:text-orange-300' },
 }
 
@@ -122,7 +122,7 @@ export const EVENT_TYPE_META: Record<string, { label: string; color: string; ico
 export const EVENT_STATUS_META: Record<string, { label: string; bg: string; text: string }> = {
   SCHEDULED: { label: 'Agendado', bg: 'bg-blue-100', text: 'text-blue-700' },
   DONE: { label: 'Concluído', bg: 'bg-emerald-100', text: 'text-emerald-700' },
-  CANCELED: { label: 'Cancelado', bg: 'bg-gray-100', text: 'text-gray-600' },
+  CANCELED: { label: 'Cancelado', bg: 'bg-neutral-100', text: 'text-neutral-600' },
 }
 
 export const MODULE_CATEGORY_META: Record<string, { label: string }> = {
@@ -143,7 +143,7 @@ export const EMAIL_CATEGORIES: Record<string, { label: string; color: string }> 
 }
 
 export const EMAIL_CAMPAIGN_STATUS_META: Record<string, { label: string; color: string }> = {
-  DRAFT: { label: 'Rascunho', color: 'bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300' },
+  DRAFT: { label: 'Rascunho', color: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900 dark:text-neutral-300' },
   SCHEDULED: { label: 'Agendada', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
   SENDING: { label: 'Enviando', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' },
   SENT: { label: 'Enviada', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
@@ -152,14 +152,14 @@ export const EMAIL_CAMPAIGN_STATUS_META: Record<string, { label: string; color: 
 }
 
 export const EMAIL_RECIPIENT_STATUS_META: Record<string, { label: string; color: string }> = {
-  PENDING: { label: 'Pendente', color: 'bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300' },
+  PENDING: { label: 'Pendente', color: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900 dark:text-neutral-300' },
   SENT: { label: 'Enviado', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
   DELIVERED: { label: 'Entregue', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
   OPENED: { label: 'Aberto', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
   CLICKED: { label: 'Clicado', color: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300' },
   BOUNCED: { label: 'Rejeitado', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
   FAILED: { label: 'Falhou', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' },
-  UNSUBSCRIBED: { label: 'Descadastrado', color: 'bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300' },
+  UNSUBSCRIBED: { label: 'Descadastrado', color: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900 dark:text-neutral-300' },
 }
 
 export function leadStatusLabel(s: LeadStatus | string) {
@@ -167,7 +167,7 @@ export function leadStatusLabel(s: LeadStatus | string) {
 }
 
 export const CONTRACT_STATUS_META: Record<string, { label: string; color: string; bg: string; text: string }> = {
-  DRAFT: { label: 'Rascunho', color: '#6B7280', bg: 'bg-gray-100', text: 'text-gray-700' },
+  DRAFT: { label: 'Rascunho', color: '#6B7280', bg: 'bg-neutral-100', text: 'text-neutral-700' },
   PENDING_CLIENT: { label: 'Aguardando Cliente', color: '#F59E0B', bg: 'bg-yellow-100', text: 'text-yellow-700' },
   SIGNED: { label: 'Assinado', color: '#10B981', bg: 'bg-green-100', text: 'text-green-700' },
   CANCELLED: { label: 'Cancelado', color: '#EF4444', bg: 'bg-red-100', text: 'text-red-700' },
@@ -229,7 +229,7 @@ export const EMAIL_ACCOUNT_PROVIDERS: Record<string, { id: string; label: string
 
 export const EMAIL_ACCOUNT_STATUS_META: Record<string, { label: string; bg: string; text: string }> = {
   active: { label: 'Ativa', bg: 'bg-emerald-100', text: 'text-emerald-700' },
-  inactive: { label: 'Inativa', bg: 'bg-gray-100', text: 'text-gray-600' },
+  inactive: { label: 'Inativa', bg: 'bg-neutral-100', text: 'text-neutral-600' },
   error: { label: 'Erro', bg: 'bg-red-100', text: 'text-red-700' },
   pending: { label: 'Pendente', bg: 'bg-yellow-100', text: 'text-yellow-700' },
 }
@@ -244,7 +244,7 @@ export const AD_CAMPAIGN_STATUS_META: Record<string, { label: string; color: str
   ACTIVE: { label: 'Ativa', color: 'bg-emerald-100 text-emerald-700', bg: 'bg-emerald-100', text: 'text-emerald-700' },
   PAUSED: { label: 'Pausada', color: 'bg-yellow-100 text-yellow-700', bg: 'bg-yellow-100', text: 'text-yellow-700' },
   DELETED: { label: 'Deletada', color: 'bg-red-100 text-red-700', bg: 'bg-red-100', text: 'text-red-700' },
-  ARCHIVED: { label: 'Arquivada', color: 'bg-gray-100 text-gray-600', bg: 'bg-gray-100', text: 'text-gray-600' },
+  ARCHIVED: { label: 'Arquivada', color: 'bg-neutral-100 text-neutral-600', bg: 'bg-neutral-100', text: 'text-neutral-600' },
 }
 
 export const AD_OBJECTIVE_META: Record<string, { label: string; description: string }> = {
@@ -261,7 +261,7 @@ export const PAYMENT_STATUS_META: Record<string, { label: string; bg: string; te
   PROCESSING: { label: 'Processando', bg: 'bg-blue-100', text: 'text-blue-700' },
   APPROVED: { label: 'Aprovado', bg: 'bg-emerald-100', text: 'text-emerald-700' },
   REJECTED: { label: 'Rejeitado', bg: 'bg-red-100', text: 'text-red-700' },
-  REFUNDED: { label: 'Estornado', bg: 'bg-gray-100', text: 'text-gray-600' },
+  REFUNDED: { label: 'Estornado', bg: 'bg-neutral-100', text: 'text-neutral-600' },
   CANCELLED: { label: 'Cancelado', bg: 'bg-orange-100', text: 'text-orange-700' },
 }
 
@@ -283,7 +283,7 @@ export const PAYMENT_METHOD_META: Record<string, { label: string; icon: string }
 export const SUBSCRIPTION_STATUS_META: Record<string, { label: string; bg: string; text: string }> = {
   ACTIVE: { label: 'Ativa', bg: 'bg-emerald-100', text: 'text-emerald-700' },
   PAST_DUE: { label: 'Atrasada', bg: 'bg-red-100', text: 'text-red-700' },
-  CANCELLED: { label: 'Cancelada', bg: 'bg-gray-100', text: 'text-gray-600' },
+  CANCELLED: { label: 'Cancelada', bg: 'bg-neutral-100', text: 'text-neutral-600' },
   TRIALING: { label: 'Teste', bg: 'bg-blue-100', text: 'text-blue-700' },
   INCOMPLETE: { label: 'Incompleta', bg: 'bg-yellow-100', text: 'text-yellow-700' },
 }

@@ -158,7 +158,7 @@ export function EmailSettings({ initialEnabled, initialKeySet, initialKeyMasked,
               <p className="text-sm text-muted-foreground">Nenhuma chave configurada ainda. Preencha abaixo para ativar o envio de email.</p>
             )}
 
-            <div className="mt-5 space-y-3 border-t pt-5 dark:border-gray-700">
+            <div className="mt-5 space-y-3 border-t pt-5 dark:border-neutral-700">
               <div>
                 <label className="text-sm font-medium mb-1 block">Nova chave da API (preencha para trocar)</label>
                 <Input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="re_••••••••••••" autoComplete="off" />

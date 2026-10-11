@@ -79,29 +79,29 @@ export function BillingView({ clients }: Props) {
   return (
     <div className="space-y-6">
       {/* Painel de vencidas */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+      <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+        <div className="px-6 py-4 border-b border-neutral-200 dark:border-neutral-700">
+          <h2 className="font-semibold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-red-500 inline-block" />
             Parcelas Vencidas
           </h2>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Parcelas não pagas e com data de vencimento no passado.</p>
+          <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">Parcelas não pagas e com data de vencimento no passado.</p>
         </div>
 
         {overdueLoading ? (
-          <div className="text-center py-8 text-gray-400 text-sm">Carregando...</div>
+          <div className="text-center py-8 text-neutral-400 text-sm">Carregando...</div>
         ) : overdueList.length === 0 ? (
           <div className="text-center py-8 text-green-600 dark:text-green-400 text-sm font-medium">
             ✅ Nenhuma parcela vencida! Tudo em dia.
           </div>
         ) : (
-          <div className="divide-y divide-gray-100 dark:divide-gray-700">
+          <div className="divide-y divide-neutral-100 dark:divide-neutral-700">
             {overdueList.map((item) => (
-              <div key={item.id} className="flex items-center justify-between px-6 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+              <div key={item.id} className="flex items-center justify-between px-6 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-700/30 transition-colors">
                 <div>
-                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
                     {item.client}
-                    <span className="text-gray-400 font-normal mx-2">—</span>
+                    <span className="text-neutral-400 font-normal mx-2">—</span>
                     {item.project}
                   </div>
                   <div className="text-xs text-red-500 font-medium mt-0.5">
@@ -128,10 +128,10 @@ export function BillingView({ clients }: Props) {
       </div>
 
       {/* Gerador de notinha */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="font-semibold text-gray-900 dark:text-gray-100">Gerar Extrato de Cobranças</h2>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Selecione um cliente para ver todas as parcelas pendentes e enviar por WhatsApp.</p>
+      <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+        <div className="px-6 py-4 border-b border-neutral-200 dark:border-neutral-700">
+          <h2 className="font-semibold text-neutral-900 dark:text-neutral-100">Gerar Extrato de Cobranças</h2>
+          <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">Selecione um cliente para ver todas as parcelas pendentes e enviar por WhatsApp.</p>
         </div>
 
         <div className="p-6 space-y-4">
@@ -139,7 +139,7 @@ export function BillingView({ clients }: Props) {
             <select
               value={selectedClientId}
               onChange={(e) => { setSelectedClientId(e.target.value); setBilling(null); setError('') }}
-              className="flex-1 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 border border-neutral-200 dark:border-neutral-700 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Selecionar cliente...</option>
               {clients.map((c) => (
@@ -165,8 +165,8 @@ export function BillingView({ clients }: Props) {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">{billing.client.name}</div>
-                  <div className="text-xs text-gray-400">
+                  <div className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{billing.client.name}</div>
+                  <div className="text-xs text-neutral-400">
                     {billing.installmentCount} parcela{billing.installmentCount !== 1 ? 's' : ''} pendente{billing.installmentCount !== 1 ? 's' : ''}
                     {' — '}
                     <span className="text-amber-600 dark:text-amber-400 font-medium">{formatCurrency(billing.total)} a receber</span>
@@ -175,7 +175,7 @@ export function BillingView({ clients }: Props) {
                 <div className="flex gap-2">
                   <button
                     onClick={handleCopy}
-                    className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+                    className="px-3 py-1.5 border border-neutral-200 dark:border-neutral-700 rounded-lg text-xs font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 transition-colors"
                   >
                     {copiedText ? '✓ Copiado' : 'Copiar texto'}
                   </button>
@@ -191,9 +191,9 @@ export function BillingView({ clients }: Props) {
               </div>
 
               {/* Preview da mensagem */}
-              <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-                <div className="text-xs text-gray-400 dark:text-gray-500 mb-2 font-medium">Preview da mensagem:</div>
-                <pre className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-sans leading-relaxed">
+              <div className="bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl p-4">
+                <div className="text-xs text-neutral-400 dark:text-neutral-500 mb-2 font-medium">Preview da mensagem:</div>
+                <pre className="text-xs text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap font-sans leading-relaxed">
                   {billing.text}
                 </pre>
               </div>

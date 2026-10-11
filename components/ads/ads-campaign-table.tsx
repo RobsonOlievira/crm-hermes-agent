@@ -71,7 +71,7 @@ export function AdsCampaignTable({
           <select
             value={platformFilter}
             onChange={(e) => setPlatformFilter(e.target.value)}
-            className="rounded-md border border-input bg-background px-3 py-2 text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
+            className="rounded-md border border-input bg-background px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-100"
           >
             <option value="ALL">Todas as Plataformas</option>
             <option value="META">Meta Ads</option>
@@ -81,7 +81,7 @@ export function AdsCampaignTable({
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-md border border-input bg-background px-3 py-2 text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
+            className="rounded-md border border-input bg-background px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-100"
           >
             <option value="ALL">Todos os Status</option>
             <option value="ACTIVE">Ativas</option>
@@ -98,10 +98,10 @@ export function AdsCampaignTable({
           <p className="text-sm text-muted-foreground">Nenhuma campanha encontrada com esses filtros</p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border dark:border-gray-700 bg-card">
+        <div className="overflow-x-auto rounded-xl border dark:border-neutral-700 bg-card">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b bg-muted/50 dark:bg-gray-900/50 dark:border-gray-700">
+              <tr className="border-b bg-muted/50 dark:bg-neutral-900/50 dark:border-neutral-700">
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">Campanha</th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">Canal</th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
@@ -113,15 +113,15 @@ export function AdsCampaignTable({
                 <th className="px-4 py-3 text-right font-medium text-muted-foreground">Ação</th>
               </tr>
             </thead>
-            <tbody className="divide-y dark:divide-gray-700">
+            <tbody className="divide-y dark:divide-neutral-700">
               {filtered.map((c) => {
-                const statusMeta = AD_CAMPAIGN_STATUS_META[c.status] || { label: c.status, color: 'bg-gray-100' }
+                const statusMeta = AD_CAMPAIGN_STATUS_META[c.status] || { label: c.status, color: 'bg-neutral-100' }
                 const objLabel = c.objective ? AD_OBJECTIVE_META[c.objective]?.label || c.objective : 'Geral'
 
                 return (
                   <tr
                     key={c.id}
-                    className="hover:bg-muted/30 dark:hover:bg-gray-800/30 transition-colors cursor-pointer"
+                    className="hover:bg-muted/30 dark:hover:bg-neutral-800/30 transition-colors cursor-pointer"
                     onClick={() => onSelectCampaign?.(c)}
                   >
                     <td className="px-4 py-3">

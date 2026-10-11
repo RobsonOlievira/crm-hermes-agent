@@ -18,13 +18,13 @@ export const ProposalPreview: React.FC<Props> = ({ data, id }) => {
   return (
     <div
       id={id}
-      className="w-[794px] min-h-[1123px] bg-white dark:bg-zinc-900 text-gray-900 dark:text-gray-100 relative overflow-hidden flex flex-col p-12 print:p-8 font-['Inter'] selection:bg-transparent shadow-2xl border border-gray-200 dark:border-zinc-800"
+      className="w-[794px] min-h-[1123px] bg-white dark:bg-zinc-900 text-neutral-900 dark:text-neutral-100 relative overflow-hidden flex flex-col p-12 print:p-8 font-['Inter'] selection:bg-transparent shadow-2xl border border-neutral-200 dark:border-zinc-800"
       style={{
         backgroundImage: `radial-gradient(circle at 100% 0%, ${brandColor}15 0%, transparent 40%)`,
       }}
     >
       {/* Header com Branding do Tenant */}
-      <header className="flex justify-between items-start pb-6 border-b border-gray-200 dark:border-zinc-800 shrink-0">
+      <header className="flex justify-between items-start pb-6 border-b border-neutral-200 dark:border-zinc-800 shrink-0">
         <div className="flex items-center gap-4">
           {data.companyLogo ? (
             <img src={data.companyLogo} alt={data.companyName} className="h-12 object-contain max-w-[180px]" />
@@ -34,47 +34,47 @@ export const ProposalPreview: React.FC<Props> = ({ data, id }) => {
             </div>
           )}
           <div>
-            <h2 className="font-bold text-base text-gray-900 dark:text-gray-100">{data.companyName || 'Empresa'}</h2>
-            <p className="text-xs text-gray-400">Proposta Comercial</p>
+            <h2 className="font-bold text-base text-neutral-900 dark:text-neutral-100">{data.companyName || 'Empresa'}</h2>
+            <p className="text-xs text-neutral-400">Proposta Comercial</p>
           </div>
         </div>
 
         <div className="text-right">
           <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">Orçamento Para</span>
-          <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">{data.clientName || 'Nome do Cliente'}</h1>
-          {data.clientEmail && <p className="text-xs text-gray-400">{data.clientEmail}</p>}
-          <p className="text-xs text-gray-400 mt-1">Data: {new Date().toLocaleDateString('pt-BR')}</p>
+          <h1 className="text-lg font-bold text-neutral-900 dark:text-neutral-100">{data.clientName || 'Nome do Cliente'}</h1>
+          {data.clientEmail && <p className="text-xs text-neutral-400">{data.clientEmail}</p>}
+          <p className="text-xs text-neutral-400 mt-1">Data: {new Date().toLocaleDateString('pt-BR')}</p>
         </div>
       </header>
 
       {/* Título do Serviço */}
-      <div className="py-8 border-b border-gray-200 dark:border-zinc-800">
-        <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+      <div className="py-8 border-b border-neutral-200 dark:border-zinc-800">
+        <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400">
           {data.serviceType || 'Serviço'}
         </span>
-        <h2 className="text-3xl font-extrabold text-gray-900 dark:text-gray-100 mt-1" style={{ color: brandColor }}>
+        <h2 className="text-3xl font-extrabold text-neutral-900 dark:text-neutral-100 mt-1" style={{ color: brandColor }}>
           {data.serviceTitle || 'Prestação de Serviços'}
         </h2>
       </div>
 
       {/* Tabela de Entregáveis / Itens */}
       <div className="py-8 flex-grow">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4">Itens & Escopo do Projeto</h3>
+        <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-4">Itens & Escopo do Projeto</h3>
         
-        <div className="border border-gray-200 dark:border-zinc-800 rounded-xl overflow-hidden">
+        <div className="border border-neutral-200 dark:border-zinc-800 rounded-xl overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 dark:bg-zinc-800/50 border-b border-gray-200 dark:border-zinc-800">
+            <thead className="bg-neutral-50 dark:bg-zinc-800/50 border-b border-neutral-200 dark:border-zinc-800">
               <tr>
-                <th className="text-left px-4 py-3 font-semibold text-gray-500 dark:text-gray-400">Descrição do Entregável</th>
-                <th className="text-center px-4 py-3 font-semibold text-gray-500 dark:text-gray-400 w-20">Qtd</th>
-                <th className="text-right px-4 py-3 font-semibold text-gray-500 dark:text-gray-400 w-32">Valor Unit.</th>
-                <th className="text-right px-4 py-3 font-semibold text-gray-500 dark:text-gray-400 w-32">Total</th>
+                <th className="text-left px-4 py-3 font-semibold text-neutral-500 dark:text-neutral-400">Descrição do Entregável</th>
+                <th className="text-center px-4 py-3 font-semibold text-neutral-500 dark:text-neutral-400 w-20">Qtd</th>
+                <th className="text-right px-4 py-3 font-semibold text-neutral-500 dark:text-neutral-400 w-32">Valor Unit.</th>
+                <th className="text-right px-4 py-3 font-semibold text-neutral-500 dark:text-neutral-400 w-32">Total</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-zinc-800">
+            <tbody className="divide-y divide-neutral-100 dark:divide-zinc-800">
               {items.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="py-6 text-center text-gray-400 text-xs">Sem itens adicionados.</td>
+                  <td colSpan={4} className="py-6 text-center text-neutral-400 text-xs">Sem itens adicionados.</td>
                 </tr>
               ) : (
                 items.map((item, idx) => {
@@ -82,10 +82,10 @@ export const ProposalPreview: React.FC<Props> = ({ data, id }) => {
                   const total = qtd * (item.price || 0)
                   return (
                     <tr key={item.id || idx}>
-                      <td className="px-4 py-3 text-gray-800 dark:text-gray-200 font-medium">{item.description}</td>
-                      <td className="px-4 py-3 text-center text-gray-500">{qtd}</td>
-                      <td className="px-4 py-3 text-right text-gray-500">{formatCurrency(item.price || 0)}</td>
-                      <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-gray-100">{formatCurrency(total)}</td>
+                      <td className="px-4 py-3 text-neutral-800 dark:text-neutral-200 font-medium">{item.description}</td>
+                      <td className="px-4 py-3 text-center text-neutral-500">{qtd}</td>
+                      <td className="px-4 py-3 text-right text-neutral-500">{formatCurrency(item.price || 0)}</td>
+                      <td className="px-4 py-3 text-right font-semibold text-neutral-900 dark:text-neutral-100">{formatCurrency(total)}</td>
                     </tr>
                   )
                 })
@@ -96,31 +96,31 @@ export const ProposalPreview: React.FC<Props> = ({ data, id }) => {
       </div>
 
       {/* Resumo Financeiro e Condições */}
-      <div className="py-6 border-t border-gray-200 dark:border-zinc-800 grid grid-cols-2 gap-8 items-end shrink-0">
+      <div className="py-6 border-t border-neutral-200 dark:border-zinc-800 grid grid-cols-2 gap-8 items-end shrink-0">
         <div className="space-y-3">
           {data.paymentTerms && (
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Condições de Pagamento</h4>
-              <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed bg-gray-50 dark:bg-zinc-800/50 p-3 rounded-lg border border-gray-200 dark:border-zinc-800">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1">Condições de Pagamento</h4>
+              <p className="text-xs text-neutral-700 dark:text-neutral-300 leading-relaxed bg-neutral-50 dark:bg-zinc-800/50 p-3 rounded-lg border border-neutral-200 dark:border-zinc-800">
                 {data.paymentTerms}
               </p>
             </div>
           )}
         </div>
 
-        <div className="bg-gray-50 dark:bg-zinc-800/50 p-5 rounded-xl border border-gray-200 dark:border-zinc-800 space-y-2 text-right">
-          <div className="flex justify-between text-xs text-gray-500">
+        <div className="bg-neutral-50 dark:bg-zinc-800/50 p-5 rounded-xl border border-neutral-200 dark:border-zinc-800 space-y-2 text-right">
+          <div className="flex justify-between text-xs text-neutral-500">
             <span>Subtotal:</span>
             <span>{formatCurrency(subtotal)}</span>
           </div>
           {(data.discount ?? 0) > 0 && (
-            <div className="flex justify-between text-xs text-gray-500">
+            <div className="flex justify-between text-xs text-neutral-500">
               <span>Desconto:</span>
               <span className="text-green-600 dark:text-green-400">- {formatCurrency(data.discount || 0)}</span>
             </div>
           )}
-          <div className="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-zinc-700">
-            <span className="text-sm font-bold text-gray-900 dark:text-gray-100">Investimento Final:</span>
+          <div className="flex justify-between items-center pt-2 border-t border-neutral-200 dark:border-zinc-700">
+            <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100">Investimento Final:</span>
             <span className="text-2xl font-extrabold" style={{ color: brandColor }}>
               {formatCurrency(finalPrice)}
             </span>
@@ -129,11 +129,11 @@ export const ProposalPreview: React.FC<Props> = ({ data, id }) => {
       </div>
 
       {/* Observações e Rodapé */}
-      <footer className="mt-6 pt-6 border-t border-gray-200 dark:border-zinc-800 flex justify-between items-end text-xs text-gray-400 shrink-0">
+      <footer className="mt-6 pt-6 border-t border-neutral-200 dark:border-zinc-800 flex justify-between items-end text-xs text-neutral-400 shrink-0">
         <div className="w-2/3 space-y-1">
           {data.observations && (
             <>
-              <p className="font-bold text-gray-500 uppercase tracking-wider text-[10px]">Observações:</p>
+              <p className="font-bold text-neutral-500 uppercase tracking-wider text-[10px]">Observações:</p>
               <p className="leading-relaxed whitespace-pre-wrap text-[11px]">{data.observations}</p>
             </>
           )}

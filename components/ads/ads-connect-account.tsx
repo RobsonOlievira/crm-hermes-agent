@@ -90,7 +90,7 @@ export function AdsConnectAccount({
       {/* Grid de Canais */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Meta Ads Card */}
-        <div className="rounded-xl border p-6 bg-card dark:border-gray-700 space-y-4">
+        <div className="rounded-xl border p-6 bg-card dark:border-neutral-700 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-3 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">
@@ -115,7 +115,7 @@ export function AdsConnectAccount({
               {metaAccounts.map((acc) => (
                 <div
                   key={acc.id}
-                  className="flex items-center justify-between p-3 rounded-lg border bg-muted/30 dark:border-gray-700 text-xs"
+                  className="flex items-center justify-between p-3 rounded-lg border bg-muted/30 dark:border-neutral-700 text-xs"
                 >
                   <div>
                     <span className="font-semibold block">{acc.name}</span>
@@ -141,7 +141,7 @@ export function AdsConnectAccount({
         </div>
 
         {/* Google Ads Card */}
-        <div className="rounded-xl border p-6 bg-card dark:border-gray-700 space-y-4">
+        <div className="rounded-xl border p-6 bg-card dark:border-neutral-700 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-3 rounded-xl bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400">
@@ -166,7 +166,7 @@ export function AdsConnectAccount({
               {googleAccounts.map((acc) => (
                 <div
                   key={acc.id}
-                  className="flex items-center justify-between p-3 rounded-lg border bg-muted/30 dark:border-gray-700 text-xs"
+                  className="flex items-center justify-between p-3 rounded-lg border bg-muted/30 dark:border-neutral-700 text-xs"
                 >
                   <div>
                     <span className="font-semibold block">{acc.name}</span>
@@ -195,7 +195,7 @@ export function AdsConnectAccount({
       {/* Modal / Form de Conexão */}
       {showModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-card dark:bg-gray-900 border dark:border-gray-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+          <div className="bg-card dark:bg-neutral-900 border dark:border-neutral-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
             <h3 className="text-lg font-bold">
               Conectar Conta {platform === 'META' ? 'Meta Ads' : 'Google Ads'}
             </h3>

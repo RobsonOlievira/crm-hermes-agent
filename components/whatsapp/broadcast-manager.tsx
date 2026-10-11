@@ -235,11 +235,11 @@ export function BroadcastManager({ initialTemplates, initialBroadcasts, leadType
       {/* Top Banner & Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
             <Megaphone className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
             Disparo de Promoções (API Meta WhatsApp)
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
             Envie mensagens de marketing e promoções em massa utilizando **Templates Oficiais pré-aprovados** na Meta.
           </p>
         </div>
@@ -265,13 +265,13 @@ export function BroadcastManager({ initialTemplates, initialBroadcasts, leadType
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-200 dark:border-gray-800">
+      <div className="flex border-b border-neutral-200 dark:border-neutral-800">
         <button
           onClick={() => setActiveTab('broadcasts')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
             activeTab === 'broadcasts'
               ? 'border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400'
-              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+              : 'border-transparent text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-300'
           }`}
         >
           Disparos Realizados ({broadcasts.length})
@@ -281,7 +281,7 @@ export function BroadcastManager({ initialTemplates, initialBroadcasts, leadType
           className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
             activeTab === 'templates'
               ? 'border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400'
-              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+              : 'border-transparent text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-300'
           }`}
         >
           Templates Meta Aprovados ({templates.length})
@@ -293,9 +293,9 @@ export function BroadcastManager({ initialTemplates, initialBroadcasts, leadType
         <div className="space-y-4">
           {broadcasts.length === 0 ? (
             <Card className="p-8 text-center">
-              <Megaphone className="mx-auto h-12 w-12 text-gray-400 mb-3" />
-              <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200">Nenhum disparo de promoção ainda</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-md mx-auto">
+              <Megaphone className="mx-auto h-12 w-12 text-neutral-400 mb-3" />
+              <h3 className="text-base font-semibold text-neutral-800 dark:text-neutral-200">Nenhum disparo de promoção ainda</h3>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1 max-w-md mx-auto">
                 Crie o seu primeiro disparo selecionando um template oficial da Meta e filtrando o seu público-alvo.
               </p>
               <Button
@@ -337,12 +337,12 @@ export function BroadcastManager({ initialTemplates, initialBroadcasts, leadType
                   </CardHeader>
 
                   <CardContent className="space-y-3 text-xs">
-                    <div className="flex justify-between border-t pt-2 border-gray-100 dark:border-gray-800">
-                      <span className="text-gray-500">Destinatários elegíveis:</span>
+                    <div className="flex justify-between border-t pt-2 border-neutral-100 dark:border-neutral-800">
+                      <span className="text-neutral-500">Destinatários elegíveis:</span>
                       <span className="font-semibold">{b.totalRecipients}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Mensagens enviadas:</span>
+                      <span className="text-neutral-500">Mensagens enviadas:</span>
                       <span className="font-semibold text-emerald-600">{b.totalSent}</span>
                     </div>
 
@@ -370,9 +370,9 @@ export function BroadcastManager({ initialTemplates, initialBroadcasts, leadType
         <div className="space-y-4">
           {templates.length === 0 ? (
             <Card className="p-8 text-center">
-              <FileCode className="mx-auto h-12 w-12 text-gray-400 mb-3" />
-              <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200">Nenhum Template Meta cadastrado</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-md mx-auto">
+              <FileCode className="mx-auto h-12 w-12 text-neutral-400 mb-3" />
+              <h3 className="text-base font-semibold text-neutral-800 dark:text-neutral-200">Nenhum Template Meta cadastrado</h3>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1 max-w-md mx-auto">
                 Cadastre o nome dos modelos de mensagem que foram aprovados no seu Gerenciador de Negócios da Meta.
               </p>
               <Button
@@ -390,18 +390,18 @@ export function BroadcastManager({ initialTemplates, initialBroadcasts, leadType
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <Badge className="bg-emerald-500 text-white">{t.category}</Badge>
-                      <span className="text-xs text-gray-400 font-mono">{t.language}</span>
+                      <span className="text-xs text-neutral-400 font-mono">{t.language}</span>
                     </div>
                     <CardTitle className="text-base font-mono mt-2 text-emerald-700 dark:text-emerald-400">
                       {t.name}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2 text-xs">
-                    <div className="rounded-lg bg-gray-50 p-2.5 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 font-sans whitespace-pre-wrap">
+                    <div className="rounded-lg bg-neutral-50 p-2.5 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 font-sans whitespace-pre-wrap">
                       {t.bodyText}
                     </div>
                     {t.variablesCount > 0 && (
-                      <p className="text-[11px] text-gray-500">
+                      <p className="text-[11px] text-neutral-500">
                         Possui <strong>{t.variablesCount}</strong> variável(is) configurável(is).
                       </p>
                     )}
@@ -416,12 +416,12 @@ export function BroadcastManager({ initialTemplates, initialBroadcasts, leadType
       {/* MODAL: NOVO TEMPLATE META */}
       {showNewTemplateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-900 space-y-4">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl dark:bg-neutral-900 space-y-4">
+            <h3 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
               <FileCode className="h-5 w-5 text-emerald-600" />
               Cadastrar Template Meta Aprovado
             </h3>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-neutral-500">
               Digite o nome exato do modelo de mensagem aprovado no seu Meta Business Manager (ex: <code>promocao_outubro_v1</code>).
             </p>
 
@@ -450,7 +450,7 @@ export function BroadcastManager({ initialTemplates, initialBroadcasts, leadType
                   <select
                     value={templateCategory}
                     onChange={(e) => setTemplateCategory(e.target.value)}
-                    className="w-full rounded-lg border border-gray-200 bg-white p-2 text-xs dark:border-gray-700 dark:bg-gray-900"
+                    className="w-full rounded-lg border border-neutral-200 bg-white p-2 text-xs dark:border-neutral-700 dark:bg-neutral-900"
                   >
                     <option value="MARKETING">MARKETING</option>
                     <option value="UTILITY">UTILITY (Utilidade)</option>
@@ -467,7 +467,7 @@ export function BroadcastManager({ initialTemplates, initialBroadcasts, leadType
                   placeholder="Olá {{1}}, aproveite nossa oferta exclusiva de {{2}}% de desconto!"
                   rows={4}
                 />
-                <span className="text-[10px] text-gray-400 mt-1 block">
+                <span className="text-[10px] text-neutral-400 mt-1 block">
                   Use <code>{"{{1}}"}</code>, <code>{"{{2}}"}</code> para adicionar variáveis dinâmicas.
                 </span>
               </div>
@@ -495,8 +495,8 @@ export function BroadcastManager({ initialTemplates, initialBroadcasts, leadType
       {/* MODAL: NOVO DISPARO */}
       {showNewBroadcastModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-900 space-y-4">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+          <div className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-xl dark:bg-neutral-900 space-y-4">
+            <h3 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
               <Megaphone className="h-5 w-5 text-emerald-600" />
               Novo Disparo de Promoção em Massa
             </h3>
@@ -519,7 +519,7 @@ export function BroadcastManager({ initialTemplates, initialBroadcasts, leadType
                     setSelectedTemplateId(e.target.value)
                     setVariableMapping({})
                   }}
-                  className="w-full rounded-lg border border-gray-200 bg-white p-2 text-xs dark:border-gray-700 dark:bg-gray-900 font-mono"
+                  className="w-full rounded-lg border border-neutral-200 bg-white p-2 text-xs dark:border-neutral-700 dark:bg-neutral-900 font-mono"
                 >
                   <option value="">-- Escolha um Template aprovado --</option>
                   {templates.map((t) => (
@@ -548,7 +548,7 @@ export function BroadcastManager({ initialTemplates, initialBroadcasts, leadType
                           onChange={(e) =>
                             setVariableMapping((prev) => ({ ...prev, [varNum]: e.target.value }))
                           }
-                          className="flex-1 rounded-md border border-gray-200 bg-white p-1.5 text-xs dark:border-gray-700 dark:bg-gray-900"
+                          className="flex-1 rounded-md border border-neutral-200 bg-white p-1.5 text-xs dark:border-neutral-700 dark:bg-neutral-900"
                         >
                           <option value="name">Nome do Lead</option>
                           <option value="phone">Telefone do Lead</option>
@@ -562,18 +562,18 @@ export function BroadcastManager({ initialTemplates, initialBroadcasts, leadType
               )}
 
               {/* Filtro de Público */}
-              <div className="rounded-xl border border-gray-200 p-3 space-y-2 bg-gray-50/50 dark:border-gray-800 dark:bg-gray-900/50">
-                <span className="font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+              <div className="rounded-xl border border-neutral-200 p-3 space-y-2 bg-neutral-50/50 dark:border-neutral-800 dark:bg-neutral-900/50">
+                <span className="font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
                   <Filter className="h-3.5 w-3.5" /> Segmentar Público-Alvo:
                 </span>
 
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="block text-[10px] text-gray-500 mb-0.5">Tipo de Lead</label>
+                    <label className="block text-[10px] text-neutral-500 mb-0.5">Tipo de Lead</label>
                     <select
                       value={filterLeadTypeId}
                       onChange={(e) => setFilterLeadTypeId(e.target.value)}
-                      className="w-full rounded-md border border-gray-200 bg-white p-1.5 text-xs dark:border-gray-700 dark:bg-gray-900"
+                      className="w-full rounded-md border border-neutral-200 bg-white p-1.5 text-xs dark:border-neutral-700 dark:bg-neutral-900"
                     >
                       <option value="">Todos os tipos</option>
                       {leadTypesOptions.map((lt) => (
@@ -585,11 +585,11 @@ export function BroadcastManager({ initialTemplates, initialBroadcasts, leadType
                   </div>
 
                   <div>
-                    <label className="block text-[10px] text-gray-500 mb-0.5">Período</label>
+                    <label className="block text-[10px] text-neutral-500 mb-0.5">Período</label>
                     <select
                       value={filterPeriod}
                       onChange={(e) => setFilterPeriod(e.target.value)}
-                      className="w-full rounded-md border border-gray-200 bg-white p-1.5 text-xs dark:border-gray-700 dark:bg-gray-900"
+                      className="w-full rounded-md border border-neutral-200 bg-white p-1.5 text-xs dark:border-neutral-700 dark:bg-neutral-900"
                     >
                       <option value="">Qualquer data</option>
                       <option value="today">Hoje</option>
@@ -599,11 +599,11 @@ export function BroadcastManager({ initialTemplates, initialBroadcasts, leadType
                   </div>
 
                   <div>
-                    <label className="block text-[10px] text-gray-500 mb-0.5">Status</label>
+                    <label className="block text-[10px] text-neutral-500 mb-0.5">Status</label>
                     <select
                       value={filterStatus}
                       onChange={(e) => setFilterStatus(e.target.value)}
-                      className="w-full rounded-md border border-gray-200 bg-white p-1.5 text-xs dark:border-gray-700 dark:bg-gray-900"
+                      className="w-full rounded-md border border-neutral-200 bg-white p-1.5 text-xs dark:border-neutral-700 dark:bg-neutral-900"
                     >
                       <option value="">Todos os status</option>
                       {STATUS_OPTIONS.map((st) => (

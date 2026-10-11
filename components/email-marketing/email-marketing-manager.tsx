@@ -430,7 +430,7 @@ export function EmailMarketingManager({
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-              className="rounded-md border border-input bg-background px-3 py-2 text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100">
+              className="rounded-md border border-input bg-background px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-100">
               <option value="ALL">Todos os status</option>
               {Object.entries(EMAIL_CAMPAIGN_STATUS_META).map(([k, v]) => (
                 <option key={k} value={k}>{v.label}</option>
@@ -460,10 +460,10 @@ export function EmailMarketingManager({
             </Button>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border dark:border-gray-700">
+          <div className="overflow-x-auto rounded-xl border dark:border-neutral-700">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-muted/50 dark:bg-gray-900/50 dark:border-gray-700">
+                <tr className="border-b bg-muted/50 dark:bg-neutral-900/50 dark:border-neutral-700">
                   <th className="px-4 py-3 text-left font-medium text-muted-foreground">Campanha</th>
                   <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden md:table-cell">Categoria</th>
                   <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
@@ -473,13 +473,13 @@ export function EmailMarketingManager({
                   <th className="px-4 py-3 text-right font-medium text-muted-foreground">Ações</th>
                 </tr>
               </thead>
-              <tbody className="divide-y dark:divide-gray-700">
+              <tbody className="divide-y dark:divide-neutral-700">
                 {filtered.map(c => {
-                  const sm = EMAIL_CAMPAIGN_STATUS_META[c.status] || { label: c.status, color: 'bg-gray-100 text-gray-600' }
+                  const sm = EMAIL_CAMPAIGN_STATUS_META[c.status] || { label: c.status, color: 'bg-neutral-100 text-neutral-600' }
                   const catLabel = EMAIL_CATEGORIES[c.category]?.label || c.category
                   const openRate = c.totalSent > 0 ? Math.round((c.totalOpened / c.totalSent) * 100) : 0
                   return (
-                    <tr key={c.id} className="hover:bg-muted/30 dark:hover:bg-gray-800/30 cursor-pointer"
+                    <tr key={c.id} className="hover:bg-muted/30 dark:hover:bg-neutral-800/30 cursor-pointer"
                       onClick={() => openDetail(c)}>
                       <td className="px-4 py-3">
                         <p className="font-medium truncate max-w-[200px]">{c.name}</p>
@@ -530,7 +530,7 @@ export function EmailMarketingManager({
   // ─── DETALHE ───
   if (view === 'detail' && selectedCampaign) {
     const c = selectedCampaign
-    const sm = EMAIL_CAMPAIGN_STATUS_META[c.status] || { label: c.status, color: 'bg-gray-100 text-gray-600' }
+    const sm = EMAIL_CAMPAIGN_STATUS_META[c.status] || { label: c.status, color: 'bg-neutral-100 text-neutral-600' }
     const catLabel = EMAIL_CATEGORIES[c.category]?.label || c.category
     const openRate = c.totalSent > 0 ? Math.round((c.totalOpened / c.totalSent) * 100) : 0
     const clickRate = c.totalSent > 0 ? Math.round((c.totalClicked / c.totalSent) * 100) : 0
@@ -560,7 +560,7 @@ export function EmailMarketingManager({
               { label: 'Cliques', value: `${c.totalClicked} (${clickRate}%)`, icon: BarChart3, color: 'text-violet-600 dark:text-violet-400' },
               { label: 'Bounces', value: c.totalBounced + c.totalFailed, icon: RefreshCw, color: 'text-red-600 dark:text-red-400' },
             ].map(s => (
-              <div key={s.label} className="rounded-xl border p-4 dark:border-gray-700 dark:bg-gray-900/40">
+              <div key={s.label} className="rounded-xl border p-4 dark:border-neutral-700 dark:bg-neutral-900/40">
                 <div className="flex items-center gap-2 mb-1">
                   <s.icon className={`h-4 w-4 ${s.color}`} />
                   <span className="text-xs text-muted-foreground">{s.label}</span>
@@ -572,7 +572,7 @@ export function EmailMarketingManager({
         )}
 
         {/* Info */}
-        <div className="rounded-xl border p-5 space-y-3 dark:border-gray-700 dark:bg-gray-900/30">
+        <div className="rounded-xl border p-5 space-y-3 dark:border-neutral-700 dark:bg-neutral-900/30">
           <h3 className="font-semibold text-sm">Detalhes</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm">
             <InfoRow label="Categoria" value={catLabel} />
@@ -586,7 +586,7 @@ export function EmailMarketingManager({
         </div>
 
         {/* Envio real */}
-        <div className="rounded-xl border p-5 dark:border-gray-700 dark:bg-gray-900/30">
+        <div className="rounded-xl border p-5 dark:border-neutral-700 dark:bg-neutral-900/30">
           <h3 className="font-semibold text-sm mb-3">Disparo</h3>
 
           {sendError && (
@@ -596,12 +596,12 @@ export function EmailMarketingManager({
           )}
 
           {sendProgress && (
-            <div className="mb-3 bg-muted/50 dark:bg-gray-900/60 rounded-lg p-4">
+            <div className="mb-3 bg-muted/50 dark:bg-neutral-900/60 rounded-lg p-4">
               <div className="flex justify-between text-xs mb-2">
                 <span>{sendProgress.done ? 'Envio concluído' : 'Enviando…'}</span>
                 <span>{sendProgress.sent} enviados · {sendProgress.failed} falhas</span>
               </div>
-              <div className="w-full bg-black/10 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+              <div className="w-full bg-black/10 dark:bg-neutral-700 rounded-full h-2 overflow-hidden">
                 <div className="h-full bg-blue-600 transition-all"
                   style={{ width: `${sendProgress.total > 0 ? Math.min(100, ((sendProgress.sent + sendProgress.failed) / sendProgress.total) * 100) : 100}%` }} />
               </div>
@@ -634,23 +634,23 @@ export function EmailMarketingManager({
 
         {/* Destinatários */}
         {recipients.length > 0 && (
-          <div className="rounded-xl border dark:border-gray-700 overflow-hidden">
-            <div className="px-4 py-2 bg-muted/50 dark:bg-gray-900/50 border-b dark:border-gray-700 flex items-center justify-between">
+          <div className="rounded-xl border dark:border-neutral-700 overflow-hidden">
+            <div className="px-4 py-2 bg-muted/50 dark:bg-neutral-900/50 border-b dark:border-neutral-700 flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground">Destinatários ({recipients.length} recentes)</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b bg-muted/50 dark:bg-gray-900/50 dark:border-gray-700">
+                  <tr className="border-b bg-muted/50 dark:bg-neutral-900/50 dark:border-neutral-700">
                     <th className="px-4 py-2 text-left font-medium text-muted-foreground">Nome</th>
                     <th className="px-4 py-2 text-left font-medium text-muted-foreground">Email</th>
                     <th className="px-4 py-2 text-left font-medium text-muted-foreground">Status</th>
                     <th className="px-4 py-2 text-left font-medium text-muted-foreground hidden md:table-cell">Erro</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y dark:divide-gray-700">
+                <tbody className="divide-y dark:divide-neutral-700">
                   {recipients.map(r => {
-                    const meta = EMAIL_RECIPIENT_STATUS_META[r.status] || { label: r.status, color: 'bg-gray-100 text-gray-600' }
+                    const meta = EMAIL_RECIPIENT_STATUS_META[r.status] || { label: r.status, color: 'bg-neutral-100 text-neutral-600' }
                     return (
                       <tr key={r.id}>
                         <td className="px-4 py-2">{r.name || '—'}</td>
@@ -674,11 +674,11 @@ export function EmailMarketingManager({
 
         {/* Preview HTML */}
         {c.htmlBody && (
-          <div className="rounded-xl border dark:border-gray-700 overflow-hidden">
-            <div className="px-4 py-2 bg-muted/50 dark:bg-gray-900/50 border-b dark:border-gray-700">
+          <div className="rounded-xl border dark:border-neutral-700 overflow-hidden">
+            <div className="px-4 py-2 bg-muted/50 dark:bg-neutral-900/50 border-b dark:border-neutral-700">
               <span className="text-xs font-medium text-muted-foreground">Preview do conteúdo</span>
             </div>
-            <div className="p-4 bg-white dark:bg-gray-900 prose prose-sm max-w-none dark:prose-invert"
+            <div className="p-4 bg-white dark:bg-neutral-900 prose prose-sm max-w-none dark:prose-invert"
               dangerouslySetInnerHTML={{ __html: c.htmlBody }} />
           </div>
         )}
@@ -705,14 +705,14 @@ export function EmailMarketingManager({
 
       {/* Templates rápidos */}
       {templates.length > 0 && (
-        <div className="rounded-xl border p-4 dark:border-gray-700 dark:bg-gray-900/30">
+        <div className="rounded-xl border p-4 dark:border-neutral-700 dark:bg-neutral-900/30">
           <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
             <FileText className="h-4 w-4 text-muted-foreground" /> Templates disponíveis
           </h3>
           <div className="flex flex-wrap gap-2">
             {templates.map(t => (
               <button key={t.id} onClick={() => loadTemplate(t)}
-                className="px-3 py-1.5 rounded-lg border text-xs font-medium hover:bg-muted/50 dark:border-gray-600 dark:hover:bg-gray-700/50 transition-colors">
+                className="px-3 py-1.5 rounded-lg border text-xs font-medium hover:bg-muted/50 dark:border-neutral-600 dark:hover:bg-neutral-700/50 transition-colors">
                 {t.name}
               </button>
             ))}
@@ -733,14 +733,14 @@ export function EmailMarketingManager({
         <div>
           <label className="text-sm font-medium mb-1 block">Categoria</label>
           <select value={category} onChange={e => setCategory(e.target.value)}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100">
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-100">
             {Object.entries(EMAIL_CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
           </select>
         </div>
         <div>
           <label className="text-sm font-medium mb-1 block">Segmento</label>
           <select value={segmentType} onChange={e => { setSegmentType(e.target.value); setSegmentValue('') }}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100">
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-100">
             {SEGMENT_TYPES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
           </select>
         </div>
@@ -753,7 +753,7 @@ export function EmailMarketingManager({
             {segmentType === 'STATUS' ? 'Status' : segmentType === 'SOURCE' ? 'Origem' : segmentType === 'LEAD_TYPE' ? 'Tipo de lead' : segmentType === 'TAG' ? 'Tag' : SEGMENT_VALUE_OPTIONS[segmentType as keyof typeof SEGMENT_VALUE_OPTIONS]?.label || 'Valor'}
           </label>
           <select value={segmentValue} onChange={e => setSegmentValue(e.target.value)}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 max-w-xs">
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-100 max-w-xs">
             <option value="">Selecione...</option>
             {segmentType === 'STATUS' && leadStatuses.map(s => <option key={s} value={s}>{s}</option>)}
             {segmentType === 'SOURCE' && leadSources.map(s => <option key={s} value={s}>{s}</option>)}
@@ -785,18 +785,18 @@ export function EmailMarketingManager({
       </div>
 
       {/* Editor HTML */}
-      <div className="rounded-xl border dark:border-gray-700 overflow-hidden">
-        <div className="flex items-center gap-1 flex-wrap px-3 py-2 bg-muted/50 dark:bg-gray-900/50 border-b dark:border-gray-700">
+      <div className="rounded-xl border dark:border-neutral-700 overflow-hidden">
+        <div className="flex items-center gap-1 flex-wrap px-3 py-2 bg-muted/50 dark:bg-neutral-900/50 border-b dark:border-neutral-700">
           {TOOLBAR.map((item, i) => (
             <button key={i} onClick={() => handleToolbar(item)} title={item.label}
-              className="p-1.5 rounded hover:bg-muted dark:hover:bg-gray-700 text-muted-foreground hover:text-foreground transition-colors">
+              className="p-1.5 rounded hover:bg-muted dark:hover:bg-neutral-700 text-muted-foreground hover:text-foreground transition-colors">
               <item.icon className="h-4 w-4" />
             </button>
           ))}
         </div>
         <textarea ref={textareaRef} value={htmlBody} onChange={e => setHtmlBody(e.target.value)}
           placeholder="Escreva o HTML do email aqui... Use a toolbar acima para formatar."
-          className="w-full min-h-[250px] p-4 bg-background text-sm font-mono resize-y focus:outline-none dark:bg-gray-900 dark:text-gray-100 dark:placeholder:text-gray-500" />
+          className="w-full min-h-[250px] p-4 bg-background text-sm font-mono resize-y focus:outline-none dark:bg-neutral-900 dark:text-neutral-100 dark:placeholder:text-neutral-500" />
       </div>
 
       {/* Preview toggle */}
@@ -808,11 +808,11 @@ export function EmailMarketingManager({
       </div>
 
       {showPreview && htmlBody.trim() && (
-        <div className="rounded-xl border dark:border-gray-700 overflow-hidden">
-          <div className="px-4 py-2 bg-muted/50 dark:bg-gray-900/50 border-b dark:border-gray-700">
+        <div className="rounded-xl border dark:border-neutral-700 overflow-hidden">
+          <div className="px-4 py-2 bg-muted/50 dark:bg-neutral-900/50 border-b dark:border-neutral-700">
             <span className="text-xs font-medium text-muted-foreground">Preview</span>
           </div>
-          <div className="p-4 bg-white dark:bg-gray-900 prose prose-sm max-w-none dark:prose-invert"
+          <div className="p-4 bg-white dark:bg-neutral-900 prose prose-sm max-w-none dark:prose-invert"
             dangerouslySetInnerHTML={{ __html: personalize(htmlBody) }} />
         </div>
       )}

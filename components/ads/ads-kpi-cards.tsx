@@ -77,7 +77,7 @@ export function AdsKpiCards({ kpis }: { kpis: KpiData }) {
         return (
           <div
             key={card.title}
-            className="rounded-xl border p-4 shadow-sm bg-card text-card-foreground dark:border-gray-700 dark:bg-gray-900/40 flex flex-col justify-between transition-all hover:shadow-md"
+            className="rounded-xl border p-4 shadow-sm bg-card text-card-foreground dark:border-neutral-700 dark:bg-neutral-900/40 flex flex-col justify-between transition-all hover:shadow-md"
           >
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium text-muted-foreground">{card.title}</span>

@@ -58,13 +58,13 @@ export function ChecklistStagesModal({ stages: initial, onClose, onSaved }: Prop
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
-          <h2 className="font-bold text-gray-900 dark:text-gray-100">Etapas do Checklist</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">×</button>
+      <div className="bg-white dark:bg-neutral-900 w-full max-w-md rounded-2xl shadow-xl overflow-hidden border border-neutral-200 dark:border-neutral-700">
+        <div className="px-6 py-4 border-b border-neutral-100 dark:border-neutral-800 flex justify-between items-center">
+          <h2 className="font-bold text-neutral-900 dark:text-neutral-100">Etapas do Checklist</h2>
+          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600">×</button>
         </div>
         <div className="p-6 space-y-3 max-h-[60vh] overflow-y-auto">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-neutral-500">
             Estas etapas aparecem como checklist em cada novo projeto/proposta. Alterações valem para os próximos criados.
           </p>
           {error && <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg px-3 py-2 text-sm">{error}</div>}
@@ -72,17 +72,17 @@ export function ChecklistStagesModal({ stages: initial, onClose, onSaved }: Prop
           {stages.map((s, i) => (
             <div key={i} className="flex items-center gap-2">
               <div className="flex flex-col">
-                <button onClick={() => move(i, -1)} disabled={i === 0} className="text-gray-400 hover:text-gray-700 disabled:opacity-30 text-xs leading-none">▲</button>
-                <button onClick={() => move(i, 1)} disabled={i === stages.length - 1} className="text-gray-400 hover:text-gray-700 disabled:opacity-30 text-xs leading-none">▼</button>
+                <button onClick={() => move(i, -1)} disabled={i === 0} className="text-neutral-400 hover:text-neutral-700 disabled:opacity-30 text-xs leading-none">▲</button>
+                <button onClick={() => move(i, 1)} disabled={i === stages.length - 1} className="text-neutral-400 hover:text-neutral-700 disabled:opacity-30 text-xs leading-none">▼</button>
               </div>
               <input
                 type="text"
                 placeholder="Nome da etapa"
                 value={s.label}
                 onChange={(e) => update(i, { label: e.target.value })}
-                className="flex-1 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                className="flex-1 border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-purple-500"
               />
-              <label className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+              <label className="flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
                 <input type="checkbox" checked={s.isActive} onChange={(e) => update(i, { isActive: e.target.checked })} className="rounded" />
                 Ativa
               </label>
@@ -92,13 +92,13 @@ export function ChecklistStagesModal({ stages: initial, onClose, onSaved }: Prop
 
           <button
             onClick={() => setStages((prev) => [...prev, { label: '', sortOrder: prev.length, isActive: true }])}
-            className="w-full py-2 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-500 font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            className="w-full py-2 border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-lg text-sm text-neutral-500 font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
           >
             + Adicionar etapa
           </button>
         </div>
-        <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300">Cancelar</button>
+        <div className="px-6 py-4 bg-neutral-50 dark:bg-neutral-900 border-t border-neutral-100 dark:border-neutral-700 flex justify-end gap-2">
+          <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300">Cancelar</button>
           <button onClick={save} disabled={saving} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium disabled:opacity-60">
             {saving ? 'Salvando...' : 'Salvar etapas'}
           </button>

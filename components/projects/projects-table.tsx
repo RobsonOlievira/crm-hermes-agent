@@ -71,10 +71,10 @@ function ChecklistProgress({ raw }: { raw?: string | null }) {
   const done = items.filter((i) => i.done).length
   return (
     <div className="flex items-center gap-2 min-w-[90px]">
-      <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+      <div className="flex-1 bg-neutral-200 dark:bg-neutral-700 rounded-full h-1.5 overflow-hidden">
         <div className="h-full bg-purple-500 rounded-full transition-all" style={{ width: `${(done / items.length) * 100}%` }} />
       </div>
-      <span className="text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">{done}/{items.length}</span>
+      <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 whitespace-nowrap">{done}/{items.length}</span>
     </div>
   )
 }
@@ -87,17 +87,17 @@ function InstallmentProgress({ installments }: { installments: Installment[] }) 
   const now = new Date()
   const overdue = installments.filter((i) => !i.paid && new Date(i.dueDate) < now).length
 
-  if (total === 0) return <span className="text-gray-400 text-xs">—</span>
+  if (total === 0) return <span className="text-neutral-400 text-xs">—</span>
 
   return (
     <div className="flex items-center gap-2 min-w-[100px]">
-      <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+      <div className="flex-1 bg-neutral-200 dark:bg-neutral-700 rounded-full h-1.5 overflow-hidden">
         <div
           className="h-full bg-green-500 rounded-full transition-all"
           style={{ width: `${(paid / total) * 100}%` }}
         />
       </div>
-      <span className={`text-xs font-medium whitespace-nowrap ${overdue > 0 ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'}`}>
+      <span className={`text-xs font-medium whitespace-nowrap ${overdue > 0 ? 'text-red-500' : 'text-neutral-500 dark:text-neutral-400'}`}>
         {paid}/{total}{overdue > 0 ? ` ⚠️` : ''}
       </span>
     </div>
@@ -186,20 +186,20 @@ export function ProjectsTable({ projects: initialProjects, clients, members, che
       {/* Header com Ano e Novo Projeto */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 hidden sm:block">Projetos</h1>
-          <div className="flex items-center bg-gray-900 dark:bg-gray-900 rounded-lg text-gray-300 overflow-hidden border border-gray-700">
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 hidden sm:block">Projetos</h1>
+          <div className="flex items-center bg-neutral-900 dark:bg-neutral-900 rounded-lg text-neutral-300 overflow-hidden border border-neutral-700">
             <button 
               onClick={() => setYear(y => y - 1)}
-              className="px-3 py-1.5 hover:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
+              className="px-3 py-1.5 hover:bg-neutral-800 dark:hover:bg-neutral-700 transition-colors"
             >
               ‹
             </button>
-            <div className="px-2 py-1.5 flex items-center gap-2 font-medium text-sm border-x border-gray-700">
+            <div className="px-2 py-1.5 flex items-center gap-2 font-medium text-sm border-x border-neutral-700">
               <span className="opacity-70">📅</span> {year}
             </div>
             <button 
               onClick={() => setYear(y => y + 1)}
-              className="px-3 py-1.5 hover:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
+              className="px-3 py-1.5 hover:bg-neutral-800 dark:hover:bg-neutral-700 transition-colors"
             >
               ›
             </button>
@@ -208,7 +208,7 @@ export function ProjectsTable({ projects: initialProjects, clients, members, che
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowStagesModal(true)}
-            className="hidden sm:inline-flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 px-2 py-2 transition-colors"
+            className="hidden sm:inline-flex items-center gap-1 text-sm font-medium text-neutral-500 dark:text-neutral-400 hover:text-purple-600 dark:hover:text-purple-400 px-2 py-2 transition-colors"
             title="Configurar etapas do checklist"
           >
             ⚙️ Etapas
@@ -245,14 +245,14 @@ export function ProjectsTable({ projects: initialProjects, clients, members, che
                 className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-3 hover:bg-purple-100/40 dark:hover:bg-purple-900/20 cursor-pointer transition-colors"
               >
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-gray-900 dark:text-gray-100 truncate">{p.name}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                  <div className="font-medium text-neutral-900 dark:text-neutral-100 truncate">{p.name}</div>
+                  <div className="text-xs text-neutral-500 dark:text-neutral-400">
                     {p.client.name}
                     {p.plannedDate && <> · planejado {formatCompetenceDate(p.plannedDate)}</>}
                   </div>
                 </div>
                 <ChecklistProgress raw={p.checklist} />
-                <div className="text-sm font-semibold text-gray-800 dark:text-gray-200 sm:w-28 sm:text-right">
+                <div className="text-sm font-semibold text-neutral-800 dark:text-neutral-200 sm:w-28 sm:text-right">
                   {formatCurrency(p.totalValue)}
                 </div>
                 <button
@@ -268,7 +268,7 @@ export function ProjectsTable({ projects: initialProjects, clients, members, che
       )}
 
       {/* Meses (Estilo Abas) */}
-      <div className="flex bg-gray-900 dark:bg-[#1a1a1a] rounded-lg p-1 overflow-x-auto scrollbar-none border border-gray-800">
+      <div className="flex bg-neutral-900 dark:bg-[#1a1a1a] rounded-lg p-1 overflow-x-auto scrollbar-none border border-neutral-800">
         {MONTH_NAMES_PT.map((mName, idx) => {
           const isSelected = month === idx
           return (
@@ -277,8 +277,8 @@ export function ProjectsTable({ projects: initialProjects, clients, members, che
               onClick={() => setMonth(idx)}
               className={`flex-1 min-w-[80px] px-3 py-2 text-sm font-medium transition-all rounded-md ${
                 isSelected 
-                  ? 'bg-gray-800 dark:bg-[#2d2d2d] text-purple-400 border-b-2 border-purple-500 rounded-b-none' 
-                  : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
+                  ? 'bg-neutral-800 dark:bg-[#2d2d2d] text-purple-400 border-b-2 border-purple-500 rounded-b-none' 
+                  : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50'
               }`}
             >
               {mName}
@@ -295,12 +295,12 @@ export function ProjectsTable({ projects: initialProjects, clients, members, che
             placeholder="Buscar projeto ou cliente..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#8b5cf6] w-64"
+            className="border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#8b5cf6] w-64"
           />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#8b5cf6]"
+            className="border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-[#8b5cf6]"
           >
             <option value="">Todos os status</option>
             {STATUS_ORDER.map((s) => (
@@ -310,7 +310,7 @@ export function ProjectsTable({ projects: initialProjects, clients, members, che
           <select
             value={clientFilter}
             onChange={(e) => setClientFilter(e.target.value)}
-            className="border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#8b5cf6]"
+            className="border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-[#8b5cf6]"
           >
             <option value="">Todos os clientes</option>
             {clients.map((c) => (
@@ -332,37 +332,37 @@ export function ProjectsTable({ projects: initialProjects, clients, members, che
               className={`p-3 rounded-xl border text-left transition-all ${
                 statusFilter === s
                   ? `${meta.bg} border-current`
-                  : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                  : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 hover:border-neutral-300'
               }`}
             >
-              <div className={`text-2xl font-bold ${statusFilter === s ? meta.text : 'text-gray-900 dark:text-gray-100'}`}>
+              <div className={`text-2xl font-bold ${statusFilter === s ? meta.text : 'text-neutral-900 dark:text-neutral-100'}`}>
                 {count}
               </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{meta.label}</div>
+              <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{meta.label}</div>
             </button>
           )
         })}
       </div>
 
       {/* Tabela */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
-                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Cliente</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Projeto</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Valor</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Parcelas</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Status</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Início</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Ações</th>
+              <tr className="border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900/50">
+                <th className="text-left px-4 py-3 font-medium text-neutral-500 dark:text-neutral-400">Cliente</th>
+                <th className="text-left px-4 py-3 font-medium text-neutral-500 dark:text-neutral-400">Projeto</th>
+                <th className="text-right px-4 py-3 font-medium text-neutral-500 dark:text-neutral-400">Valor</th>
+                <th className="text-center px-4 py-3 font-medium text-neutral-500 dark:text-neutral-400">Parcelas</th>
+                <th className="text-center px-4 py-3 font-medium text-neutral-500 dark:text-neutral-400">Status</th>
+                <th className="text-left px-4 py-3 font-medium text-neutral-500 dark:text-neutral-400">Início</th>
+                <th className="text-center px-4 py-3 font-medium text-neutral-500 dark:text-neutral-400">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-700">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12 text-gray-400 dark:text-gray-500">
+                  <td colSpan={7} className="text-center py-12 text-neutral-400 dark:text-neutral-500">
                     {search || statusFilter || clientFilter
                       ? 'Nenhum projeto encontrado com os filtros aplicados.'
                       : 'Nenhum projeto ainda. Clique em "+ Novo Projeto" para começar.'}
@@ -374,21 +374,21 @@ export function ProjectsTable({ projects: initialProjects, clients, members, che
                   return (
                     <tr
                       key={project.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700/30 cursor-pointer transition-colors"
+                      className="hover:bg-neutral-50 dark:hover:bg-neutral-700/30 cursor-pointer transition-colors"
                       onClick={() => setSelectedProject(project)}
                     >
                       <td className="px-4 py-3">
-                        <div className="font-medium text-gray-900 dark:text-gray-100">{project.client.name}</div>
-                        <div className="text-xs text-gray-400">{project.client.phone}</div>
+                        <div className="font-medium text-neutral-900 dark:text-neutral-100">{project.client.name}</div>
+                        <div className="text-xs text-neutral-400">{project.client.phone}</div>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="font-medium text-gray-900 dark:text-gray-100">{project.name}</div>
+                        <div className="font-medium text-neutral-900 dark:text-neutral-100">{project.name}</div>
                         {project.description && (
-                          <div className="text-xs text-gray-400 truncate max-w-[200px]">{project.description}</div>
+                          <div className="text-xs text-neutral-400 truncate max-w-[200px]">{project.description}</div>
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <div className="font-semibold text-gray-900 dark:text-gray-100">
+                        <div className="font-semibold text-neutral-900 dark:text-neutral-100">
                           {formatCurrency(project.totalValue)}
                         </div>
                       </td>
@@ -400,7 +400,7 @@ export function ProjectsTable({ projects: initialProjects, clients, members, che
                           {meta?.label ?? project.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">
+                      <td className="px-4 py-3 text-neutral-500 dark:text-neutral-400 text-xs">
                         {formatCompetenceDate(project.startDate)}
                       </td>
                       <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
@@ -418,11 +418,11 @@ export function ProjectsTable({ projects: initialProjects, clients, members, che
             </tbody>
             {filtered.length > 0 && (
               <tfoot>
-                <tr className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
-                  <td colSpan={2} className="px-4 py-3 text-sm font-medium text-gray-500">
+                <tr className="border-t border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900/50">
+                  <td colSpan={2} className="px-4 py-3 text-sm font-medium text-neutral-500">
                     {filtered.length} projeto{filtered.length !== 1 ? 's' : ''}
                   </td>
-                  <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-gray-100">
+                  <td className="px-4 py-3 text-right font-semibold text-neutral-900 dark:text-neutral-100">
                     {formatCurrency(totalValue)}
                   </td>
                   <td className="px-4 py-3 text-center text-xs text-green-600 dark:text-green-400 font-medium">

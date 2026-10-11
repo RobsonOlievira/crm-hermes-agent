@@ -111,7 +111,7 @@ const STATUS_OPTIONS = Object.entries(LEAD_STATUS_META).map(([key, val]) => ({
 
 // ---------- Helpers ----------
 function statusMeta(status: string) {
-  return LEAD_STATUS_META[status] ?? { label: status, color: '#6B7280', bg: 'bg-gray-100', text: 'text-gray-600' }
+  return LEAD_STATUS_META[status] ?? { label: status, color: '#6B7280', bg: 'bg-neutral-100', text: 'text-neutral-600' }
 }
 
 function mediaIcon(type: string | null) {
@@ -374,10 +374,10 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
       )}
 
       {/* Barra de Filtros Elegante no Topo (Sempre Visível) */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-white p-3 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
         <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[280px]">
           <div className="relative min-w-[200px] flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -458,7 +458,7 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
 
       <div
         className={cn(
-          'relative grid min-h-0 flex-1 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-950 transition-all',
+          'relative grid min-h-0 flex-1 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-950 transition-all',
           'grid-cols-1 md:grid-cols-[320px_1fr]',
           showInfo ? 'lg:grid-cols-[330px_1fr_320px]' : 'lg:grid-cols-[330px_1fr]',
         )}
@@ -466,13 +466,13 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
         {/* ---------- Coluna 1: lista de conversas ---------- */}
         <aside
           className={cn(
-            'flex min-h-0 flex-col border-r border-gray-200 bg-gray-50/60 dark:border-gray-800 dark:bg-gray-900/40',
+            'flex min-h-0 flex-col border-r border-neutral-200 bg-neutral-50/60 dark:border-neutral-800 dark:bg-neutral-900/40',
             activeLeadId ? 'hidden md:flex' : 'flex',
           )}
         >
-          <div className="border-b border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
+          <div className="border-b border-neutral-200 bg-white px-4 py-3 dark:border-neutral-800 dark:bg-neutral-900">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Conversas</h2>
+              <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">Conversas</h2>
               {totalUnread > 0 && (
                 <Badge className="bg-emerald-500 text-white hover:bg-emerald-500">{totalUnread} não lidas</Badge>
               )}
@@ -485,7 +485,7 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
                   'rounded-full px-3 py-1 text-xs font-medium transition',
                   tab === 'todas'
                     ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'
-                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-700',
+                    : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-700',
                 )}
               >
                 Todas
@@ -496,7 +496,7 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
                   'rounded-full px-3 py-1 text-xs font-medium transition',
                   tab === 'nao_lidas'
                     ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'
-                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-700',
+                    : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-700',
                 )}
               >
                 Não lidas {totalUnread > 0 && `(${totalUnread})`}
@@ -506,12 +506,12 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
 
           <ScrollArea className="flex-1">
             {filtered.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-2 px-6 py-16 text-center text-sm text-gray-400 dark:text-gray-500">
+              <div className="flex flex-col items-center justify-center gap-2 px-6 py-16 text-center text-sm text-neutral-400 dark:text-neutral-500">
                 <MessageSquare className="h-8 w-8" />
                 <p>{tab === 'nao_lidas' ? 'Nenhuma conversa não lida.' : 'Nenhuma conversa ainda.'}</p>
               </div>
             ) : (
-              <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+              <ul className="divide-y divide-neutral-100 dark:divide-neutral-800">
                 {filtered.map((c) => {
                   const meta = statusMeta(c.status)
                   const isActive = c.leadId === activeLeadId
@@ -523,7 +523,7 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
                           'relative flex w-full items-center gap-3 px-4 py-3.5 text-left transition-all border-l-4',
                           isActive
                             ? 'bg-emerald-100/90 text-emerald-950 font-semibold border-l-emerald-600 dark:bg-emerald-950/80 dark:text-emerald-50 dark:border-l-emerald-400 shadow-sm'
-                            : 'border-l-transparent hover:bg-gray-100/80 dark:hover:bg-gray-800/60 text-gray-700 dark:text-gray-300',
+                            : 'border-l-transparent hover:bg-neutral-100/80 dark:hover:bg-neutral-800/60 text-neutral-700 dark:text-neutral-300',
                         )}
                       >
                         <div className="relative shrink-0">
@@ -533,22 +533,22 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
                             </AvatarFallback>
                           </Avatar>
                           <span
-                            className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white dark:border-gray-900"
+                            className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white dark:border-neutral-900"
                             style={{ backgroundColor: meta.color }}
                             title={meta.label}
                           />
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-2">
-                            <span className={cn('truncate text-sm', isActive ? 'text-emerald-950 dark:text-emerald-50 font-bold' : 'text-gray-900 dark:text-gray-100 font-medium')}>
+                            <span className={cn('truncate text-sm', isActive ? 'text-emerald-950 dark:text-emerald-50 font-bold' : 'text-neutral-900 dark:text-neutral-100 font-medium')}>
                               {c.name}
                             </span>
-                            <span className={cn('shrink-0 text-[11px]', isActive ? 'text-emerald-800 dark:text-emerald-300 font-medium' : 'text-gray-400 dark:text-gray-500')}>
+                            <span className={cn('shrink-0 text-[11px]', isActive ? 'text-emerald-800 dark:text-emerald-300 font-medium' : 'text-neutral-400 dark:text-neutral-500')}>
                               {timeLabel(c.lastMessageAt, mounted)}
                             </span>
                           </div>
                           <div className="mt-0.5 flex items-center justify-between gap-2">
-                            <span className={cn('truncate text-xs', isActive ? 'text-emerald-900/90 dark:text-emerald-200/90 font-medium' : 'text-gray-500 dark:text-gray-400')}>
+                            <span className={cn('truncate text-xs', isActive ? 'text-emerald-900/90 dark:text-emerald-200/90 font-medium' : 'text-neutral-500 dark:text-neutral-400')}>
                               {c.lastMessageText || 'Sem mensagens'}
                             </span>
                             {c.unreadCount > 0 && (
@@ -575,29 +575,29 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
           )}
         >
           {!activeLeadId || !activeLead ? (
-            <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-gray-50 px-8 text-center dark:bg-[#0b141a]">
+            <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-neutral-50 px-8 text-center dark:bg-[#0b141a]">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/50">
                 <MessageSquare className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Selecione uma conversa</h3>
-              <p className="max-w-sm text-sm text-gray-500 dark:text-gray-400">
+              <h3 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100">Selecione uma conversa</h3>
+              <p className="max-w-sm text-sm text-neutral-500 dark:text-neutral-400">
                 Escolha um contato à esquerda para ver o histórico completo e responder diretamente pelo painel.
               </p>
             </div>
           ) : (
             <>
               {/* Header da thread */}
-              <header className="flex items-center gap-3 border-b border-gray-200 bg-[#f0f2f5] px-4 py-2.5 dark:border-gray-800 dark:bg-gray-900">
+              <header className="flex items-center gap-3 border-b border-neutral-200 bg-[#f0f2f5] px-4 py-2.5 dark:border-neutral-800 dark:bg-neutral-900">
                 <button
                   onClick={() => setActiveLeadId(null)}
-                  className="rounded-md p-1 text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-800 md:hidden"
+                  className="rounded-md p-1 text-neutral-500 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:bg-neutral-800 md:hidden"
                   aria-label="Voltar"
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </button>
                 <div
                   onClick={() => setShowInfo((s) => !s)}
-                  className="flex min-w-0 flex-1 items-center gap-3 cursor-pointer rounded-lg p-1 transition hover:bg-gray-200/60 dark:hover:bg-gray-800/60"
+                  className="flex min-w-0 flex-1 items-center gap-3 cursor-pointer rounded-lg p-1 transition hover:bg-neutral-200/60 dark:hover:bg-neutral-800/60"
                   title="Clique para ver/ocultar detalhes do lead"
                 >
                   <Avatar className="h-10 w-10 shrink-0">
@@ -606,8 +606,8 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{activeLead.name}</p>
-                    <p className="truncate text-xs text-gray-500 dark:text-gray-400">{activeLead.phone || 'Sem telefone'}</p>
+                    <p className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">{activeLead.name}</p>
+                    <p className="truncate text-xs text-neutral-500 dark:text-neutral-400">{activeLead.phone || 'Sem telefone'}</p>
                   </div>
                 </div>
 
@@ -617,7 +617,7 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={cn('shrink-0', showInfo && 'bg-gray-200 dark:bg-gray-900')}
+                  className={cn('shrink-0', showInfo && 'bg-neutral-200 dark:bg-neutral-900')}
                   onClick={() => setShowInfo((s) => !s)}
                   aria-label="Informações do lead"
                   title="Informações do lead"
@@ -637,9 +637,9 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
                 }}
               >
                 {loadingThread && messages.length === 0 ? (
-                  <div className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">Carregando…</div>
+                  <div className="flex h-full items-center justify-center text-sm text-neutral-500 dark:text-neutral-400">Carregando…</div>
                 ) : messages.length === 0 ? (
-                  <div className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
+                  <div className="flex h-full items-center justify-center text-sm text-neutral-500 dark:text-neutral-400">
                     Nenhuma mensagem nesta conversa ainda.
                   </div>
                 ) : (
@@ -653,7 +653,7 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
                       <div key={m.id}>
                         {showDay && (
                           <div className="my-3 flex justify-center">
-                            <span className="rounded-full bg-white/80 px-3 py-1 text-[11px] font-medium text-gray-500 shadow-sm dark:bg-gray-900/80 dark:text-gray-300">
+                            <span className="rounded-full bg-white/80 px-3 py-1 text-[11px] font-medium text-neutral-500 shadow-sm dark:bg-neutral-900/80 dark:text-neutral-300">
                               {dayDivider(m.timestamp, mounted)}
                             </span>
                           </div>
@@ -663,8 +663,8 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
                             className={cn(
                               'max-w-[75%] rounded-lg px-3 py-2 text-sm shadow-sm',
                               outbound
-                                ? 'bg-[#d9fdd3] text-gray-800 dark:bg-emerald-800 dark:text-gray-50'
-                                : 'bg-white text-gray-800 dark:bg-gray-900 dark:text-gray-50',
+                                ? 'bg-[#d9fdd3] text-neutral-800 dark:bg-emerald-800 dark:text-neutral-50'
+                                : 'bg-white text-neutral-800 dark:bg-neutral-900 dark:text-neutral-50',
                             )}
                           >
                             {outbound && m.isFromBot && (
@@ -678,12 +678,12 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
                               </span>
                             )}
                             {m.mediaType && (
-                              <span className="mb-1 flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-gray-300">
+                              <span className="mb-1 flex items-center gap-1 text-xs font-medium text-neutral-500 dark:text-neutral-300">
                                 <MediaIco className="h-3.5 w-3.5" /> {m.mediaType}
                               </span>
                             )}
                             <p className="whitespace-pre-wrap break-words">{m.content}</p>
-                            <span className="mt-1 flex items-center justify-end gap-1 text-[10px] text-gray-400 dark:text-gray-300/70">
+                            <span className="mt-1 flex items-center justify-end gap-1 text-[10px] text-neutral-400 dark:text-neutral-300/70">
                               {bubbleTime(m.timestamp, mounted)}
                               {outbound &&
                                 (m.status === 'READ' ? (
@@ -703,7 +703,7 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
               </div>
 
               {/* Composer */}
-              <div className="flex items-end gap-2 border-t border-gray-200 bg-[#f0f2f5] px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
+              <div className="flex items-end gap-2 border-t border-neutral-200 bg-[#f0f2f5] px-4 py-3 dark:border-neutral-800 dark:bg-neutral-900">
                 <Textarea
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
@@ -715,7 +715,7 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
                   }}
                   placeholder="Digite uma mensagem…"
                   rows={1}
-                  className="max-h-32 min-h-[44px] flex-1 resize-none rounded-xl bg-white dark:bg-gray-900 dark:text-gray-100 dark:placeholder:text-gray-500"
+                  className="max-h-32 min-h-[44px] flex-1 resize-none rounded-xl bg-white dark:bg-neutral-900 dark:text-neutral-100 dark:placeholder:text-neutral-500"
                 />
                 <Button
                   onClick={sendMessage}
@@ -735,30 +735,30 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
         {activeLead && (
           <aside
             className={cn(
-              'min-h-0 flex-col overflow-y-auto border-l border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900',
+              'min-h-0 flex-col overflow-y-auto border-l border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900',
               'absolute inset-0 z-10 lg:static lg:z-auto',
               showInfo ? 'flex' : 'hidden',
             )}
           >
-            <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-800">
-              <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">Informações do lead</span>
+            <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
+              <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Informações do lead</span>
               <button
                 onClick={() => setShowInfo(false)}
-                className="rounded-md p-1 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                className="rounded-md p-1 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
                 title="Fechar detalhes"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="flex flex-col items-center gap-2 border-b border-gray-100 px-4 py-6 text-center dark:border-gray-800">
+            <div className="flex flex-col items-center gap-2 border-b border-neutral-100 px-4 py-6 text-center dark:border-neutral-800">
               <Avatar className="h-20 w-20">
                 <AvatarFallback className="bg-emerald-100 text-xl font-semibold text-emerald-700">
                   {initials(activeLead.name)}
                 </AvatarFallback>
               </Avatar>
-              <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{activeLead.name}</h3>
-              {activeLead.phone && <p className="text-sm text-gray-500 dark:text-gray-400">{activeLead.phone}</p>}
+              <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">{activeLead.name}</h3>
+              {activeLead.phone && <p className="text-sm text-neutral-500 dark:text-neutral-400">{activeLead.phone}</p>}
               <div className="mt-1 flex flex-wrap items-center justify-center gap-1.5">
                 <Badge
                   variant="secondary"
@@ -781,7 +781,7 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
               </div>
               <Link
                 href={`/leads/${activeLead.id}`}
-                className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-gray-700 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300"
+                className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-neutral-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300"
               >
                 Ver perfil completo <ExternalLink className="h-3.5 w-3.5" />
               </Link>
@@ -827,12 +827,12 @@ export function InboxBoard({ initialConversations, currentUserName, webhookConfi
 
               {activeLead.tags && activeLead.tags.length > 0 && (
                 <div>
-                  <div className="mb-1.5 flex items-center gap-2 text-xs font-medium text-gray-400 dark:text-gray-500">
+                  <div className="mb-1.5 flex items-center gap-2 text-xs font-medium text-neutral-400 dark:text-neutral-500">
                     <Tag className="h-3.5 w-3.5" /> Etiquetas
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {activeLead.tags.map((t) => (
-                      <span key={t} className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-600 dark:bg-gray-900 dark:text-gray-300">
+                      <span key={t} className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs text-neutral-600 dark:bg-neutral-900 dark:text-neutral-300">
                         {t}
                       </span>
                     ))}
@@ -858,12 +858,12 @@ function InfoRow({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500 dark:bg-gray-900 dark:text-gray-400">
+      <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-neutral-500 dark:bg-neutral-900 dark:text-neutral-400">
         <Icon className="h-3.5 w-3.5" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-xs text-gray-400 dark:text-gray-500">{label}</p>
-        <p className="break-words text-sm font-medium text-gray-800 dark:text-gray-200">{value}</p>
+        <p className="text-xs text-neutral-400 dark:text-neutral-500">{label}</p>
+        <p className="break-words text-sm font-medium text-neutral-800 dark:text-neutral-200">{value}</p>
       </div>
     </div>
   )

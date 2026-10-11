@@ -241,11 +241,11 @@ export const ProposalEditor: React.FC<Props> = ({
   }
 
   return (
-    <div className="h-full flex flex-col bg-white dark:bg-zinc-900 border-r border-gray-200 dark:border-zinc-800 shadow-xl overflow-hidden font-['Inter'] text-gray-800 dark:text-zinc-200">
+    <div className="h-full flex flex-col bg-white dark:bg-zinc-900 border-r border-neutral-200 dark:border-zinc-800 shadow-xl overflow-hidden font-['Inter'] text-neutral-800 dark:text-zinc-200">
       {/* Top Action Header */}
-      <div className="p-4 border-b border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 sticky top-0 z-20 flex flex-col gap-2">
+      <div className="p-4 border-b border-neutral-200 dark:border-zinc-800 bg-neutral-50 dark:bg-zinc-900 sticky top-0 z-20 flex flex-col gap-2">
         <div className="flex justify-between items-center">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 tracking-tight">Editor de Orçamento</h2>
+          <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 tracking-tight">Editor de Orçamento</h2>
           <div className="flex gap-2">
             {onSave && (
               <Button
@@ -260,7 +260,7 @@ export const ProposalEditor: React.FC<Props> = ({
             <Button
               onClick={onPrint}
               variant="outline"
-              className="h-9 border-gray-300 dark:border-zinc-700"
+              className="h-9 border-neutral-300 dark:border-zinc-700"
             >
               <Download className="w-4 h-4 mr-2" />
               PDF
@@ -280,7 +280,7 @@ export const ProposalEditor: React.FC<Props> = ({
 
       <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar">
         {/* Seção 1: Modelos Prontos */}
-        <section className="bg-gray-50 dark:bg-zinc-800/40 p-4 rounded-xl border border-gray-200 dark:border-zinc-800">
+        <section className="bg-neutral-50 dark:bg-zinc-800/40 p-4 rounded-xl border border-neutral-200 dark:border-zinc-800">
           <div className="flex items-center gap-2 mb-3 text-purple-600 dark:text-purple-400">
             <LayoutTemplate size={16} />
             <h3 className="text-xs font-bold uppercase tracking-wider">Modelos Prontos</h3>
@@ -289,7 +289,7 @@ export const ProposalEditor: React.FC<Props> = ({
           <div className="space-y-3">
             <select
               onChange={loadTemplate}
-              className="w-full bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full bg-white dark:bg-zinc-900 border border-neutral-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-neutral-900 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
               defaultValue=""
             >
               <option value="" disabled>Selecione um modelo...</option>
@@ -301,7 +301,7 @@ export const ProposalEditor: React.FC<Props> = ({
             {!showSaveTemplate ? (
               <button
                 onClick={() => setShowSaveTemplate(true)}
-                className="w-full py-2 text-xs font-medium text-gray-500 dark:text-zinc-400 hover:text-purple-600 border border-dashed border-gray-300 dark:border-zinc-700 rounded-lg transition-all"
+                className="w-full py-2 text-xs font-medium text-neutral-500 dark:text-zinc-400 hover:text-purple-600 border border-dashed border-neutral-300 dark:border-zinc-700 rounded-lg transition-all"
               >
                 + Salvar orçamento atual como modelo
               </button>
@@ -312,7 +312,7 @@ export const ProposalEditor: React.FC<Props> = ({
                   placeholder="Nome do modelo..."
                   value={newTemplateName}
                   onChange={(e) => setNewTemplateName(e.target.value)}
-                  className="flex-1 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-gray-900 dark:text-zinc-100"
+                  className="flex-1 bg-white dark:bg-zinc-900 border border-neutral-300 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-neutral-900 dark:text-zinc-100"
                 />
                 <button
                   onClick={saveTemplate}
@@ -327,17 +327,17 @@ export const ProposalEditor: React.FC<Props> = ({
 
         {/* Seção 2: Cliente / Lead */}
         <section className="space-y-3">
-          <div className="flex items-center gap-2 text-gray-400">
+          <div className="flex items-center gap-2 text-neutral-400">
             <UserCheck size={14} />
             <h3 className="text-xs font-bold uppercase tracking-wider">Cliente ou Lead</h3>
           </div>
 
           {clients.length > 0 && (
             <div>
-              <label className="block text-xs text-gray-500 dark:text-zinc-400 mb-1">Selecionar do CRM</label>
+              <label className="block text-xs text-neutral-500 dark:text-zinc-400 mb-1">Selecionar do CRM</label>
               <select
                 onChange={handleRecipientSelect}
-                className="w-full bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full bg-white dark:bg-zinc-800 border border-neutral-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-neutral-900 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 defaultValue=""
               >
                 <option value="">Selecione um cliente...</option>
@@ -349,30 +349,30 @@ export const ProposalEditor: React.FC<Props> = ({
           )}
 
           <div>
-            <label className="block text-xs text-gray-500 dark:text-zinc-400 mb-1">Nome do Destinatário</label>
+            <label className="block text-xs text-neutral-500 dark:text-zinc-400 mb-1">Nome do Destinatário</label>
             <input
               type="text"
               value={data.clientName}
               onChange={(e) => onChange({ ...data, clientName: e.target.value })}
               placeholder="Ex: João da Silva / Empresa XYZ"
-              className="w-full bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full bg-white dark:bg-zinc-800 border border-neutral-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-neutral-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
         </section>
 
         {/* Seção 3: Serviço & Catálogo */}
         <section className="space-y-3">
-          <div className="flex items-center gap-2 text-gray-400">
+          <div className="flex items-center gap-2 text-neutral-400">
             <Package size={14} />
             <h3 className="text-xs font-bold uppercase tracking-wider">Serviço & Catálogo</h3>
           </div>
 
           {catalogItems.length > 0 && (
             <div>
-              <label className="block text-xs text-gray-500 dark:text-zinc-400 mb-1">Puxar do Catálogo de Produtos</label>
+              <label className="block text-xs text-neutral-500 dark:text-zinc-400 mb-1">Puxar do Catálogo de Produtos</label>
               <select
                 onChange={handleCatalogSelect}
-                className="w-full bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full bg-white dark:bg-zinc-800 border border-neutral-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-neutral-900 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 defaultValue=""
               >
                 <option value="">Selecione do catálogo...</option>
@@ -384,12 +384,12 @@ export const ProposalEditor: React.FC<Props> = ({
           )}
 
           <div>
-            <label className="block text-xs text-gray-500 dark:text-zinc-400 mb-1">Título do Serviço</label>
+            <label className="block text-xs text-neutral-500 dark:text-zinc-400 mb-1">Título do Serviço</label>
             <input
               type="text"
               value={data.serviceTitle}
               onChange={(e) => onChange({ ...data, serviceTitle: e.target.value })}
-              className="w-full bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full bg-white dark:bg-zinc-800 border border-neutral-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-neutral-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
         </section>
@@ -397,7 +397,7 @@ export const ProposalEditor: React.FC<Props> = ({
         {/* Seção 4: Entregáveis e Valores */}
         <section className="space-y-3">
           <div className="flex justify-between items-center">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">Entregáveis & Valores</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400">Entregáveis & Valores</h3>
             <button
               onClick={addItem}
               className="text-xs flex items-center gap-1 text-purple-600 dark:text-purple-400 hover:underline font-medium"
@@ -408,13 +408,13 @@ export const ProposalEditor: React.FC<Props> = ({
 
           <div className="space-y-2">
             {data.serviceItems.map((item, idx) => (
-              <div key={item.id || idx} className="flex gap-2 items-center bg-gray-50 dark:bg-zinc-800/50 p-2 rounded-lg border border-gray-200 dark:border-zinc-800">
+              <div key={item.id || idx} className="flex gap-2 items-center bg-neutral-50 dark:bg-zinc-800/50 p-2 rounded-lg border border-neutral-200 dark:border-zinc-800">
                 <input
                   type="text"
                   value={item.description}
                   placeholder="Descrição do item / entregável"
                   onChange={(e) => updateItem(idx, 'description', e.target.value)}
-                  className="flex-1 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded px-2 py-1 text-xs text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  className="flex-1 bg-white dark:bg-zinc-800 border border-neutral-300 dark:border-zinc-700 rounded px-2 py-1 text-xs text-neutral-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-purple-500"
                 />
                 <input
                   type="number"
@@ -422,10 +422,10 @@ export const ProposalEditor: React.FC<Props> = ({
                   value={item.quantity ?? 1}
                   placeholder="Qtd"
                   onChange={(e) => updateItem(idx, 'quantity', parseInt(e.target.value) || 1)}
-                  className="w-14 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded px-2 py-1 text-xs text-gray-900 dark:text-zinc-100 text-center focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  className="w-14 bg-white dark:bg-zinc-800 border border-neutral-300 dark:border-zinc-700 rounded px-2 py-1 text-xs text-neutral-900 dark:text-zinc-100 text-center focus:outline-none focus:ring-1 focus:ring-purple-500"
                 />
                 <div className="relative w-24">
-                  <span className="absolute left-1.5 top-1 text-[10px] text-gray-400">R$</span>
+                  <span className="absolute left-1.5 top-1 text-[10px] text-neutral-400">R$</span>
                   <input
                     type="number"
                     min="0"
@@ -433,12 +433,12 @@ export const ProposalEditor: React.FC<Props> = ({
                     value={item.price || ''}
                     placeholder="0.00"
                     onChange={(e) => updateItem(idx, 'price', parseFloat(e.target.value) || 0)}
-                    className="w-full bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded pl-6 pr-2 py-1 text-xs text-gray-900 dark:text-zinc-100 text-right focus:outline-none focus:ring-1 focus:ring-purple-500"
+                    className="w-full bg-white dark:bg-zinc-800 border border-neutral-300 dark:border-zinc-700 rounded pl-6 pr-2 py-1 text-xs text-neutral-900 dark:text-zinc-100 text-right focus:outline-none focus:ring-1 focus:ring-purple-500"
                   />
                 </div>
                 <button
                   onClick={() => removeItem(idx)}
-                  className="text-gray-400 hover:text-red-500 p-1 transition-colors"
+                  className="text-neutral-400 hover:text-red-500 p-1 transition-colors"
                 >
                   <Trash2 size={14} />
                 </button>
@@ -448,13 +448,13 @@ export const ProposalEditor: React.FC<Props> = ({
         </section>
 
         {/* Seção 5: Investimento Final */}
-        <section className="space-y-3 bg-gray-50 dark:bg-zinc-800/40 p-4 rounded-xl border border-gray-200 dark:border-zinc-800">
+        <section className="space-y-3 bg-neutral-50 dark:bg-zinc-800/40 p-4 rounded-xl border border-neutral-200 dark:border-zinc-800">
           <div className="flex justify-between items-center">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">Resumo do Investimento</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400">Resumo do Investimento</h3>
             <button
               onClick={() => setAutoSum(!autoSum)}
               className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
-                autoSum ? 'bg-purple-100 dark:bg-purple-950 text-purple-600 border-purple-300' : 'bg-gray-200 text-gray-500'
+                autoSum ? 'bg-purple-100 dark:bg-purple-950 text-purple-600 border-purple-300' : 'bg-neutral-200 text-neutral-500'
               }`}
             >
               <Calculator size={10} className="inline mr-1" />
@@ -464,7 +464,7 @@ export const ProposalEditor: React.FC<Props> = ({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-gray-500 dark:text-zinc-400 mb-1">Desconto (R$)</label>
+              <label className="block text-xs text-neutral-500 dark:text-zinc-400 mb-1">Desconto (R$)</label>
               <input
                 type="number"
                 min="0"
@@ -472,7 +472,7 @@ export const ProposalEditor: React.FC<Props> = ({
                 value={data.discount || ''}
                 placeholder="0.00"
                 onChange={(e) => onChange({ ...data, discount: parseFloat(e.target.value) || 0 })}
-                className="w-full bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full bg-white dark:bg-zinc-800 border border-neutral-300 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-neutral-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
             </div>
             <div>
@@ -483,7 +483,7 @@ export const ProposalEditor: React.FC<Props> = ({
                 step="0.01"
                 value={data.finalPrice}
                 onChange={(e) => onChange({ ...data, finalPrice: parseFloat(e.target.value) || 0 })}
-                className="w-full bg-white dark:bg-zinc-800 border border-purple-400 dark:border-purple-600 rounded-lg px-3 py-1.5 text-sm font-bold text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full bg-white dark:bg-zinc-800 border border-purple-400 dark:border-purple-600 rounded-lg px-3 py-1.5 text-sm font-bold text-neutral-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
             </div>
           </div>
@@ -492,23 +492,23 @@ export const ProposalEditor: React.FC<Props> = ({
         {/* Seção 6: Condições & Observações */}
         <section className="space-y-3">
           <div>
-            <label className="block text-xs text-gray-500 dark:text-zinc-400 mb-1">Condições de Pagamento</label>
+            <label className="block text-xs text-neutral-500 dark:text-zinc-400 mb-1">Condições de Pagamento</label>
             <input
               type="text"
               value={data.paymentTerms || ''}
               onChange={(e) => onChange({ ...data, paymentTerms: e.target.value })}
               placeholder="Ex: 50% de entrada + 2x no cartão"
-              className="w-full bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full bg-white dark:bg-zinc-800 border border-neutral-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-neutral-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
 
           <div>
-            <label className="block text-xs text-gray-500 dark:text-zinc-400 mb-1">Observações / Validade</label>
+            <label className="block text-xs text-neutral-500 dark:text-zinc-400 mb-1">Observações / Validade</label>
             <textarea
               rows={3}
               value={data.observations}
               onChange={(e) => onChange({ ...data, observations: e.target.value })}
-              className="w-full bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-xs text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full bg-white dark:bg-zinc-800 border border-neutral-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-xs text-neutral-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
               placeholder="Observações finais, regras ou prazo de validade..."
             />
           </div>

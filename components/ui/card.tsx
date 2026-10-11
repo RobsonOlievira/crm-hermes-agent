@@ -16,9 +16,9 @@ const cardVariants = cva(
         "glass-dark-interactive":
           "bg-white/10 backdrop-blur-xl border border-white/20 shadow-md [box-shadow:inset_0_0_0_1px_rgba(255,255,255,0.15)] transition-all duration-normal hover:bg-white/15 hover:border-white/30 hover:shadow-lg hover:-translate-y-0.5",
         "glass-light":
-          "bg-black/[0.04] backdrop-blur-xl border border-black/[0.08] shadow-md [box-shadow:inset_0_0_0_1px_rgba(255,255,255,0.5)] text-gray-900",
+          "bg-black/[0.04] backdrop-blur-xl border border-black/[0.08] shadow-md [box-shadow:inset_0_0_0_1px_rgba(255,255,255,0.5)] text-neutral-900",
         "glass-light-interactive":
-          "bg-black/[0.04] backdrop-blur-xl border border-black/[0.08] shadow-md [box-shadow:inset_0_0_0_1px_rgba(255,255,255,0.5)] text-gray-900 transition-all duration-normal hover:bg-black/[0.08] hover:border-black/[0.15] hover:shadow-lg hover:-translate-y-0.5",
+          "bg-black/[0.04] backdrop-blur-xl border border-black/[0.08] shadow-md [box-shadow:inset_0_0_0_1px_rgba(255,255,255,0.5)] text-neutral-900 transition-all duration-normal hover:bg-black/[0.08] hover:border-black/[0.15] hover:shadow-lg hover:-translate-y-0.5",
         ghost:
           "border-transparent shadow-none bg-transparent",
       },

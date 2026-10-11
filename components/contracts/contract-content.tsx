@@ -19,7 +19,7 @@ export function ContractContent({ content, className = '' }: Props) {
     return parts.map((part, i) => {
       if (part.startsWith('**') && part.endsWith('**')) {
         return (
-          <strong key={i} className="font-semibold text-gray-900 dark:text-gray-100">
+          <strong key={i} className="font-semibold text-neutral-900 dark:text-neutral-100">
             {part.slice(2, -2)}
           </strong>
         )
@@ -29,7 +29,7 @@ export function ContractContent({ content, className = '' }: Props) {
   }
 
   return (
-    <div className={`space-y-3 font-serif text-sm md:text-base leading-relaxed text-gray-800 dark:text-zinc-200 ${className}`}>
+    <div className={`space-y-3 font-serif text-sm md:text-base leading-relaxed text-neutral-800 dark:text-zinc-200 ${className}`}>
       {lines.map((line, idx) => {
         const trimmed = line.trim()
 
@@ -40,7 +40,7 @@ export function ContractContent({ content, className = '' }: Props) {
 
         // Horizontal Rule
         if (trimmed === '---' || trimmed === '***' || trimmed === '___') {
-          return <hr key={idx} className="my-6 border-t border-gray-200 dark:border-zinc-800" />
+          return <hr key={idx} className="my-6 border-t border-neutral-200 dark:border-zinc-800" />
         }
 
         // Heading 1 (# Header)
@@ -48,7 +48,7 @@ export function ContractContent({ content, className = '' }: Props) {
           return (
             <h1
               key={idx}
-              className="text-xl md:text-2xl font-black text-center text-gray-900 dark:text-gray-100 uppercase tracking-tight my-6 pb-2 border-b-2 border-purple-500/30"
+              className="text-xl md:text-2xl font-black text-center text-neutral-900 dark:text-neutral-100 uppercase tracking-tight my-6 pb-2 border-b-2 border-purple-500/30"
             >
               {renderFormattedText(trimmed.slice(2))}
             </h1>
@@ -60,7 +60,7 @@ export function ContractContent({ content, className = '' }: Props) {
           return (
             <h2
               key={idx}
-              className="text-lg font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wide my-4 pt-2 border-b border-gray-200 dark:border-zinc-800"
+              className="text-lg font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wide my-4 pt-2 border-b border-neutral-200 dark:border-zinc-800"
             >
               {renderFormattedText(trimmed.slice(3))}
             </h2>

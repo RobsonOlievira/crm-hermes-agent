@@ -90,7 +90,7 @@ export function AdsDashboard({
   return (
     <div className="space-y-6">
       {/* Barra de Topo do Módulo */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b pb-4 dark:border-gray-700">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b pb-4 dark:border-neutral-700">
         <div className="flex items-center gap-3">
           <div className="p-3 rounded-2xl bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400">
             <Megaphone className="h-6 w-6" />
@@ -108,7 +108,7 @@ export function AdsDashboard({
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
-            className="rounded-md border border-input bg-background px-3 py-2 text-xs dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
+            className="rounded-md border border-input bg-background px-3 py-2 text-xs dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-100"
           >
             <option value="7d">Últimos 7 dias</option>
             <option value="30d">Últimos 30 dias</option>
@@ -122,7 +122,7 @@ export function AdsDashboard({
       </div>
 
       {/* Navegação por Abas */}
-      <div className="flex items-center gap-1 border-b dark:border-gray-700 pb-2">
+      <div className="flex items-center gap-1 border-b dark:border-neutral-700 pb-2">
         <button
           onClick={() => {
             setSelectedCampaign(null)

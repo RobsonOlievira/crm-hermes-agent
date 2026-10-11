@@ -95,15 +95,15 @@ export function ProjectForm({ clients, members, onClose, onCreated }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-700">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Novo Projeto</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">As parcelas serão criadas e provisionadas automaticamente.</p>
+            <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Novo Projeto</h2>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">As parcelas serão criadas e provisionadas automaticamente.</p>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl leading-none p-1"
+            className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 text-xl leading-none p-1"
           >
             ×
           </button>
@@ -119,14 +119,14 @@ export function ProjectForm({ clients, members, onClose, onCreated }: Props) {
           {/* Dados do cliente */}
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                 Cliente *
               </label>
               <select
                 value={clientId}
                 onChange={(e) => setClientId(e.target.value)}
                 required
-                className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Selecionar cliente...</option>
                 {clients.map((c) => (
@@ -136,7 +136,7 @@ export function ProjectForm({ clients, members, onClose, onCreated }: Props) {
             </div>
 
             <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                 Nome do Projeto *
               </label>
               <input
@@ -145,12 +145,12 @@ export function ProjectForm({ clients, members, onClose, onCreated }: Props) {
                 onChange={(e) => setName(e.target.value)}
                 required
                 placeholder="Ex: Site Institucional — Loja Abc"
-                className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                 Valor Total (R$) *
               </label>
               <input
@@ -161,12 +161,12 @@ export function ProjectForm({ clients, members, onClose, onCreated }: Props) {
                 onChange={(e) => setTotalValue(e.target.value)}
                 required
                 placeholder="2500.00"
-                className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                 Nº de Parcelas
               </label>
               <input
@@ -175,17 +175,17 @@ export function ProjectForm({ clients, members, onClose, onCreated }: Props) {
                 max="60"
                 value={installmentCount}
                 onChange={(e) => setInstallmentCount(parseInt(e.target.value) || 1)}
-                className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               {totalValue && installmentCount > 1 && (
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-neutral-400 mt-1">
                   ≈ {formatCurrency(parseFloat(totalValue) / installmentCount)} por parcela
                 </p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                 Data de Início *
               </label>
               <input
@@ -193,25 +193,25 @@ export function ProjectForm({ clients, members, onClose, onCreated }: Props) {
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 required
-                className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                 Prazo de Entrega
               </label>
               <input
                 type="date"
                 value={deadline}
                 onChange={(e) => setDeadline(e.target.value)}
-                className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
               Descrição do Projeto
             </label>
             <textarea
@@ -219,19 +219,19 @@ export function ProjectForm({ clients, members, onClose, onCreated }: Props) {
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
               placeholder="Descreva brevemente o escopo do projeto..."
-              className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                 Responsável
               </label>
               <select
                 value={assignedToId}
                 onChange={(e) => setAssignedToId(e.target.value)}
-                className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Sem responsável</option>
                 {members.map((m) => (
@@ -241,7 +241,7 @@ export function ProjectForm({ clients, members, onClose, onCreated }: Props) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                 Link do Projeto
               </label>
               <input
@@ -249,31 +249,31 @@ export function ProjectForm({ clients, members, onClose, onCreated }: Props) {
                 value={projectLink}
                 onChange={(e) => setProjectLink(e.target.value)}
                 placeholder="https://..."
-                className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
 
           {/* Indicação */}
-          <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Indicação (opcional)</h3>
+          <div className="border border-neutral-200 dark:border-neutral-700 rounded-xl p-4">
+            <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">Indicação (opcional)</h3>
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Nome do Indicador</label>
+                <label className="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">Nome do Indicador</label>
                 <input
                   type="text"
                   value={referralName}
                   onChange={(e) => setReferralName(e.target.value)}
                   placeholder="Nome"
-                  className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Modelo</label>
+                <label className="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">Modelo</label>
                 <select
                   value={referralModel}
                   onChange={(e) => setReferralModel(e.target.value)}
-                  className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Nenhum</option>
                   <option value="PERCENTAGE">Percentual (%)</option>
@@ -281,7 +281,7 @@ export function ProjectForm({ clients, members, onClose, onCreated }: Props) {
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                <label className="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">
                   {referralModel === 'PERCENTAGE' ? 'Percentual (%)' : 'Valor (R$)'}
                 </label>
                 <input
@@ -292,16 +292,16 @@ export function ProjectForm({ clients, members, onClose, onCreated }: Props) {
                   onChange={(e) => setReferralValue(e.target.value)}
                   disabled={!referralModel}
                   placeholder="0"
-                  className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                  className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                 />
               </div>
             </div>
           </div>
 
           {/* Credenciais */}
-          <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+          <div className="border border-neutral-200 dark:border-neutral-700 rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Credenciais de Acesso (opcional)</h3>
+              <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Credenciais de Acesso (opcional)</h3>
               <button
                 type="button"
                 onClick={addCredential}
@@ -311,7 +311,7 @@ export function ProjectForm({ clients, members, onClose, onCreated }: Props) {
               </button>
             </div>
             {credentials.length === 0 ? (
-              <p className="text-xs text-gray-400 dark:text-gray-500">Nenhuma credencial. Você pode adicionar depois.</p>
+              <p className="text-xs text-neutral-400 dark:text-neutral-500">Nenhuma credencial. Você pode adicionar depois.</p>
             ) : (
               <div className="space-y-2">
                 {credentials.map((cred, i) => (
@@ -321,21 +321,21 @@ export function ProjectForm({ clients, members, onClose, onCreated }: Props) {
                       placeholder="Label (ex: cPanel)"
                       value={cred.label}
                       onChange={(e) => updateCredential(i, 'label', e.target.value)}
-                      className="col-span-1 border border-gray-200 dark:border-gray-700 rounded px-2 py-1.5 text-xs bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="col-span-1 border border-neutral-200 dark:border-neutral-700 rounded px-2 py-1.5 text-xs bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     />
                     <input
                       type="text"
                       placeholder="URL / Usuário"
                       value={cred.url}
                       onChange={(e) => updateCredential(i, 'url', e.target.value)}
-                      className="col-span-1 border border-gray-200 dark:border-gray-700 rounded px-2 py-1.5 text-xs bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="col-span-1 border border-neutral-200 dark:border-neutral-700 rounded px-2 py-1.5 text-xs bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     />
                     <input
                       type="text"
                       placeholder="Senha"
                       value={cred.password}
                       onChange={(e) => updateCredential(i, 'password', e.target.value)}
-                      className="col-span-1 border border-gray-200 dark:border-gray-700 rounded px-2 py-1.5 text-xs bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="col-span-1 border border-neutral-200 dark:border-neutral-700 rounded px-2 py-1.5 text-xs bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     />
                     <button
                       type="button"
@@ -354,7 +354,7 @@ export function ProjectForm({ clients, members, onClose, onCreated }: Props) {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+              className="px-4 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200 transition-colors"
             >
               Cancelar
             </button>

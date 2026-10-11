@@ -17,7 +17,7 @@ export function AdsCampaignDetail({
   campaign: CampaignRow
   onBack: () => void
 }) {
-  const statusMeta = AD_CAMPAIGN_STATUS_META[campaign.status] || { label: campaign.status, color: 'bg-gray-100' }
+  const statusMeta = AD_CAMPAIGN_STATUS_META[campaign.status] || { label: campaign.status, color: 'bg-neutral-100' }
 
   return (
     <div className="space-y-6">
@@ -29,7 +29,7 @@ export function AdsCampaignDetail({
       </button>
 
       {/* Cabeçalho da Campanha */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between border-b pb-4 dark:border-gray-700">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between border-b pb-4 dark:border-neutral-700">
         <div>
           <div className="flex items-center gap-2 mb-1">
             {campaign.platform === 'META' ? (
@@ -52,7 +52,7 @@ export function AdsCampaignDetail({
         </div>
 
         {campaign.dailyBudget && (
-          <div className="rounded-lg border p-3 bg-muted/40 text-right dark:border-gray-700">
+          <div className="rounded-lg border p-3 bg-muted/40 text-right dark:border-neutral-700">
             <span className="text-xs text-muted-foreground block">Orçamento Diário</span>
             <span className="font-bold text-base">{fmtMoney(campaign.dailyBudget)}</span>
           </div>
@@ -61,22 +61,22 @@ export function AdsCampaignDetail({
 
       {/* Cards de Desempenho da Campanha */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="rounded-xl border p-4 dark:border-gray-700 bg-card">
+        <div className="rounded-xl border p-4 dark:border-neutral-700 bg-card">
           <span className="text-xs text-muted-foreground block mb-1">Investimento</span>
           <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{fmtMoney(campaign.totalSpend)}</p>
         </div>
 
-        <div className="rounded-xl border p-4 dark:border-gray-700 bg-card">
+        <div className="rounded-xl border p-4 dark:border-neutral-700 bg-card">
           <span className="text-xs text-muted-foreground block mb-1">Leads Gerados</span>
           <p className="text-xl font-bold">{campaign.totalLeads}</p>
         </div>
 
-        <div className="rounded-xl border p-4 dark:border-gray-700 bg-card">
+        <div className="rounded-xl border p-4 dark:border-neutral-700 bg-card">
           <span className="text-xs text-muted-foreground block mb-1">CPL (Custo/Lead)</span>
           <p className="text-xl font-bold text-amber-600 dark:text-amber-400">{fmtMoney(campaign.cpl)}</p>
         </div>
 
-        <div className="rounded-xl border p-4 dark:border-gray-700 bg-card">
+        <div className="rounded-xl border p-4 dark:border-neutral-700 bg-card">
           <span className="text-xs text-muted-foreground block mb-1">ROI da Campanha</span>
           <p className={`text-xl font-bold ${campaign.roi >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
             {campaign.roi.toFixed(1)}%
@@ -85,7 +85,7 @@ export function AdsCampaignDetail({
       </div>
 
       {/* Métricas Adicionais */}
-      <div className="rounded-xl border p-5 space-y-3 dark:border-gray-700 bg-card">
+      <div className="rounded-xl border p-5 space-y-3 dark:border-neutral-700 bg-card">
         <h3 className="font-semibold text-sm">Resumo de Mídia e Conversões</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
           <div>

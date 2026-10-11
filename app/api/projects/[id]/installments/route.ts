@@ -12,10 +12,63 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     if (!user?.tenantId) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
     const body = await req.json()
-    const { installmentId, action, amount, dueDate } = body
+    const { installmentId, action, amount, dueDate, totalValue } = body
 
-    if (!installmentId || !action) {
-      return NextResponse.json({ error: 'installmentId e action são obrigatórios' }, { status: 400 })
+    if (!action) {
+      return NextResponse.json({ error: 'action é obrigatória' }, { status: 400 })
+    }
+
+    const round2 = (n: number) => Math.round(n * 100) / 100
+
+    // ── Definir o VALOR TOTAL do projeto, redistribuindo entre as parcelas não pagas ──
+    // body: { action: 'set_total', totalValue }
+    if (action === 'set_total') {
+      const project = await prisma.project.findFirst({ where: { id: params.id, tenantId: user.tenantId } })
+      if (!project) return NextResponse.json({ error: 'Projeto não encontrado' }, { status: 404 })
+
+      const newTotal = Number(totalValue)
+      if (!Number.isFinite(newTotal) || newTotal < 0) {
+        return NextResponse.json({ error: 'Valor total inválido.' }, { status: 400 })
+      }
+
+      const all = await prisma.projectInstallment.findMany({ where: { projectId: params.id }, orderBy: { number: 'asc' } })
+      const paidSum = all.filter((i) => i.paid).reduce((s, i) => s + (i.paidAmount ?? i.amount), 0)
+      const unpaid = all.filter((i) => !i.paid)
+
+      if (newTotal < paidSum) {
+        return NextResponse.json(
+          { error: `O total não pode ser menor que o já recebido (R$ ${paidSum.toFixed(2)}).` },
+          { status: 400 }
+        )
+      }
+
+      // Se não há parcelas em aberto, apenas ajusta o total do projeto.
+      if (unpaid.length === 0) {
+        const updated = await prisma.project.update({ where: { id: params.id }, data: { totalValue: round2(newTotal) } })
+        return NextResponse.json({ ok: true, totalValue: updated.totalValue, installments: all })
+      }
+
+      // Distribui o restante (total - já pago) igualmente entre as parcelas em aberto;
+      // a última parcela absorve o arredondamento.
+      const remaining = newTotal - paidSum
+      const per = Math.floor((remaining / unpaid.length) * 100) / 100
+      await prisma.$transaction(async (tx) => {
+        let allocated = 0
+        for (let idx = 0; idx < unpaid.length; idx++) {
+          const amt = idx === unpaid.length - 1 ? round2(remaining - allocated) : per
+          allocated = round2(allocated + amt)
+          await tx.projectInstallment.update({ where: { id: unpaid[idx].id }, data: { amount: amt } })
+          await tx.cashFlowTransaction.updateMany({ where: { installmentId: unpaid[idx].id, type: 'PROVISION' }, data: { amount: amt } })
+        }
+        await tx.project.update({ where: { id: params.id }, data: { totalValue: round2(newTotal) } })
+      })
+
+      const updated = await prisma.projectInstallment.findMany({ where: { projectId: params.id }, orderBy: { number: 'asc' } })
+      return NextResponse.json({ ok: true, totalValue: round2(newTotal), installments: updated })
+    }
+
+    if (!installmentId) {
+      return NextResponse.json({ error: 'installmentId é obrigatório' }, { status: 400 })
     }
 
     const installment = await prisma.projectInstallment.findFirst({
@@ -36,13 +89,18 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
           ...(dueDate !== undefined && { dueDate: new Date(dueDate) }),
         },
       })
+      let newProjectTotal: number | undefined
       if (amount !== undefined) {
         await prisma.cashFlowTransaction.updateMany({
           where: { installmentId, type: 'PROVISION' },
           data: { amount: Number(amount) },
         })
+        // Interligado: o total do projeto acompanha a soma das parcelas.
+        const all = await prisma.projectInstallment.findMany({ where: { projectId: params.id } })
+        newProjectTotal = round2(all.reduce((s, i) => s + i.amount, 0))
+        await prisma.project.update({ where: { id: params.id }, data: { totalValue: newProjectTotal } })
       }
-      return NextResponse.json(updated)
+      return NextResponse.json({ ...updated, projectTotalValue: newProjectTotal })
     }
 
     // ── Desfazer pagamento ──

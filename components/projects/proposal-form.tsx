@@ -74,13 +74,13 @@ export function ProposalForm({ clients, onClose, onCreated }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-700">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Nova Proposta</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Registre uma negociação em andamento. Nada entra no caixa até ser iniciada.</p>
+            <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Nova Proposta</h2>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">Registre uma negociação em andamento. Nada entra no caixa até ser iniciada.</p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl leading-none p-1">×</button>
+          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 text-xl leading-none p-1">×</button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
@@ -91,7 +91,7 @@ export function ProposalForm({ clients, onClose, onCreated }: Props) {
           {/* Cliente */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Cliente *</label>
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">Cliente *</label>
               <button
                 type="button"
                 onClick={() => setMode(mode === 'existing' ? 'new' : 'existing')}
@@ -104,7 +104,7 @@ export function ProposalForm({ clients, onClose, onCreated }: Props) {
               <select
                 value={clientId}
                 onChange={(e) => setClientId(e.target.value)}
-                className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#8b5cf6]"
+                className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-[#8b5cf6]"
               >
                 <option value="">Selecionar cliente...</option>
                 {clients.map((c) => (
@@ -118,14 +118,14 @@ export function ProposalForm({ clients, onClose, onCreated }: Props) {
                   placeholder="Nome do cliente"
                   value={newClientName}
                   onChange={(e) => setNewClientName(e.target.value)}
-                  className="border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#8b5cf6]"
+                  className="border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-[#8b5cf6]"
                 />
                 <input
                   type="text"
                   placeholder="WhatsApp / telefone"
                   value={newClientPhone}
                   onChange={(e) => setNewClientPhone(e.target.value)}
-                  className="border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#8b5cf6]"
+                  className="border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-[#8b5cf6]"
                 />
               </div>
             )}
@@ -133,19 +133,19 @@ export function ProposalForm({ clients, onClose, onCreated }: Props) {
 
           {/* Tema / serviço */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tema / Serviço proposto *</label>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">Tema / Serviço proposto *</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ex: Vídeo institucional — Loja Abc"
-              className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#8b5cf6]"
+              className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-[#8b5cf6]"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Valor proposto (R$) *</label>
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">Valor proposto (R$) *</label>
               <input
                 type="number"
                 min="0"
@@ -153,34 +153,34 @@ export function ProposalForm({ clients, onClose, onCreated }: Props) {
                 value={totalValue}
                 onChange={(e) => setTotalValue(e.target.value)}
                 placeholder="2500.00"
-                className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#8b5cf6]"
+                className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-[#8b5cf6]"
               />
-              {totalValue && <p className="text-xs text-gray-400 mt-1">{formatCurrency(parseFloat(totalValue) || 0)}</p>}
+              {totalValue && <p className="text-xs text-neutral-400 mt-1">{formatCurrency(parseFloat(totalValue) || 0)}</p>}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data de entrada</label>
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">Data de entrada</label>
               <input
                 type="date"
                 value={proposalDate}
                 onChange={(e) => setProposalDate(e.target.value)}
-                className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#8b5cf6]"
+                className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-[#8b5cf6]"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data planejada de execução</label>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">Data planejada de execução</label>
             <input
               type="date"
               value={plannedDate}
               onChange={(e) => setPlannedDate(e.target.value)}
-              className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#8b5cf6]"
+              className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-[#8b5cf6]"
             />
-            <p className="text-xs text-gray-400 mt-1">Apenas planejamento — a data real é definida quando você iniciar o projeto.</p>
+            <p className="text-xs text-neutral-400 mt-1">Apenas planejamento — a data real é definida quando você iniciar o projeto.</p>
           </div>
 
           <div className="flex gap-3 justify-end pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">Cancelar</button>
+            <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200 transition-colors">Cancelar</button>
             <button
               type="submit"
               disabled={loading}

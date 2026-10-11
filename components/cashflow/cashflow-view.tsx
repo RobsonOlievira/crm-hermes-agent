@@ -85,13 +85,13 @@ function KPICard({ label, value, sub, color = 'gray' }: { label: string; value: 
     amber: 'text-amber-600 dark:text-amber-400',
     red: 'text-red-600 dark:text-red-400',
     blue: 'text-blue-600 dark:text-blue-400',
-    gray: 'text-gray-900 dark:text-gray-100',
+    gray: 'text-neutral-900 dark:text-neutral-100',
   }
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-      <div className="text-xs text-gray-400 dark:text-gray-500 mb-1">{label}</div>
+    <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
+      <div className="text-xs text-neutral-400 dark:text-neutral-500 mb-1">{label}</div>
       <div className={`text-xl font-bold ${colorMap[color]}`}>{value}</div>
-      {sub && <div className="text-xs text-gray-400 mt-0.5">{sub}</div>}
+      {sub && <div className="text-xs text-neutral-400 mt-0.5">{sub}</div>}
     </div>
   )
 }
@@ -337,13 +337,13 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
   return (
     <div className="space-y-5">
       {/* Abas */}
-      <div className="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-2">
+      <div className="flex items-center gap-2 border-b border-neutral-200 dark:border-neutral-700 pb-2">
         <button
           onClick={() => setViewMode('cashflow')}
           className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
             viewMode === 'cashflow'
               ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-              : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
+              : 'text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200'
           }`}
         >
           Visão Anual
@@ -353,7 +353,7 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
           className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
             viewMode === 'billing'
               ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-              : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
+              : 'text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200'
           }`}
         >
           Inadimplência e Cobranças
@@ -368,14 +368,14 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setYear((y) => y - 1)}
-                  className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                  className="w-8 h-8 rounded-lg border border-neutral-200 dark:border-neutral-700 flex items-center justify-center text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
                 >
                   ‹
                 </button>
-                <span className="text-lg font-bold text-gray-900 dark:text-gray-100 min-w-[60px] text-center">{year}</span>
+                <span className="text-lg font-bold text-neutral-900 dark:text-neutral-100 min-w-[60px] text-center">{year}</span>
                 <button
                   onClick={() => setYear((y) => y + 1)}
-                  className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                  className="w-8 h-8 rounded-lg border border-neutral-200 dark:border-neutral-700 flex items-center justify-center text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
                 >
                   ›
                 </button>
@@ -404,7 +404,7 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
 
           {/* Grid de meses */}
           {loading ? (
-            <div className="text-center py-12 text-gray-400 dark:text-gray-500 text-sm">Carregando...</div>
+            <div className="text-center py-12 text-neutral-400 dark:text-neutral-500 text-sm">Carregando...</div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               {(annualData?.months ?? []).map((m) => {
@@ -416,26 +416,30 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
                   <button
                     key={m.month}
                     onClick={() => loadMonth(m.month)}
-                    className={`text-left p-4 rounded-xl border transition-all ${
+                    className="text-left p-4 rounded-xl border transition-all border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:border-neutral-300 dark:hover:border-neutral-600"
+                    style={
                       isSelected
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                        ? { borderColor: 'var(--brand-primary)', backgroundColor: 'color-mix(in srgb, var(--brand-primary) 12%, transparent)' }
                         : isCurrent
-                        ? 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/10'
-                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600'
-                    }`}
+                        ? { borderColor: 'color-mix(in srgb, var(--brand-primary) 50%, transparent)' }
+                        : undefined
+                    }
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className={`text-sm font-semibold ${isSelected ? 'text-blue-700 dark:text-blue-400' : 'text-gray-900 dark:text-gray-100'}`}>
+                      <span
+                        className={`text-sm font-semibold ${isSelected ? '' : 'text-neutral-900 dark:text-neutral-100'}`}
+                        style={isSelected ? { color: 'var(--brand-primary)' } : undefined}
+                      >
                         {MONTH_NAMES_PT[m.month].slice(0, 3)}
-                        {isCurrent && <span className="ml-1 text-xs text-amber-500">•</span>}
-                        {isFuture && <span className="ml-1 text-xs text-gray-400 font-normal">→</span>}
+                        {isCurrent && <span className="ml-1 text-xs" style={{ color: 'var(--brand-primary)' }}>•</span>}
+                        {isFuture && <span className="ml-1 text-xs text-neutral-400 font-normal">→</span>}
                       </span>
                       <span className={`text-xs font-medium ${m.saldo >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
                         {m.saldo >= 0 ? '+' : ''}{formatCurrency(m.saldo)}
                       </span>
                     </div>
 
-                    <div className="space-y-1 text-xs text-gray-500 dark:text-gray-400">
+                    <div className="space-y-1 text-xs text-neutral-500 dark:text-neutral-400">
                       {m.receitaProjetada > 0 && (
                         <div className="flex justify-between">
                           <span>Proj.</span>
@@ -464,7 +468,7 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
 
                     {/* Mini barra de progresso */}
                     {m.receitaProjetada > 0 && (
-                      <div className="mt-2 bg-gray-200 dark:bg-gray-700 rounded-full h-1 overflow-hidden">
+                      <div className="mt-2 bg-neutral-200 dark:bg-neutral-700 rounded-full h-1 overflow-hidden">
                         <div
                           className="h-full bg-green-500 rounded-full transition-all"
                           style={{ width: `${Math.min(100, (m.receitaRealizada / m.receitaProjetada) * 100)}%` }}
@@ -479,69 +483,69 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
 
           {/* Painel do mês selecionado */}
           {selectedMonth !== null && (
-            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+              <div className="px-6 py-4 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
+                <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">
                   {MONTH_NAMES_PT[selectedMonth]} {year}
                 </h3>
                 <button
                   onClick={() => setSelectedMonth(null)}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg leading-none"
+                  className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 text-lg leading-none"
                 >
                   ×
                 </button>
               </div>
 
               {detailLoading ? (
-                <div className="text-center py-8 text-gray-400 text-sm">Carregando mês...</div>
+                <div className="text-center py-8 text-neutral-400 text-sm">Carregando mês...</div>
               ) : monthDetail && (
                 <div className="p-6 space-y-6">
                   {/* Projetos em andamento e projetos do mês */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                      <h4 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3">
                         Projetos Ativos ({monthDetail.activeProjects?.length || 0})
                       </h4>
                       {(!monthDetail.activeProjects || monthDetail.activeProjects.length === 0) ? (
-                        <p className="text-sm text-gray-400 dark:text-gray-500">Nenhum projeto em andamento.</p>
+                        <p className="text-sm text-neutral-400 dark:text-neutral-500">Nenhum projeto em andamento.</p>
                       ) : (
                         <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin">
                           {monthDetail.activeProjects.map((p) => (
-                            <div key={p.id} className="px-3 py-2 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
-                              <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{p.name}</div>
-                              <div className="text-xs text-gray-400">{p.client.name}</div>
+                            <div key={p.id} className="px-3 py-2 bg-neutral-50 dark:bg-neutral-700/30 rounded-lg">
+                              <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{p.name}</div>
+                              <div className="text-xs text-neutral-400">{p.client.name}</div>
                             </div>
                           ))}
                         </div>
                       )}
                     </div>
                     <div>
-                      <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                      <h4 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3">
                         Projetos do Mês ({monthDetail.projects?.length || 0})
                       </h4>
                       {!monthDetail.projects || monthDetail.projects.length === 0 ? (
-                        <p className="text-sm text-gray-400 dark:text-gray-500">Nenhum projeto iniciado neste mês.</p>
+                        <p className="text-sm text-neutral-400 dark:text-neutral-500">Nenhum projeto iniciado neste mês.</p>
                       ) : (
                         <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin">
                           {monthDetail.projects.map((proj) => (
-                            <div key={proj.id} className="px-3 py-2 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
+                            <div key={proj.id} className="px-3 py-2 bg-neutral-50 dark:bg-neutral-700/30 rounded-lg">
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{proj.name}</div>
-                                  <div className="text-xs text-gray-400">{proj.client.name}</div>
+                                  <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{proj.name}</div>
+                                  <div className="text-xs text-neutral-400">{proj.client.name}</div>
                                 </div>
-                                <div className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                <div className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
                                   {formatCurrency(proj.totalValue)}
                                 </div>
                               </div>
-                              <div className="mt-2 space-y-1 border-t border-gray-200 dark:border-gray-700 pt-2">
+                              <div className="mt-2 space-y-1 border-t border-neutral-200 dark:border-neutral-700 pt-2">
                                 {proj.installments.map((inst) => (
                                   <label
                                     key={inst.id}
                                     className={`flex items-center justify-between gap-2 rounded px-1 py-1 cursor-pointer ${
                                       inst.paid
                                         ? 'bg-green-50 dark:bg-green-900/10'
-                                        : 'hover:bg-gray-200/60 dark:hover:bg-gray-600/30'
+                                        : 'hover:bg-neutral-200/60 dark:hover:bg-neutral-600/30'
                                     }`}
                                   >
                                     <span className="flex items-center gap-2">
@@ -550,16 +554,16 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
                                         checked={inst.paid}
                                         disabled={inst.paid || markingId !== null}
                                         onChange={() => markInstallmentPaid(proj.id, inst)}
-                                        className="w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 accent-green-600"
+                                        className="w-3.5 h-3.5 rounded border-neutral-300 dark:border-neutral-600 accent-green-600"
                                       />
-                                      <span className="text-xs text-gray-700 dark:text-gray-300">
+                                      <span className="text-xs text-neutral-700 dark:text-neutral-300">
                                         Parcela {inst.number}
-                                        <span className="text-[10px] text-gray-400">
+                                        <span className="text-[10px] text-neutral-400">
                                           {' '}— {new Date(inst.dueDate).toLocaleDateString('pt-BR')}
                                         </span>
                                       </span>
                                     </span>
-                                    <span className={`text-xs font-semibold ${inst.paid ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-gray-100'}`}>
+                                    <span className={`text-xs font-semibold ${inst.paid ? 'text-green-600 dark:text-green-400' : 'text-neutral-900 dark:text-neutral-100'}`}>
                                       {inst.paid
                                         ? formatCurrency(inst.paidAmount ?? inst.amount)
                                         : formatCurrency(inst.amount)}
@@ -572,7 +576,7 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
                         </div>
                       )}
                       {markingId !== null && (
-                        <p className="text-xs text-gray-400 mt-2">Salvando pagamento...</p>
+                        <p className="text-xs text-neutral-400 mt-2">Salvando pagamento...</p>
                       )}
                       {markError && (
                         <p className="text-xs text-red-500 mt-2">{markError}</p>
@@ -583,7 +587,7 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
                   {/* Despesas editáveis */}
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Despesas</h4>
+                      <h4 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">Despesas</h4>
                       <button
                         onClick={() => setEditExpenses((prev) => [...prev, { category: '', description: '', amount: '', isFixed: false }])}
                         className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium"
@@ -592,7 +596,7 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
                       </button>
                     </div>
                     {editExpenses.length === 0 ? (
-                      <p className="text-sm text-gray-400 dark:text-gray-500">Nenhuma despesa registrada.</p>
+                      <p className="text-sm text-neutral-400 dark:text-neutral-500">Nenhuma despesa registrada.</p>
                     ) : (
                       <div className="space-y-2">
                         {editExpenses.map((exp, i) => (
@@ -600,7 +604,7 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
                             <select
                               value={exp.category}
                               onChange={(e) => setEditExpenses((prev) => prev.map((x, idx) => idx === i ? { ...x, category: e.target.value } : x))}
-                              className="flex-1 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-xs bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="flex-1 border border-neutral-200 dark:border-neutral-700 rounded-lg px-2 py-1.5 text-xs bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
                             >
                               <option value="">Categoria...</option>
                               {DEFAULT_EXPENSE_CATEGORIES.map((c) => (
@@ -612,7 +616,7 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
                               placeholder="Descrição"
                               value={exp.description}
                               onChange={(e) => setEditExpenses((prev) => prev.map((x, idx) => idx === i ? { ...x, description: e.target.value } : x))}
-                              className="w-32 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-xs bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="w-32 border border-neutral-200 dark:border-neutral-700 rounded-lg px-2 py-1.5 text-xs bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
                             />
                             <input
                               type="number"
@@ -621,9 +625,9 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
                               placeholder="R$"
                               value={exp.amount}
                               onChange={(e) => setEditExpenses((prev) => prev.map((x, idx) => idx === i ? { ...x, amount: e.target.value } : x))}
-                              className="w-24 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-xs bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="w-24 border border-neutral-200 dark:border-neutral-700 rounded-lg px-2 py-1.5 text-xs bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
                             />
-                            <label className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                            <label className="flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
                               <input
                                 type="checkbox"
                                 checked={exp.isFixed}
@@ -648,7 +652,7 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
                   {editRevenueEntries.length > 0 && (
                     <div>
                       <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Fontes de Receita</h4>
+                        <h4 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">Fontes de Receita</h4>
                         <button
                           onClick={() => {
                             setRevenueSourcesEdit((annualData?.revenueSources || []).map(s => ({ id: s.id, name: s.name, icon: s.icon ?? '', isRecurring: s.isRecurring, isActive: s.isActive })))
@@ -663,7 +667,7 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
                         {editRevenueEntries.map((entry, i) => (
                           <div key={entry.sourceId} className="flex items-center gap-2">
                             <span className="text-base w-6 text-center flex-shrink-0">{entry.icon || '💰'}</span>
-                            <span className="flex-1 text-xs text-gray-700 dark:text-gray-300 truncate">{entry.name}</span>
+                            <span className="flex-1 text-xs text-neutral-700 dark:text-neutral-300 truncate">{entry.name}</span>
                             <input
                               type="number"
                               min="0"
@@ -671,7 +675,7 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
                               placeholder="R$"
                               value={entry.amount}
                               onChange={(e) => setEditRevenueEntries((prev) => prev.map((x, idx) => idx === i ? { ...x, amount: e.target.value } : x))}
-                              className="w-28 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-xs bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                              className="w-28 border border-neutral-200 dark:border-neutral-700 rounded-lg px-2 py-1.5 text-xs bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-teal-500"
                             />
                           </div>
                         ))}
@@ -680,7 +684,7 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
                   )}
                   {editRevenueEntries.length === 0 && (
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-400 dark:text-gray-500">Nenhuma fonte de receita configurada.</span>
+                      <span className="text-xs text-neutral-400 dark:text-neutral-500">Nenhuma fonte de receita configurada.</span>
                       <button
                         onClick={() => { setRevenueSourcesEdit([]); setShowRevenueSources(true) }}
                         className="text-xs text-teal-600 dark:text-teal-400 font-medium hover:underline"
@@ -693,7 +697,7 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
                   {/* Receitas extras editáveis */}
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Receitas Extras</h4>
+                      <h4 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">Receitas Extras</h4>
                       <button
                         onClick={() => setEditExtras((prev) => [...prev, { description: '', amount: '' }])}
                         className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium"
@@ -702,7 +706,7 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
                       </button>
                     </div>
                     {editExtras.length === 0 ? (
-                      <p className="text-sm text-gray-400 dark:text-gray-500">Nenhuma receita extra este mês.</p>
+                      <p className="text-sm text-neutral-400 dark:text-neutral-500">Nenhuma receita extra este mês.</p>
                     ) : (
                       <div className="space-y-2">
                         {editExtras.map((ext, i) => (
@@ -712,7 +716,7 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
                               placeholder="Descrição da receita..."
                               value={ext.description}
                               onChange={(e) => setEditExtras((prev) => prev.map((x, idx) => idx === i ? { ...x, description: e.target.value } : x))}
-                              className="flex-1 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-xs bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="flex-1 border border-neutral-200 dark:border-neutral-700 rounded-lg px-2 py-1.5 text-xs bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
                             />
                             <input
                               type="number"
@@ -721,7 +725,7 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
                               placeholder="R$"
                               value={ext.amount}
                               onChange={(e) => setEditExtras((prev) => prev.map((x, idx) => idx === i ? { ...x, amount: e.target.value } : x))}
-                              className="w-28 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-xs bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="w-28 border border-neutral-200 dark:border-neutral-700 rounded-lg px-2 py-1.5 text-xs bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
                             />
                             <button
                               onClick={() => setEditExtras((prev) => prev.filter((_, idx) => idx !== i))}
@@ -737,13 +741,13 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
 
                   {/* Observação */}
                   <div>
-                    <label className="block text-xs text-gray-400 dark:text-gray-500 mb-1">Observação do mês</label>
+                    <label className="block text-xs text-neutral-400 dark:text-neutral-500 mb-1">Observação do mês</label>
                     <textarea
                       value={editObs}
                       onChange={(e) => setEditObs(e.target.value)}
                       rows={2}
                       placeholder="Anotações sobre este mês..."
-                      className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                     />
                   </div>
 
@@ -765,24 +769,24 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
           {/* BARRA LATERAL */}
           <div className="lg:col-span-1 space-y-4">
              {/* Resumo do Ano */}
-             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
-                <h3 className="font-bold text-gray-900 dark:text-gray-100">Resumo {year}</h3>
+             <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 p-5 space-y-4">
+                <h3 className="font-bold text-neutral-900 dark:text-neutral-100">Resumo {year}</h3>
                 
                 <div className="space-y-3">
                   <div>
-                    <div className="text-xs text-gray-500">Faturamento Projetado</div>
+                    <div className="text-xs text-neutral-500">Faturamento Projetado</div>
                     <div className="font-semibold text-blue-600 dark:text-blue-400">{formatCurrency(totals?.receitaProjetada || 0)}</div>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-500">Recebido (Realizado)</div>
+                    <div className="text-xs text-neutral-500">Recebido (Realizado)</div>
                     <div className="font-semibold text-green-600 dark:text-green-400">{formatCurrency(totals?.receitaRealizada || 0)}</div>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-500">Gastos Totais</div>
+                    <div className="text-xs text-neutral-500">Gastos Totais</div>
                     <div className="font-semibold text-red-600 dark:text-red-400">{formatCurrency(totals?.despesas || 0)}</div>
                   </div>
-                  <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
-                    <div className="text-xs text-gray-500">Saldo Anual</div>
+                  <div className="pt-2 border-t border-neutral-100 dark:border-neutral-700">
+                    <div className="text-xs text-neutral-500">Saldo Anual</div>
                     <div className={`font-bold ${(totals?.saldo || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600'}`}>{formatCurrency(totals?.saldo || 0)}</div>
                   </div>
                 </div>
@@ -800,15 +804,15 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
              )}
              
              {/* Contas Bancárias */}
-             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
-                <h3 className="font-bold text-gray-900 dark:text-gray-100">Contas Bancárias</h3>
+             <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 p-5 space-y-4">
+                <h3 className="font-bold text-neutral-900 dark:text-neutral-100">Contas Bancárias</h3>
                 {(!annualData?.bankAccounts || annualData.bankAccounts.length === 0) ? (
-                  <p className="text-xs text-gray-500">Nenhuma conta cadastrada.</p>
+                  <p className="text-xs text-neutral-500">Nenhuma conta cadastrada.</p>
                 ) : (
                   <div className="space-y-3">
                     {annualData.bankAccounts.map(b => (
                       <div key={b.id} className="flex justify-between items-center">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{b.name}</span>
+                        <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{b.name}</span>
                         <span className={`text-sm font-semibold ${b.balance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
                           {formatCurrency(b.balance)}
                         </span>
@@ -819,20 +823,20 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
              </div>
 
              {/* Notas Fiscais */}
-             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-3">
-                <h3 className="font-bold text-gray-900 dark:text-gray-100 text-sm">Notas Fiscais</h3>
+             <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 p-5 space-y-3">
+                <h3 className="font-bold text-neutral-900 dark:text-neutral-100 text-sm">Notas Fiscais</h3>
                 
                 {selectedMonth !== null ? (
                    <div>
-                     <div className="text-xs text-gray-500 mb-1">Total emitido no mês</div>
-                     <div className="font-semibold text-gray-800 dark:text-gray-200">
+                     <div className="text-xs text-neutral-500 mb-1">Total emitido no mês</div>
+                     <div className="font-semibold text-neutral-800 dark:text-neutral-200">
                        {formatCurrency((monthDetail?.invoices || []).reduce((a, b) => a + b.amount, 0))}
                      </div>
                    </div>
                 ) : (
                    <div>
-                     <div className="text-xs text-gray-500 mb-1">Total emitido no ano</div>
-                     <div className="font-semibold text-gray-800 dark:text-gray-200">
+                     <div className="text-xs text-neutral-500 mb-1">Total emitido no ano</div>
+                     <div className="font-semibold text-neutral-800 dark:text-neutral-200">
                        {formatCurrency((annualData?.yearInvoices || []).reduce((a, b) => a + b.amount, 0))}
                      </div>
                    </div>
@@ -844,29 +848,29 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
       ) : (
         <div className="space-y-6">
           {/* Painel de vencidas */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+            <div className="px-6 py-4 border-b border-neutral-200 dark:border-neutral-700">
+              <h2 className="font-semibold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-red-500 inline-block" />
                 Parcelas Vencidas
               </h2>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Parcelas não pagas e com data de vencimento no passado.</p>
+              <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">Parcelas não pagas e com data de vencimento no passado.</p>
             </div>
 
             {overdueLoading ? (
-              <div className="text-center py-8 text-gray-400 text-sm">Carregando...</div>
+              <div className="text-center py-8 text-neutral-400 text-sm">Carregando...</div>
             ) : overdueList.length === 0 ? (
               <div className="text-center py-8 text-green-600 dark:text-green-400 text-sm font-medium">
                 ✅ Nenhuma parcela vencida! Tudo em dia.
               </div>
             ) : (
-              <div className="divide-y divide-gray-100 dark:divide-gray-700">
+              <div className="divide-y divide-neutral-100 dark:divide-neutral-700">
                 {overdueList.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between px-6 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                  <div key={item.id} className="flex items-center justify-between px-6 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-700/30 transition-colors">
                     <div>
-                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
                         {item.client}
-                        <span className="text-gray-400 font-normal mx-2">—</span>
+                        <span className="text-neutral-400 font-normal mx-2">—</span>
                         {item.project}
                       </div>
                       <div className="text-xs text-red-500 font-medium mt-0.5">
@@ -893,10 +897,10 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
           </div>
 
           {/* Gerador de notinha */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="font-semibold text-gray-900 dark:text-gray-100">Gerar Extrato de Cobranças</h2>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Selecione um cliente para ver todas as parcelas pendentes e gerar a mensagem de cobrança.</p>
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+            <div className="px-6 py-4 border-b border-neutral-200 dark:border-neutral-700">
+              <h2 className="font-semibold text-neutral-900 dark:text-neutral-100">Gerar Extrato de Cobranças</h2>
+              <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">Selecione um cliente para ver todas as parcelas pendentes e gerar a mensagem de cobrança.</p>
             </div>
 
             <div className="p-6 space-y-4">
@@ -904,7 +908,7 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
                 <select
                   value={selectedClientId}
                   onChange={(e) => { setSelectedClientId(e.target.value); setBilling(null); setBillingError('') }}
-                  className="flex-1 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 border border-neutral-200 dark:border-neutral-700 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Selecionar cliente...</option>
                   {clients.map((c) => (
@@ -930,8 +934,8 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">{billing.client.name}</div>
-                      <div className="text-xs text-gray-400">
+                      <div className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{billing.client.name}</div>
+                      <div className="text-xs text-neutral-400">
                         {billing.installmentCount} parcela{billing.installmentCount !== 1 ? 's' : ''} pendente{billing.installmentCount !== 1 ? 's' : ''}
                         {' — '}
                         <span className="text-amber-600 dark:text-amber-400 font-medium">{formatCurrency(billing.total)} a receber</span>
@@ -940,7 +944,7 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
                     <div className="flex gap-2">
                       <button
                         onClick={handleCopy}
-                        className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+                        className="px-3 py-1.5 border border-neutral-200 dark:border-neutral-700 rounded-lg text-xs font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 transition-colors"
                       >
                         {copiedText ? '✓ Copiado' : 'Copiar texto'}
                       </button>
@@ -956,7 +960,7 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
                   </div>
 
                   {/* Preview da mensagem oculto por padrão */}
-                  <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+                  <div className="bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl p-4">
                     <button
                       onClick={() => setShowBillingText(!showBillingText)}
                       className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline mb-2 flex items-center gap-1"
@@ -966,7 +970,7 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
                     {showBillingText && (
                       <textarea
                         readOnly
-                        className="w-full text-xs text-gray-700 dark:text-gray-300 font-sans leading-relaxed bg-transparent border-none resize-none focus:outline-none"
+                        className="w-full text-xs text-neutral-700 dark:text-neutral-300 font-sans leading-relaxed bg-transparent border-none resize-none focus:outline-none"
                         rows={billing.text.split('\n').length}
                         value={billing.text}
                       />
@@ -983,33 +987,33 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
       {/* Modal Fontes de Receita */}
       {showRevenueSources && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
-              <h2 className="font-bold text-gray-900 dark:text-gray-100">Fontes de Receita</h2>
-              <button onClick={() => setShowRevenueSources(false)} className="text-gray-400 hover:text-gray-600">×</button>
+          <div className="bg-white dark:bg-neutral-900 w-full max-w-md rounded-2xl shadow-xl overflow-hidden border border-neutral-200 dark:border-neutral-700">
+            <div className="px-6 py-4 border-b border-neutral-100 dark:border-neutral-800 flex justify-between items-center">
+              <h2 className="font-bold text-neutral-900 dark:text-neutral-100">Fontes de Receita</h2>
+              <button onClick={() => setShowRevenueSources(false)} className="text-neutral-400 hover:text-neutral-600">×</button>
             </div>
             <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-neutral-500">
                 Cadastre suas fontes de receita recorrentes (YouTube, AdSense, cursos, etc.). A cada mês, basta digitar o valor de cada fonte.
               </p>
               <div className="space-y-3">
                 {revenueSourcesEdit.map((src, i) => (
-                  <div key={i} className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                  <div key={i} className="flex items-center gap-2 p-3 bg-neutral-50 dark:bg-neutral-900 rounded-lg">
                     <input
                       type="text"
                       placeholder="Emoji"
                       value={src.icon}
                       onChange={(e) => setRevenueSourcesEdit((prev) => prev.map((x, idx) => idx === i ? { ...x, icon: e.target.value } : x))}
-                      className="w-12 text-center border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      className="w-12 text-center border border-neutral-200 dark:border-neutral-700 rounded-lg px-2 py-1.5 text-sm bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
                     />
                     <input
                       type="text"
                       placeholder="Nome da fonte (ex: YouTube)"
                       value={src.name}
                       onChange={(e) => setRevenueSourcesEdit((prev) => prev.map((x, idx) => idx === i ? { ...x, name: e.target.value } : x))}
-                      className="flex-1 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      className="flex-1 border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
                     />
-                    <label className="flex items-center gap-1 text-xs text-gray-500 whitespace-nowrap cursor-pointer">
+                    <label className="flex items-center gap-1 text-xs text-neutral-500 whitespace-nowrap cursor-pointer">
                       <input
                         type="checkbox"
                         checked={src.isActive}
@@ -1024,13 +1028,13 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
               </div>
               <button
                 onClick={() => setRevenueSourcesEdit((prev) => [...prev, { name: '', icon: '', isRecurring: true, isActive: true }])}
-                className="w-full py-2 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-500 font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                className="w-full py-2 border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-lg text-sm text-neutral-500 font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
               >
                 + Adicionar Fonte
               </button>
             </div>
-            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-2">
-              <button onClick={() => setShowRevenueSources(false)} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300">Cancelar</button>
+            <div className="px-6 py-4 bg-neutral-50 dark:bg-neutral-900 border-t border-neutral-100 dark:border-neutral-700 flex justify-end gap-2">
+              <button onClick={() => setShowRevenueSources(false)} className="px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300">Cancelar</button>
               <button
                 onClick={saveRevenueSources}
                 disabled={savingRevenueSources}
@@ -1045,27 +1049,27 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
 
       {showConfig && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
-              <h2 className="font-bold text-gray-900 dark:text-gray-100">Despesas Fixas Padrão</h2>
-              <button onClick={() => setShowConfig(false)} className="text-gray-400 hover:text-gray-600">×</button>
+          <div className="bg-white dark:bg-neutral-900 w-full max-w-md rounded-2xl shadow-xl overflow-hidden border border-neutral-200 dark:border-neutral-700">
+            <div className="px-6 py-4 border-b border-neutral-100 dark:border-neutral-800 flex justify-between items-center">
+              <h2 className="font-bold text-neutral-900 dark:text-neutral-100">Despesas Fixas Padrão</h2>
+              <button onClick={() => setShowConfig(false)} className="text-neutral-400 hover:text-neutral-600">×</button>
             </div>
             <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-neutral-500">
                 Estas despesas serão carregadas automaticamente em qualquer novo mês selecionado.
               </p>
               
               <div className="space-y-3">
                  {defaultExpensesEdit.map((exp, i) => (
-                    <div key={i} className="flex flex-col gap-2 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                    <div key={i} className="flex flex-col gap-2 p-3 bg-neutral-50 dark:bg-neutral-900 rounded-lg">
                        <div className="flex justify-between items-center">
-                         <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">Despesa {i + 1}</span>
+                         <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Despesa {i + 1}</span>
                          <button onClick={() => setDefaultExpensesEdit(prev => prev.filter((_, idx) => idx !== i))} className="text-red-500 text-xs font-medium">Remover</button>
                        </div>
                        <select
                          value={exp.category}
                          onChange={(e) => setDefaultExpensesEdit((prev) => prev.map((x, idx) => idx === i ? { ...x, category: e.target.value } : x))}
-                         className="border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900"
+                         className="border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900"
                        >
                          <option value="">Categoria...</option>
                          {DEFAULT_EXPENSE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -1075,7 +1079,7 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
                          placeholder="Descrição (Ex: Conta de Internet)"
                          value={exp.description}
                          onChange={(e) => setDefaultExpensesEdit((prev) => prev.map((x, idx) => idx === i ? { ...x, description: e.target.value } : x))}
-                         className="border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900"
+                         className="border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900"
                        />
                        <input
                          type="number"
@@ -1084,20 +1088,20 @@ export function CashFlowView({ clients = [] }: { clients?: Client[] }) {
                          placeholder="Valor R$"
                          value={exp.amount}
                          onChange={(e) => setDefaultExpensesEdit((prev) => prev.map((x, idx) => idx === i ? { ...x, amount: e.target.value } : x))}
-                         className="border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900"
+                         className="border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900"
                        />
                     </div>
                  ))}
               </div>
               <button
                 onClick={() => setDefaultExpensesEdit(prev => [...prev, { category: '', description: '', amount: '' }])}
-                className="w-full py-2 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-500 font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                className="w-full py-2 border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-lg text-sm text-neutral-500 font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
               >
                 + Adicionar Despesa
               </button>
             </div>
-            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-2">
-              <button onClick={() => setShowConfig(false)} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300">Cancelar</button>
+            <div className="px-6 py-4 bg-neutral-50 dark:bg-neutral-900 border-t border-neutral-100 dark:border-neutral-700 flex justify-end gap-2">
+              <button onClick={() => setShowConfig(false)} className="px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300">Cancelar</button>
               <button onClick={saveDefaultExpenses} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium">Salvar Configurações</button>
             </div>
           </div>

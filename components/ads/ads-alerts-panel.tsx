@@ -57,8 +57,8 @@ export function AdsAlertsPanel({
             key={alert.id}
             className={`rounded-xl border p-4 flex items-start justify-between gap-3 transition-all ${
               alert.isRead
-                ? 'opacity-60 bg-card dark:border-gray-800'
-                : 'bg-card shadow-sm dark:border-gray-700'
+                ? 'opacity-60 bg-card dark:border-neutral-800'
+                : 'bg-card shadow-sm dark:border-neutral-700'
             }`}
           >
             <div className="flex items-start gap-3">

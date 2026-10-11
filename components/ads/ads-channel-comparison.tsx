@@ -44,7 +44,7 @@ export function AdsChannelComparison({ data }: { data: PlatformSummary[] }) {
   const googlePct = Math.round((google.spend / totalSpend) * 100)
 
   return (
-    <div className="rounded-xl border p-5 bg-card dark:border-gray-700 dark:bg-gray-900/40 space-y-4">
+    <div className="rounded-xl border p-5 bg-card dark:border-neutral-700 dark:bg-neutral-900/40 space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="font-semibold text-base">Comparação de Canais</h3>
