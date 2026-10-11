@@ -122,4 +122,85 @@ export const adsMcpTools: McpTool[] = [
       return { ok: true, campanhaId: updated.id, status: updated.status, aviso: 'Status alterado apenas no CRM — não afeta o gasto na plataforma.' }
     },
   },
+  {
+    name: 'registrar_gasto_ads',
+    description:
+      'Registra/atualiza o GASTO de tráfego pago (Meta/Google Ads) de um mês e o lança automaticamente como DESPESA no fluxo de caixa (categoria "Tráfego Pago", variável). É assim que o gasto de anúncios entra no fluxo de caixa. Idempotente: por padrão SUBSTITUI o valor do mês para aquela plataforma (use quando o Hermes reenvia o gasto ACUMULADO do mês, sem duplicar); use modo "somar" para acrescentar um gasto pontual ao que já foi lançado no mês.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        valor: { type: 'number', description: 'Valor gasto em reais (ex.: 850.00).' },
+        mes: { type: 'number', description: 'Mês de competência (1 = Janeiro ... 12 = Dezembro).' },
+        ano: { type: 'number', description: 'Ano de competência (ex.: 2026).' },
+        plataforma: { type: 'string', description: 'META, GOOGLE ou OUTRO. Usado na descrição da despesa. Padrão META.' },
+        descricao: { type: 'string', description: 'Descrição da despesa (opcional). Padrão: "<Plataforma> Ads". Serve como chave para não duplicar no mês.' },
+        modo: { type: 'string', description: '"substituir" (padrão: o valor passa a ser o total do mês para essa fonte) ou "somar" (acrescenta ao já lançado no mês).' },
+      },
+      required: ['valor', 'mes', 'ano'],
+    },
+    handler: async (tenantId, args) => {
+      const valor = Number(args.valor)
+      if (!Number.isFinite(valor) || valor < 0) throw new Error('Valor inválido. Informe um número maior ou igual a zero.')
+      const mes = Number(args.mes)
+      if (!Number.isInteger(mes) || mes < 1 || mes > 12) throw new Error('Mês inválido. Use 1 (Janeiro) a 12 (Dezembro).')
+      const ano = Number(args.ano)
+      if (!Number.isInteger(ano) || ano < 2000 || ano > 2100) throw new Error('Ano inválido.')
+      const month0 = mes - 1
+
+      const plataforma = String(args.plataforma || 'META').toUpperCase()
+      const platformLabel =
+        plataforma === 'META' ? 'Meta' : plataforma === 'GOOGLE' ? 'Google' : plataforma.charAt(0) + plataforma.slice(1).toLowerCase()
+      const descricao = args.descricao ? String(args.descricao).trim() : `${platformLabel} Ads`
+      const modo = String(args.modo || 'substituir').toLowerCase()
+      if (!['substituir', 'somar'].includes(modo)) throw new Error('Modo inválido. Use "substituir" ou "somar".')
+
+      const categoria = 'Tráfego Pago'
+
+      // Garante que o mês existe no fluxo de caixa
+      const cf = await prisma.monthlyCashFlow.upsert({
+        where: { tenantId_year_month: { tenantId, year: ano, month: month0 } },
+        create: { tenantId, year: ano, month: month0 },
+        update: {},
+      })
+
+      // Procura uma despesa existente dessa mesma fonte no mês (idempotência)
+      const existing = await prisma.cashFlowExpense.findFirst({
+        where: { cashFlowId: cf.id, category: categoria, description: descricao },
+      })
+
+      let expense
+      if (existing) {
+        const novoValor = modo === 'somar' ? existing.amount + valor : valor
+        expense = await prisma.cashFlowExpense.update({
+          where: { id: existing.id },
+          data: { amount: round2(novoValor) },
+        })
+      } else {
+        expense = await prisma.cashFlowExpense.create({
+          data: { cashFlowId: cf.id, category: categoria, description: descricao, amount: round2(valor), isFixed: false },
+        })
+      }
+
+      // Total de despesas do mês após o lançamento
+      const totalDespesas = await prisma.cashFlowExpense.aggregate({
+        where: { cashFlowId: cf.id },
+        _sum: { amount: true },
+      })
+
+      return {
+        ok: true,
+        mes,
+        ano,
+        categoria,
+        descricao,
+        modo,
+        valorInformado: round2(valor),
+        gastoAdsNoMes: round2(expense.amount),
+        totalDespesasDoMes: round2(totalDespesas._sum.amount ?? 0),
+        mensagem: `Gasto de ${descricao} (${String(mes).padStart(2, '0')}/${ano}) ${
+          existing ? (modo === 'somar' ? 'somado ao' : 'atualizado no') : 'lançado no'
+        } fluxo de caixa.`,
+      }
+    },
+  },
 ]

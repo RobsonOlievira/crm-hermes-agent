@@ -3,6 +3,10 @@ const path = require('path')
 const { spawn } = require('child_process')
 const http = require('http')
 
+app.commandLine.appendSwitch('disable-gpu')
+app.commandLine.appendSwitch('disable-software-rasterizer')
+app.disableHardwareAcceleration()
+
 const isDev = !app.isPackaged
 const PORT = 3001
 const BASE_URL = `http://localhost:${PORT}`
@@ -31,7 +35,23 @@ function waitForServer(timeout = 60000) {
 
 // Em produção, inicia o servidor standalone do Next.js
 function startProductionServer() {
-  const serverScript = path.join(process.resourcesPath, 'app', 'server.js')
+  const standaloneDir = path.join(process.resourcesPath, 'standalone')
+  const serverScript = path.join(standaloneDir, 'server.js')
+
+  // Copia static e public para dentro do standalone se ainda não existirem
+  const fs = require('fs')
+  const staticSrc = path.join(process.resourcesPath, 'static')
+  const staticDest = path.join(standaloneDir, '.next', 'static')
+  const publicSrc = path.join(process.resourcesPath, 'public')
+  const publicDest = path.join(standaloneDir, 'public')
+
+  if (!fs.existsSync(staticDest)) {
+    fs.cpSync(staticSrc, staticDest, { recursive: true })
+  }
+  if (!fs.existsSync(publicDest)) {
+    fs.cpSync(publicSrc, publicDest, { recursive: true })
+  }
+
   serverProcess = spawn(process.execPath, [serverScript], {
     env: {
       ...process.env,
@@ -39,7 +59,7 @@ function startProductionServer() {
       HOSTNAME: '127.0.0.1',
       NODE_ENV: 'production',
     },
-    cwd: path.join(process.resourcesPath, 'app'),
+    cwd: standaloneDir,
     stdio: 'ignore',
   })
   serverProcess.on('error', (err) => console.error('Erro no servidor:', err))
