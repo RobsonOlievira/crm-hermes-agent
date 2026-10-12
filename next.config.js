@@ -12,6 +12,9 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
   images: { unoptimized: true },
+  experimental: {
+    serverComponentsExternalPackages: ['@prisma/client', '.prisma/client', '@prisma/adapter-pg', 'pg'],
+  },
 };
 
 module.exports = nextConfig;
