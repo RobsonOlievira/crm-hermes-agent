@@ -3,9 +3,14 @@ const path = require('path')
 const { spawn } = require('child_process')
 const http = require('http')
 
-app.commandLine.appendSwitch('disable-gpu')
-app.commandLine.appendSwitch('disable-software-rasterizer')
+// Evita o crash "GPU process isn't usable" (exit 0xC0000022 = ACCESS_DENIED)
+// em máquinas Windows onde o sandbox do processo de GPU é bloqueado.
+// no-sandbox resolve o acesso negado; disableHardwareAcceleration usa
+// renderização por software. Seguro aqui: o app carrega só o próprio
+// servidor local (localhost), não conteúdo web arbitrário.
 app.disableHardwareAcceleration()
+app.commandLine.appendSwitch('no-sandbox')
+app.commandLine.appendSwitch('disable-gpu')
 
 const isDev = !app.isPackaged
 const PORT = 3001
