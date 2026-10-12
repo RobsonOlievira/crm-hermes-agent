@@ -46,7 +46,7 @@ export const authOptions: NextAuthOptions = {
           return { id: user.id, email: user.email, name: user.name, role: user.role, image: user.avatarUrl ?? undefined, tenantId: user.tenantId ?? undefined }
         } catch (err) {
           console.error('[auth] erro ao autenticar:', err)
-          return null
+          throw new Error('ErroInterno: ' + String((err as any)?.message ?? err).slice(0, 160))
         }
       },
     }),

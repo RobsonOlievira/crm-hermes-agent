@@ -9,6 +9,11 @@
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-10-06",
   "compatibility_flags": ["nodejs_compat"],
+  // Variaveis nao secretas ficam aqui: o deploy recria as vars a partir deste arquivo.
+  "keep_vars": true,
+  "vars": {
+    "NEXTAUTH_URL": "https://crm-hermes-agent.tesseractescoladesign.workers.dev"
+  },
   "assets": {
     "binding": "ASSETS",
     "directory": ".open-next/assets"

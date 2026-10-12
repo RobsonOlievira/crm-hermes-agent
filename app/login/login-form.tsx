@@ -22,7 +22,7 @@ export function LoginForm() {
     try {
       const res = await signIn('credentials', { email, password, redirect: false })
       if (res?.error) {
-        toast.error('Email ou senha inválidos.')
+        toast.error(res.error === 'CredentialsSignin' ? 'Email ou senha inválidos.' : 'Erro no login: ' + res.error)
         setLoading(false)
         return
       }
