@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -34,90 +34,86 @@ export interface LeadRow {
   createdAt: string
 }
 
-const INITIAL_COUNT = 20
-const LOAD_MORE = 20
+const PAGE_SIZE = 50
 
-type SortKey = 'name' | 'company' | 'status' | 'type' | 'source' | 'value' | 'assignedTo' | 'date'
+type SortKey = 'name' | 'company' | 'status' | 'type' | 'source' | 'value' | 'date'
 
-export function LeadsTable({ leads, members, currentUserId }: { leads: LeadRow[]; members: { id: string; name: string }[]; currentUserId: string }) {
+interface LeadsPage { rows: LeadRow[]; total: number; totalValue: number }
+
+export function LeadsTable({ initial, members, leadTypeOptions }: { initial: LeadsPage; members: { id: string; name: string }[]; leadTypeOptions: { id: string; label: string }[] }) {
   const router = useRouter()
   const { viewRole } = useViewRole()
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [status, setStatus] = useState('all')
   const [source, setSource] = useState('all')
   const [leadType, setLeadType] = useState('all')
   const [assignee, setAssignee] = useState('all')
   const [sort, setSort] = useState<SortState<SortKey>>({ key: 'date', direction: 'desc' })
-  const [visibleCount, setVisibleCount] = useState(INITIAL_COUNT)
+  const [rows, setRows] = useState<LeadRow[]>(initial.rows)
+  const [total, setTotal] = useState(initial.total)
+  const [totalValue, setTotalValue] = useState(initial.totalValue)
+  const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState(false)
   const sentinelRef = useRef<HTMLDivElement>(null)
+  const requestId = useRef(0)
+  const skipFirstFetch = useRef(viewRole !== 'MEMBER')
 
-  const leadTypeOptions = useMemo(() => {
-    const map = new Map<string, string>()
-    for (const l of leads ?? []) (l.leadTypeIds ?? []).forEach((id, idx) => { if (id && l.leadTypeLabels[idx]) map.set(id, l.leadTypeLabels[idx]) })
-    return Array.from(map.entries()).map(([id, label]) => ({ id, label }))
-  }, [leads])
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(t)
+  }, [search])
 
-  const filtered = useMemo(() => {
-    let list = leads ?? []
-    if (viewRole === 'MEMBER') list = list.filter((l) => l.assignedToId === currentUserId)
-    if (search.trim()) {
-      const q = search.toLowerCase()
-      list = list.filter((l) => l.name.toLowerCase().includes(q) || (l.email ?? '').toLowerCase().includes(q) || (l.companyName ?? '').toLowerCase().includes(q))
+  const buildUrl = useCallback((offset: number) => {
+    const sp = new URLSearchParams({ offset: String(offset), limit: String(PAGE_SIZE), sort: sort.key, dir: sort.direction })
+    if (debouncedSearch.trim()) sp.set('search', debouncedSearch.trim())
+    if (status !== 'all') sp.set('status', status)
+    if (source !== 'all') sp.set('source', source)
+    if (leadType !== 'all') sp.set('leadType', leadType)
+    if (viewRole === 'MEMBER') sp.set('mine', '1')
+    else if (assignee !== 'all') sp.set('assignee', assignee)
+    return `/api/leads?${sp.toString()}`
+  }, [debouncedSearch, status, source, leadType, assignee, viewRole, sort])
+
+  // Busca uma página no servidor; offset 0 substitui a lista, os demais acrescentam.
+  const fetchPage = useCallback(async (offset: number) => {
+    const id = ++requestId.current
+    setLoading(true)
+    setLoadError(false)
+    try {
+      const res = await fetch(buildUrl(offset))
+      if (!res.ok) throw new Error('Falha ao carregar leads')
+      const data: LeadsPage = await res.json()
+      if (id !== requestId.current) return
+      setRows((prev) => {
+        if (offset === 0) return data.rows
+        const seen = new Set(prev.map((l) => l.id))
+        return [...prev, ...data.rows.filter((l) => !seen.has(l.id))]
+      })
+      setTotal(data.total)
+      setTotalValue(data.totalValue)
+    } catch {
+      if (id === requestId.current) setLoadError(true)
+    } finally {
+      if (id === requestId.current) setLoading(false)
     }
-    if (status !== 'all') list = list.filter((l) => l.status === status)
-    if (source !== 'all') list = list.filter((l) => l.source === source)
-    if (leadType !== 'all') list = list.filter((l) => (l.leadTypeIds ?? []).includes(leadType))
-    if (assignee !== 'all') list = list.filter((l) => l.assignedToId === assignee)
+  }, [buildUrl])
 
-    const getters: Record<SortKey, (l: LeadRow) => string | number | null | undefined> = {
-      name: (l) => l.name,
-      company: (l) => l.companyName,
-      status: (l) => l.status,
-      type: (l) => (l.leadTypeLabels ?? []).join(' '),
-      source: (l) => l.source,
-      value: (l) => l.dealValue,
-      assignedTo: (l) => l.assignedToName,
-      date: (l) => l.createdAt,
-    }
-    const getter = getters[sort.key]
-    const dir = sort.direction
-    list = [...list].sort((a, b) => {
-      const av = getter(a)
-      const bv = getter(b)
-      const bothNull = (av == null || av === '') && (bv == null || bv === '')
-      if (bothNull) return 0
-      if (av == null || av === '') return 1
-      if (bv == null || bv === '') return -1
-      const cmp =
-        typeof av === 'number' && typeof bv === 'number'
-          ? av - bv
-          : String(av).localeCompare(String(bv), 'pt-BR', { sensitivity: 'base' })
-      return dir === 'asc' ? cmp : -cmp
-    })
-    return list
-  }, [leads, search, status, source, leadType, assignee, viewRole, currentUserId, sort])
+  // Filtros, busca ou ordenação mudaram: recomeça da primeira página.
+  useEffect(() => {
+    if (skipFirstFetch.current) { skipFirstFetch.current = false; return }
+    fetchPage(0)
+  }, [fetchPage])
 
-  const visible = filtered.slice(0, visibleCount)
-  const hasMore = visibleCount < filtered.length
-
-  const loadMore = useCallback(() => setVisibleCount((p) => p + LOAD_MORE), [])
+  const hasMore = rows.length < total
 
   useEffect(() => {
     const el = sentinelRef.current
-    if (!el || !hasMore) return
-    const obs = new IntersectionObserver((entries) => { if (entries[0].isIntersecting) loadMore() }, { rootMargin: '200px' })
+    if (!el || !hasMore || loading || loadError) return
+    const obs = new IntersectionObserver((entries) => { if (entries[0].isIntersecting) fetchPage(rows.length) }, { rootMargin: '200px' })
     obs.observe(el)
     return () => obs.disconnect()
-  }, [hasMore, loadMore])
-
-  function resetFilters() {
-    setSearch('')
-    setStatus('all')
-    setSource('all')
-    setLeadType('all')
-    setAssignee('all')
-    setVisibleCount(INITIAL_COUNT)
-  }
+  }, [hasMore, loading, loadError, rows.length, fetchPage])
 
   return (
     <div className="space-y-4">
@@ -126,19 +122,19 @@ export function LeadsTable({ leads, members, currentUserId }: { leads: LeadRow[]
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-4">
             <p className="text-sm text-muted-foreground whitespace-nowrap">
-              <span className="font-medium text-foreground">{filtered.length}</span> {filtered.length === 1 ? 'lead' : 'leads'} · Valor total{' '}
+              <span className="font-medium text-foreground">{total}</span> {total === 1 ? 'lead' : 'leads'} · Valor total{' '}
               <span className="font-semibold text-foreground">
-                {formatCurrency(useMemo(() => (filtered ?? []).reduce((s, l) => s + (l.dealValue ?? 0), 0), [filtered]))}
+                {formatCurrency(totalValue)}
               </span>
             </p>
           </div>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center flex-1 lg:max-w-4xl">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input value={search} onChange={(e) => { setSearch(e.target.value); setVisibleCount(INITIAL_COUNT) }} placeholder="Buscar por nome, email ou empresa..." className="pl-10" />
+              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por nome, email ou empresa..." className="pl-10" />
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Select value={status} onValueChange={(v) => { setStatus(v); setVisibleCount(INITIAL_COUNT) }}>
+              <Select value={status} onValueChange={(v) => { setStatus(v) }}>
                 <SelectTrigger className="w-[170px]"><SelectValue placeholder="Status" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os status</SelectItem>
@@ -147,7 +143,7 @@ export function LeadsTable({ leads, members, currentUserId }: { leads: LeadRow[]
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={source} onValueChange={(v) => { setSource(v); setVisibleCount(INITIAL_COUNT) }}>
+              <Select value={source} onValueChange={(v) => { setSource(v) }}>
                 <SelectTrigger className="w-[150px]"><SelectValue placeholder="Origem" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas origens</SelectItem>
@@ -157,7 +153,7 @@ export function LeadsTable({ leads, members, currentUserId }: { leads: LeadRow[]
                 </SelectContent>
               </Select>
               {leadTypeOptions.length > 0 && (
-                <Select value={leadType} onValueChange={(v) => { setLeadType(v); setVisibleCount(INITIAL_COUNT) }}>
+                <Select value={leadType} onValueChange={(v) => { setLeadType(v) }}>
                   <SelectTrigger className="w-[160px]"><SelectValue placeholder="Tipo" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos os tipos</SelectItem>
@@ -168,7 +164,7 @@ export function LeadsTable({ leads, members, currentUserId }: { leads: LeadRow[]
                 </Select>
               )}
               {viewRole !== 'MEMBER' && (
-                <Select value={assignee} onValueChange={(v) => { setAssignee(v); setVisibleCount(INITIAL_COUNT) }}>
+                <Select value={assignee} onValueChange={(v) => { setAssignee(v) }}>
                   <SelectTrigger className="w-[160px]"><SelectValue placeholder="Responsável" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos responsáveis</SelectItem>
@@ -189,18 +185,18 @@ export function LeadsTable({ leads, members, currentUserId }: { leads: LeadRow[]
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50 hover:bg-muted/50">
-                <SortableHeader active={sort.key === 'name'} direction={sort.direction} onClick={() => { setSort((s) => toggleSort(s, 'name')); setVisibleCount(INITIAL_COUNT) }}>Lead</SortableHeader>
+                <SortableHeader active={sort.key === 'name'} direction={sort.direction} onClick={() => { setSort((s) => toggleSort(s, 'name')) }}>Lead</SortableHeader>
                 <TableHead className="hidden sm:table-cell">Telefone</TableHead>
-                <SortableHeader active={sort.key === 'date'} direction={sort.direction} className="hidden sm:table-cell" onClick={() => { setSort((s) => toggleSort(s, 'date')); setVisibleCount(INITIAL_COUNT) }}>Data</SortableHeader>
-                <SortableHeader active={sort.key === 'status'} direction={sort.direction} onClick={() => { setSort((s) => toggleSort(s, 'status')); setVisibleCount(INITIAL_COUNT) }}>Status</SortableHeader>
-                <SortableHeader active={sort.key === 'type'} direction={sort.direction} className="hidden md:table-cell" onClick={() => { setSort((s) => toggleSort(s, 'type')); setVisibleCount(INITIAL_COUNT) }}>Tipo</SortableHeader>
-                <SortableHeader active={sort.key === 'source'} direction={sort.direction} className="hidden md:table-cell" onClick={() => { setSort((s) => toggleSort(s, 'source')); setVisibleCount(INITIAL_COUNT) }}>Origem</SortableHeader>
-                <SortableHeader active={sort.key === 'value'} direction={sort.direction} className="hidden lg:table-cell" onClick={() => { setSort((s) => toggleSort(s, 'value')); setVisibleCount(INITIAL_COUNT) }}>Valor</SortableHeader>
-                <SortableHeader active={sort.key === 'company'} direction={sort.direction} className="hidden lg:table-cell" onClick={() => { setSort((s) => toggleSort(s, 'company')); setVisibleCount(INITIAL_COUNT) }}>Empresa</SortableHeader>
+                <SortableHeader active={sort.key === 'date'} direction={sort.direction} className="hidden sm:table-cell" onClick={() => { setSort((s) => toggleSort(s, 'date')) }}>Data</SortableHeader>
+                <SortableHeader active={sort.key === 'status'} direction={sort.direction} onClick={() => { setSort((s) => toggleSort(s, 'status')) }}>Status</SortableHeader>
+                <SortableHeader active={sort.key === 'type'} direction={sort.direction} className="hidden md:table-cell" onClick={() => { setSort((s) => toggleSort(s, 'type')) }}>Tipo</SortableHeader>
+                <SortableHeader active={sort.key === 'source'} direction={sort.direction} className="hidden md:table-cell" onClick={() => { setSort((s) => toggleSort(s, 'source')) }}>Origem</SortableHeader>
+                <SortableHeader active={sort.key === 'value'} direction={sort.direction} className="hidden lg:table-cell" onClick={() => { setSort((s) => toggleSort(s, 'value')) }}>Valor</SortableHeader>
+                <SortableHeader active={sort.key === 'company'} direction={sort.direction} className="hidden lg:table-cell" onClick={() => { setSort((s) => toggleSort(s, 'company')) }}>Empresa</SortableHeader>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {visible.map((l) => (
+              {rows.map((l) => (
                 <TableRow key={l.id} className="cursor-pointer" onClick={() => router.push(`/leads/${l.id}`)}>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -236,12 +232,16 @@ export function LeadsTable({ leads, members, currentUserId }: { leads: LeadRow[]
                 <TableRow>
                   <TableCell colSpan={8}>
                     <div ref={sentinelRef} className="flex items-center justify-center py-4 text-sm text-muted-foreground">
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Carregando mais...
+                      {loadError ? (
+                        <button type="button" className="underline" onClick={() => fetchPage(rows.length)}>Não foi possível carregar. Tentar novamente</button>
+                      ) : (
+                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Carregando mais...</>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
               )}
-              {visible.length === 0 && (
+              {rows.length === 0 && !loading && (
                 <TableRow>
                   <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">
                     <Filter className="mx-auto mb-2 h-8 w-8 opacity-40" />
