@@ -48,7 +48,8 @@ export const authOptions: NextAuthOptions = {
           const valid = await bcrypt.compare(credentials.password, user.password)
           if (!valid) {
             console.error('[auth] senha incorreta para:', credentials.email)
-            throw new Error(`DIAG senha nao confere (recebida com ${credentials.password.length} caracteres, hash com ${user.password.length})`)
+            const selfTest = await bcrypt.compare('autoteste-Wk!*&%+15', '$2b$10$1pKByWbpVrsChIEPaQmheugGzA.ziyzthg3fHlA9lOUkn3k9tEM7i')
+            throw new Error(`DIAG senha nao confere (recebida com ${credentials.password.length} caracteres, hash com ${user.password.length}, autoteste bcrypt no servidor: ${selfTest})`)
           }
           return { id: user.id, email: user.email, name: user.name, role: user.role, image: user.avatarUrl ?? undefined, tenantId: user.tenantId ?? undefined }
         } catch (err) {
