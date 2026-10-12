@@ -35,3 +35,8 @@ Thumbs.db
 
 # StayCloud CLI (credenciais locais — não versionar)
 .staycloud/
+# segredos locais do wrangler dev
+.dev.vars
+.open-next/
+.wrangler/
+.dev.test-login.json
