@@ -40,17 +40,9 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) return null
         try {
           const user = await prisma.user.findUnique({ where: { email: credentials.email.toLowerCase() } })
-          // DIAGNÓSTICO TEMPORÁRIO (remover): diferencia email x senha e mostra só tamanhos.
-          if (!user) {
-            console.error('[auth] usuário não encontrado:', credentials.email)
-            throw new Error(`DIAG email nao encontrado (recebido com ${credentials.email.length} caracteres)`)
-          }
+          if (!user) { console.error('[auth] usuário não encontrado:', credentials.email); return null }
           const valid = await bcrypt.compare(credentials.password, user.password)
-          if (!valid) {
-            console.error('[auth] senha incorreta para:', credentials.email)
-            const selfTest = await bcrypt.compare('autoteste-Wk!*&%+15', '$2b$10$1pKByWbpVrsChIEPaQmheugGzA.ziyzthg3fHlA9lOUkn3k9tEM7i')
-            throw new Error(`DIAG senha nao confere (recebida com ${credentials.password.length} caracteres, hash com ${user.password.length}, autoteste bcrypt no servidor: ${selfTest})`)
-          }
+          if (!valid) { console.error('[auth] senha incorreta para:', credentials.email); return null }
           return { id: user.id, email: user.email, name: user.name, role: user.role, image: user.avatarUrl ?? undefined, tenantId: user.tenantId ?? undefined }
         } catch (err) {
           console.error('[auth] erro ao autenticar:', err)
