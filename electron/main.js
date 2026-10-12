@@ -60,6 +60,8 @@ function startProductionServer() {
   serverProcess = spawn(process.execPath, [serverScript], {
     env: {
       ...process.env,
+      // Sem isto o executável do Electron abriria outra cópia do app em vez de rodar o server.js
+      ELECTRON_RUN_AS_NODE: '1',
       PORT: String(PORT),
       HOSTNAME: '127.0.0.1',
       NODE_ENV: 'production',
@@ -114,7 +116,17 @@ async function createWindow() {
   mainWindow.loadURL(BASE_URL)
 }
 
-app.whenReady().then(createWindow)
+if (!app.requestSingleInstanceLock()) {
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.focus()
+    }
+  })
+  app.whenReady().then(createWindow)
+}
 
 app.on('window-all-closed', () => {
   if (serverProcess) {
