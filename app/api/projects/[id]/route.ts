@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/session'
+import { addMonthsUTC, monthDelta } from '@/lib/date-utils'
 
 // ── GET — Detalhe do projeto ──
 export async function GET(req: Request, { params }: { params: { id: string } }) {
@@ -42,31 +43,89 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
     const body = await req.json()
 
-    const updated = await prisma.project.update({
-      where: { id: params.id },
-      data: {
-        name: body.name ?? project.name,
-        description: body.description !== undefined ? body.description : project.description,
-        status: body.status ?? project.status,
-        startDate: body.startDate ? new Date(body.startDate) : project.startDate,
-        deadline: body.deadline ? new Date(body.deadline) : project.deadline,
-        totalValue: body.totalValue ?? project.totalValue,
-        projectLink: body.projectLink !== undefined ? body.projectLink : project.projectLink,
-        referralName: body.referralName !== undefined ? body.referralName : project.referralName,
-        referralModel: body.referralModel !== undefined ? body.referralModel : project.referralModel,
-        referralValue: body.referralValue !== undefined ? body.referralValue : project.referralValue,
-        referralPaid: body.referralPaid !== undefined ? body.referralPaid : project.referralPaid,
-        catalogItemId: body.catalogItemId !== undefined ? body.catalogItemId : project.catalogItemId,
-        assignedToId: body.assignedToId !== undefined ? body.assignedToId : project.assignedToId,
-        proposalDate: body.proposalDate !== undefined ? (body.proposalDate ? new Date(body.proposalDate) : null) : project.proposalDate,
-        plannedDate: body.plannedDate !== undefined ? (body.plannedDate ? new Date(body.plannedDate) : null) : project.plannedDate,
-        checklist:
-          body.checklist !== undefined
-            ? typeof body.checklist === 'string'
-              ? body.checklist
-              : JSON.stringify(body.checklist)
-            : project.checklist,
-      },
+    // ── Competência (mês do projeto / mês de entrada da proposta) ──
+    let newStart = project.startDate
+    if (body.startDate !== undefined) {
+      const parsed = body.startDate ? new Date(body.startDate) : null
+      if (!parsed || Number.isNaN(parsed.getTime())) {
+        return NextResponse.json({ error: 'Data de início inválida' }, { status: 400 })
+      }
+      newStart = parsed
+    }
+
+    let newProposalDate = project.proposalDate
+    if (body.proposalDate !== undefined) {
+      if (!body.proposalDate) {
+        newProposalDate = null
+      } else {
+        const parsed = new Date(body.proposalDate)
+        if (Number.isNaN(parsed.getTime())) {
+          return NextResponse.json({ error: 'Data de entrada inválida' }, { status: 400 })
+        }
+        newProposalDate = parsed
+      }
+    }
+
+    // Ao mover a competência de uma proposta, a data de entrada acompanha
+    // (é ela que posiciona a proposta na aba de mês).
+    if (project.status === 'PROPOSAL' && body.proposalDate !== undefined && body.startDate === undefined && newProposalDate) {
+      newStart = newProposalDate
+    }
+
+    const delta = monthDelta(project.startDate, newStart)
+    // Por padrão, mover a competência desloca também as parcelas em aberto.
+    const shiftInstallments = delta !== 0 && body.shiftInstallments !== false
+
+    await prisma.$transaction(async (tx) => {
+      await tx.project.update({
+        where: { id: params.id },
+        data: {
+          name: body.name ?? project.name,
+          description: body.description !== undefined ? body.description : project.description,
+          status: body.status ?? project.status,
+          startDate: newStart,
+          deadline: body.deadline !== undefined ? (body.deadline ? new Date(body.deadline) : null) : project.deadline,
+          totalValue: body.totalValue ?? project.totalValue,
+          projectLink: body.projectLink !== undefined ? body.projectLink : project.projectLink,
+          referralName: body.referralName !== undefined ? body.referralName : project.referralName,
+          referralModel: body.referralModel !== undefined ? body.referralModel : project.referralModel,
+          referralValue: body.referralValue !== undefined ? body.referralValue : project.referralValue,
+          referralPaid: body.referralPaid !== undefined ? body.referralPaid : project.referralPaid,
+          catalogItemId: body.catalogItemId !== undefined ? body.catalogItemId : project.catalogItemId,
+          assignedToId: body.assignedToId !== undefined ? body.assignedToId : project.assignedToId,
+          proposalDate: newProposalDate,
+          plannedDate: body.plannedDate !== undefined ? (body.plannedDate ? new Date(body.plannedDate) : null) : project.plannedDate,
+          checklist:
+            body.checklist !== undefined
+              ? typeof body.checklist === 'string'
+                ? body.checklist
+                : JSON.stringify(body.checklist)
+              : project.checklist,
+        },
+      })
+
+      if (shiftInstallments) {
+        // Parcelas já pagas ficam no histórico; as em aberto andam o mesmo
+        // número de meses, preservando o dia (ajustado ao fim do mês).
+        const unpaid = await tx.projectInstallment.findMany({
+          where: { projectId: params.id, paid: false },
+        })
+        for (const inst of unpaid) {
+          const shifted = addMonthsUTC(inst.dueDate, delta)
+          if (!shifted) continue
+          await tx.projectInstallment.update({
+            where: { id: inst.id },
+            data: { dueDate: shifted },
+          })
+          // Provisões do caixa seguem a competência do projeto.
+          await tx.cashFlowTransaction.updateMany({
+            where: { installmentId: inst.id, type: 'PROVISION' },
+            data: { competenceDate: newStart },
+          })
+        }
+      }
+
+      return null
     })
 
     // Se mudou status → Interaction
@@ -89,7 +148,18 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       })
     }
 
-    return NextResponse.json(updated)
+    // Retorna o projeto completo (o painel de detalhes substitui o estado local)
+    const result = await prisma.project.findUnique({
+      where: { id: params.id },
+      include: {
+        client: { select: { id: true, name: true, phone: true, email: true, companyName: true } },
+        assignedTo: { select: { id: true, name: true, avatarUrl: true } },
+        installments: { orderBy: { number: 'asc' } },
+        credentials: { orderBy: { createdAt: 'asc' } },
+      },
+    })
+
+    return NextResponse.json(result)
   } catch (err) {
     console.error('[PUT /api/projects/[id]]', err)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })

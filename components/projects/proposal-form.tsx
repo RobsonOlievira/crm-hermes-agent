@@ -7,11 +7,13 @@ type Client = { id: string; name: string; phone: string; email?: string | null }
 
 interface Props {
   clients: Client[]
+  /** Data sugerida (competência da aba em uso) */
+  defaultDate?: string
   onClose: () => void
   onCreated: (project: any) => void
 }
 
-export function ProposalForm({ clients, onClose, onCreated }: Props) {
+export function ProposalForm({ clients, defaultDate, onClose, onCreated }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -22,7 +24,7 @@ export function ProposalForm({ clients, onClose, onCreated }: Props) {
 
   const [name, setName] = useState('')
   const [totalValue, setTotalValue] = useState('')
-  const [proposalDate, setProposalDate] = useState(new Date().toISOString().split('T')[0])
+  const [proposalDate, setProposalDate] = useState(defaultDate || new Date().toISOString().split('T')[0])
   const [plannedDate, setPlannedDate] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {

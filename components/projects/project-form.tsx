@@ -9,6 +9,8 @@ type Member = { id: string; name: string; avatarUrl?: string | null }
 interface Props {
   clients: Client[]
   members: Member[]
+  /** Data sugerida (competência da aba em uso) */
+  defaultDate?: string
   onClose: () => void
   onCreated: (project: any) => void
 }
@@ -21,7 +23,7 @@ const PAYMENT_METHODS = [
   { value: 'DINHEIRO', label: 'Dinheiro' },
 ]
 
-export function ProjectForm({ clients, members, onClose, onCreated }: Props) {
+export function ProjectForm({ clients, members, defaultDate, onClose, onCreated }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -29,7 +31,7 @@ export function ProjectForm({ clients, members, onClose, onCreated }: Props) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [totalValue, setTotalValue] = useState('')
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0])
+  const [startDate, setStartDate] = useState(defaultDate || new Date().toISOString().split('T')[0])
   const [deadline, setDeadline] = useState('')
   const [projectLink, setProjectLink] = useState('')
   const [installmentCount, setInstallmentCount] = useState(1)

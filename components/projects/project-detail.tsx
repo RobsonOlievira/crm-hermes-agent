@@ -3,7 +3,14 @@
 import { useState } from 'react'
 import { PROJECT_STATUS_META, PROJECT_PAYMENT_METHOD_OPTIONS } from '@/lib/crm-constants'
 import { formatCurrency } from '@/lib/format'
-import { formatCompetenceDate } from '@/lib/date-utils'
+import {
+  formatCompetenceDate,
+  formatCompetenceMonth,
+  competenceYearMonth,
+  currentCompetence,
+  defaultDateForCompetence,
+} from '@/lib/date-utils'
+import { CompetenceModal } from './competence-modal'
 
 type Installment = {
   id: string
@@ -61,8 +68,21 @@ function parseChecklist(raw?: string | null): ChecklistItem[] {
   }
 }
 
+/** Date → "YYYY-MM-DD" para <input type="date"> (datas de competência são UTC). */
+function toDateInput(value?: string | Date | null): string {
+  if (!value) return ''
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toISOString().slice(0, 10)
+}
+
+type Member = { id: string; name: string; avatarUrl?: string | null }
+
 interface Props {
   project: Project
+  members?: Member[]
+  /** Competência (mês/ano) que está aberta na tela de projetos */
+  competence?: { year: number; month: number }
   onClose: () => void
   onUpdated: (project: Project) => void
   onInstallmentPaid: (projectId: string, installmentId: string) => void
@@ -219,14 +239,16 @@ function CopyButton({ value }: { value: string }) {
 
 function ActivateModal({
   project,
+  defaultDate,
   onActivate,
   onClose,
 }: {
   project: Project
+  defaultDate?: string
   onActivate: (params: { startDate: string; installmentCount: number }) => Promise<void>
   onClose: () => void
 }) {
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0])
+  const [startDate, setStartDate] = useState(defaultDate || new Date().toISOString().split('T')[0])
   const [installmentCount, setInstallmentCount] = useState(1)
   const [loading, setLoading] = useState(false)
 
@@ -281,7 +303,7 @@ function ActivateModal({
   )
 }
 
-export function ProjectDetail({ project, onClose, onUpdated, onInstallmentPaid, onDeleted }: Props) {
+export function ProjectDetail({ project, members = [], competence, onClose, onUpdated, onInstallmentPaid, onDeleted }: Props) {
   const isProposal = project.status === 'PROPOSAL'
   const [activeTab, setActiveTab] = useState<'checklist' | 'parcelas' | 'credenciais' | 'detalhes'>(isProposal ? 'checklist' : 'parcelas')
   const [checklist, setChecklist] = useState<ChecklistItem[]>(parseChecklist(project.checklist))
@@ -304,9 +326,173 @@ export function ProjectDetail({ project, onClose, onUpdated, onInstallmentPaid, 
   const [savingTotal, setSavingTotal] = useState(false)
   const [totalError, setTotalError] = useState('')
 
+  // Alterar o mês (competência) do projeto ou o mês de entrada da proposta
+  const [showCompetence, setShowCompetence] = useState(false)
+  const competenceBasis = isProposal ? (project.proposalDate ?? project.createdAt) : project.startDate
+  const competenceYM = competenceYearMonth(competenceBasis)
+
+  const handleChangeCompetence = async (targetYear: number, targetMonth: number) => {
+    const day = new Date(competenceBasis).getUTCDate()
+    const lastDay = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate()
+    const iso = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-${String(Math.min(day, lastDay)).padStart(2, '0')}`
+
+    const res = await fetch(`/api/projects/${project.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(
+        isProposal
+          ? { proposalDate: iso }
+          : { startDate: iso, shiftInstallments: true }
+      ),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || 'Erro ao alterar o mês')
+    onUpdated(data)
+    setShowCompetence(false)
+  }
+
   // Deletar projeto
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
+
+  // ── Edição do nome (renomear direto no cabeçalho) ──
+  const [editingName, setEditingName] = useState(false)
+  const [nameInput, setNameInput] = useState(project.name)
+  const [savingName, setSavingName] = useState(false)
+  const [nameError, setNameError] = useState('')
+
+  // ── Edição dos detalhes do projeto ──
+  const [editingDetails, setEditingDetails] = useState(false)
+  const [savingDetails, setSavingDetails] = useState(false)
+  const [detailsError, setDetailsError] = useState('')
+  const buildDetailsForm = () => ({
+    name: project.name,
+    description: project.description ?? '',
+    deadline: toDateInput(project.deadline),
+    assignedToId: project.assignedTo?.id ?? '',
+    projectLink: project.projectLink ?? '',
+    referralName: project.referralName ?? '',
+    referralModel: project.referralModel ?? '',
+    referralValue: project.referralValue != null ? String(project.referralValue) : '',
+    referralPaid: project.referralPaid,
+  })
+  const [detailsForm, setDetailsForm] = useState(buildDetailsForm)
+
+  // ── Nova credencial ──
+  const emptyCredential = { label: '', url: '', username: '', email: '', password: '', notes: '' }
+  const [newCredential, setNewCredential] = useState(emptyCredential)
+  const [showCredentialForm, setShowCredentialForm] = useState(false)
+  const [savingCredential, setSavingCredential] = useState(false)
+  const [credentialError, setCredentialError] = useState('')
+
+  /** PUT genérico no projeto; devolve o projeto atualizado. */
+  const patchProject = async (patch: Record<string, any>) => {
+    const res = await fetch(`/api/projects/${project.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || 'Erro ao salvar alterações')
+    onUpdated(data)
+    return data
+  }
+
+  const handleSaveName = async () => {
+    const trimmed = nameInput.trim()
+    if (!trimmed) {
+      setNameError('O nome não pode ficar vazio.')
+      return
+    }
+    if (trimmed === project.name) {
+      setEditingName(false)
+      setNameError('')
+      return
+    }
+    setSavingName(true)
+    setNameError('')
+    try {
+      await patchProject({ name: trimmed })
+      setEditingName(false)
+    } catch (err: any) {
+      setNameError(err.message)
+    } finally {
+      setSavingName(false)
+    }
+  }
+
+  const handleSaveDetails = async () => {
+    if (!detailsForm.name.trim()) {
+      setDetailsError('O nome do projeto é obrigatório.')
+      return
+    }
+    setSavingDetails(true)
+    setDetailsError('')
+    try {
+      await patchProject({
+        name: detailsForm.name.trim(),
+        description: detailsForm.description.trim() || null,
+        deadline: detailsForm.deadline || null,
+        assignedToId: detailsForm.assignedToId || null,
+        projectLink: detailsForm.projectLink.trim() || null,
+        referralName: detailsForm.referralName.trim() || null,
+        referralModel: detailsForm.referralModel || null,
+        referralValue: detailsForm.referralValue ? parseFloat(detailsForm.referralValue) : null,
+        referralPaid: detailsForm.referralPaid,
+      })
+      setEditingDetails(false)
+    } catch (err: any) {
+      setDetailsError(err.message)
+    } finally {
+      setSavingDetails(false)
+    }
+  }
+
+  const handleAddCredential = async () => {
+    if (!newCredential.label.trim()) {
+      setCredentialError('Informe um nome/rótulo para a credencial.')
+      return
+    }
+    setSavingCredential(true)
+    setCredentialError('')
+    try {
+      const res = await fetch(`/api/projects/${project.id}/credentials`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          label: newCredential.label.trim(),
+          url: newCredential.url.trim() || null,
+          username: newCredential.username.trim() || null,
+          email: newCredential.email.trim() || null,
+          password: newCredential.password || null,
+          notes: newCredential.notes.trim() || null,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erro ao adicionar credencial')
+      setCredentials((prev) => [...prev, data])
+      setCredentialsLoaded(true)
+      setNewCredential(emptyCredential)
+      setShowCredentialForm(false)
+    } catch (err: any) {
+      setCredentialError(err.message)
+    } finally {
+      setSavingCredential(false)
+    }
+  }
+
+  const handleDeleteCredential = async (credentialId: string) => {
+    if (!confirm('Remover esta credencial?')) return
+    try {
+      const res = await fetch(`/api/projects/${project.id}/credentials?credentialId=${credentialId}`, {
+        method: 'DELETE',
+      })
+      if (!res.ok) throw new Error('Erro ao remover credencial')
+      setCredentials((prev) => prev.filter((c) => c.id !== credentialId))
+    } catch (err: any) {
+      setCredentialError(err.message)
+    }
+  }
 
   const handleDeleteProject = async () => {
     setDeleting(true)
@@ -511,11 +697,44 @@ export function ProjectDetail({ project, onClose, onUpdated, onInstallmentPaid, 
           <div className="flex items-start justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-700 flex-shrink-0">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100 truncate">{project.name}</h2>
+                {editingName ? (
+                  <div className="flex items-center gap-1 min-w-0">
+                    <input
+                      autoFocus
+                      value={nameInput}
+                      onChange={(e) => setNameInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveName()
+                        if (e.key === 'Escape') { setEditingName(false); setNameError(''); setNameInput(project.name) }
+                      }}
+                      className="min-w-0 w-full max-w-xs border border-neutral-300 dark:border-neutral-600 rounded px-2 py-1 text-base font-semibold bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button onClick={handleSaveName} disabled={savingName} title="Salvar nome" className="text-green-600 hover:text-green-700 disabled:opacity-50 px-1">
+                      {savingName ? '…' : '✓'}
+                    </button>
+                    <button
+                      onClick={() => { setEditingName(false); setNameError(''); setNameInput(project.name) }}
+                      title="Cancelar"
+                      className="text-neutral-400 hover:text-neutral-600 px-1"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => { setNameInput(project.name); setNameError(''); setEditingName(true) }}
+                    title="Clique para renomear o projeto"
+                    className="group flex items-center gap-1.5 min-w-0 text-left"
+                  >
+                    <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100 truncate">{project.name}</h2>
+                    <span className="text-[11px] opacity-0 group-hover:opacity-60 transition-opacity">✏️</span>
+                  </button>
+                )}
                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${meta?.bg ?? ''} ${meta?.text ?? ''}`}>
                   {meta?.label ?? editStatus}
                 </span>
               </div>
+              {nameError && <div className="text-[11px] text-red-500 mb-1">{nameError}</div>}
               <p className="text-sm text-neutral-500 dark:text-neutral-400">
                 {project.client.name}
                 {project.client.companyName ? ` — ${project.client.companyName}` : ''}
@@ -586,25 +805,34 @@ export function ProjectDetail({ project, onClose, onUpdated, onInstallmentPaid, 
 
           {/* Mudar Status / Iniciar proposta */}
           <div className="px-6 pb-3 flex-shrink-0 flex items-center justify-between gap-2 flex-wrap">
-            {isProposal ? (
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3 flex-wrap">
+              {isProposal ? (
                 <span className="text-xs text-neutral-400 dark:text-neutral-500">Proposta em negociação</span>
-              </div>
-            ) : (
-              <div>
-                <label className="text-xs text-neutral-400 dark:text-neutral-500 mr-2">Status:</label>
-                <select
-                  value={editStatus}
-                  onChange={(e) => handleStatusChange(e.target.value)}
-                  disabled={savingStatus}
-                  className="border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
-                >
-                  {STATUS_OPTIONS.map((s) => (
-                    <option key={s} value={s}>{PROJECT_STATUS_META[s]?.label ?? s}</option>
-                  ))}
-                </select>
-              </div>
-            )}
+              ) : (
+                <div>
+                  <label className="text-xs text-neutral-400 dark:text-neutral-500 mr-2">Status:</label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => handleStatusChange(e.target.value)}
+                    disabled={savingStatus}
+                    className="border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
+                  >
+                    {STATUS_OPTIONS.map((s) => (
+                      <option key={s} value={s}>{PROJECT_STATUS_META[s]?.label ?? s}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <button
+                onClick={() => setShowCompetence(true)}
+                title={isProposal ? 'Alterar o mês em que a proposta aparece' : 'Alterar o mês do projeto (as parcelas em aberto acompanham)'}
+                className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700/50 transition-colors"
+              >
+                📅 {isProposal ? 'Mês da proposta' : 'Mês do projeto'}:
+                <strong className="text-neutral-900 dark:text-neutral-100">{formatCompetenceMonth(competenceBasis)}</strong>
+                <span className="opacity-60">✏️</span>
+              </button>
+            </div>
             {isProposal && (
               <button
                 onClick={() => setShowActivate(true)}
@@ -769,6 +997,97 @@ export function ProjectDetail({ project, onClose, onUpdated, onInstallmentPaid, 
             {/* TAB: Credenciais */}
             {activeTab === 'credenciais' && (
               <div className="space-y-3">
+                {credentialError && (
+                  <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg px-3 py-2 text-sm">
+                    {credentialError}
+                  </div>
+                )}
+
+                <div className="flex justify-end">
+                  {!showCredentialForm && credentialsLoaded && (
+                    <button
+                      onClick={() => { setCredentialError(''); setShowCredentialForm(true) }}
+                      className="text-xs font-medium px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700/50 transition-colors"
+                    >
+                      + Adicionar credencial
+                    </button>
+                  )}
+                </div>
+
+                {showCredentialForm && (
+                  <div className="border border-blue-200 dark:border-blue-900/50 bg-blue-50/40 dark:bg-blue-900/10 rounded-xl p-4 space-y-3">
+                    <h4 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Nova credencial</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">Nome / Rótulo *</label>
+                        <input
+                          autoFocus
+                          value={newCredential.label}
+                          onChange={(e) => setNewCredential((p) => ({ ...p, label: e.target.value }))}
+                          placeholder="Ex: cPanel, Instagram, WordPress"
+                          className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">URL</label>
+                        <input
+                          value={newCredential.url}
+                          onChange={(e) => setNewCredential((p) => ({ ...p, url: e.target.value }))}
+                          placeholder="https://..."
+                          className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">Usuário</label>
+                        <input
+                          value={newCredential.username}
+                          onChange={(e) => setNewCredential((p) => ({ ...p, username: e.target.value }))}
+                          className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">E-mail</label>
+                        <input
+                          value={newCredential.email}
+                          onChange={(e) => setNewCredential((p) => ({ ...p, email: e.target.value }))}
+                          className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">Senha</label>
+                        <input
+                          value={newCredential.password}
+                          onChange={(e) => setNewCredential((p) => ({ ...p, password: e.target.value }))}
+                          className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">Observações</label>
+                        <input
+                          value={newCredential.notes}
+                          onChange={(e) => setNewCredential((p) => ({ ...p, notes: e.target.value }))}
+                          className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        onClick={() => { setShowCredentialForm(false); setNewCredential(emptyCredential); setCredentialError('') }}
+                        className="px-3 py-1.5 text-xs text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={handleAddCredential}
+                        disabled={savingCredential}
+                        className="px-4 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-60"
+                      >
+                        {savingCredential ? 'Salvando...' : 'Salvar credencial'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {!credentialsLoaded ? (
                   <p className="text-sm text-neutral-400 text-center py-4">Carregando credenciais...</p>
                 ) : credentials.length === 0 ? (
@@ -783,6 +1102,13 @@ export function ProjectDetail({ project, onClose, onUpdated, onInstallmentPaid, 
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{cred.label}</span>
+                        <button
+                          onClick={() => handleDeleteCredential(cred.id)}
+                          title="Remover credencial"
+                          className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 px-1"
+                        >
+                          Remover
+                        </button>
                       </div>
                       <div className="space-y-1 text-xs text-neutral-600 dark:text-neutral-400">
                         {cred.url && (
@@ -836,61 +1162,215 @@ export function ProjectDetail({ project, onClose, onUpdated, onInstallmentPaid, 
             {/* TAB: Detalhes */}
             {activeTab === 'detalhes' && (
               <div className="space-y-4 text-sm">
-                {project.description && (
-                  <div>
-                    <div className="text-xs text-neutral-400 dark:text-neutral-500 mb-1">Descrição</div>
-                    <p className="text-neutral-700 dark:text-neutral-300 leading-relaxed">{project.description}</p>
+                {detailsError && (
+                  <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg px-3 py-2 text-sm">
+                    {detailsError}
                   </div>
                 )}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <div className="text-xs text-neutral-400 dark:text-neutral-500">Início</div>
-                    <div className="font-medium text-neutral-900 dark:text-neutral-100">
-                      {formatCompetenceDate(project.startDate)}
+
+                {!editingDetails ? (
+                  <>
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => { setDetailsForm(buildDetailsForm()); setDetailsError(''); setEditingDetails(true) }}
+                        className="text-xs font-medium px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700/50 transition-colors"
+                      >
+                        ✏️ Editar detalhes
+                      </button>
                     </div>
-                  </div>
-                  {project.deadline && (
+
                     <div>
-                      <div className="text-xs text-neutral-400 dark:text-neutral-500">Prazo</div>
-                      <div className={`font-medium ${new Date(project.deadline) < now ? 'text-red-500' : 'text-neutral-900 dark:text-neutral-100'}`}>
-                        {formatCompetenceDate(project.deadline)}
+                      <div className="text-xs text-neutral-400 dark:text-neutral-500 mb-1">Nome do projeto</div>
+                      <p className="font-medium text-neutral-900 dark:text-neutral-100">{project.name}</p>
+                    </div>
+
+                    <div>
+                      <div className="text-xs text-neutral-400 dark:text-neutral-500 mb-1">Descrição</div>
+                      {project.description ? (
+                        <p className="text-neutral-700 dark:text-neutral-300 leading-relaxed whitespace-pre-line">{project.description}</p>
+                      ) : (
+                        <p className="text-neutral-400 dark:text-neutral-500 italic">Sem descrição. Use "Editar detalhes" para adicionar.</p>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <div className="text-xs text-neutral-400 dark:text-neutral-500">{isProposal ? 'Entrada da proposta' : 'Início'}</div>
+                        <div className="font-medium text-neutral-900 dark:text-neutral-100">
+                          {formatCompetenceDate(isProposal ? (project.proposalDate ?? project.createdAt) : project.startDate)}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-neutral-400 dark:text-neutral-500">Prazo</div>
+                        {project.deadline ? (
+                          <div className={`font-medium ${new Date(project.deadline) < now ? 'text-red-500' : 'text-neutral-900 dark:text-neutral-100'}`}>
+                            {formatCompetenceDate(project.deadline)}
+                          </div>
+                        ) : (
+                          <div className="text-neutral-400 dark:text-neutral-500 italic">Sem prazo definido</div>
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-xs text-neutral-400 dark:text-neutral-500">Responsável</div>
+                        <div className="font-medium text-neutral-900 dark:text-neutral-100">
+                          {project.assignedTo?.name ?? <span className="text-neutral-400 dark:text-neutral-500 italic font-normal">Sem responsável</span>}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-neutral-400 dark:text-neutral-500">Link do Projeto</div>
+                        {project.projectLink ? (
+                          <a
+                            href={project.projectLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 dark:text-blue-400 hover:underline break-all"
+                          >
+                            {project.projectLink}
+                          </a>
+                        ) : (
+                          <span className="text-neutral-400 dark:text-neutral-500 italic">Sem link</span>
+                        )}
                       </div>
                     </div>
-                  )}
-                  {project.projectLink && (
-                    <div className="col-span-2">
-                      <div className="text-xs text-neutral-400 dark:text-neutral-500">Link do Projeto</div>
-                      <a
-                        href={project.projectLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 dark:text-blue-400 hover:underline break-all"
-                      >
-                        {project.projectLink}
-                      </a>
-                    </div>
-                  )}
-                  {project.assignedTo && (
-                    <div>
-                      <div className="text-xs text-neutral-400 dark:text-neutral-500">Responsável</div>
-                      <div className="font-medium text-neutral-900 dark:text-neutral-100">{project.assignedTo.name}</div>
-                    </div>
-                  )}
-                </div>
 
-                {project.referralName && (
-                  <div className="border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3">
-                    <div className="text-xs font-medium text-amber-700 dark:text-amber-400 mb-1">Indicação</div>
-                    <div className="text-sm text-neutral-700 dark:text-neutral-300">
-                      {project.referralName}
-                      {project.referralValue && project.referralModel && (
-                        <span className="text-amber-600 dark:text-amber-400 ml-2">
-                          — Comissão: {project.referralModel === 'PERCENTAGE'
-                            ? `${project.referralValue}%`
-                            : formatCurrency(project.referralValue)}
-                          {project.referralPaid ? ' ✅ Paga' : ' ⏳ Pendente'}
-                        </span>
-                      )}
+                    {project.referralName ? (
+                      <div className="border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3">
+                        <div className="text-xs font-medium text-amber-700 dark:text-amber-400 mb-1">Indicação</div>
+                        <div className="text-sm text-neutral-700 dark:text-neutral-300">
+                          {project.referralName}
+                          {project.referralValue && project.referralModel && (
+                            <span className="text-amber-600 dark:text-amber-400 ml-2">
+                              — Comissão: {project.referralModel === 'PERCENTAGE'
+                                ? `${project.referralValue}%`
+                                : formatCurrency(project.referralValue)}
+                              {project.referralPaid ? ' ✅ Paga' : ' ⏳ Pendente'}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-neutral-400 dark:text-neutral-500 italic">
+                        Sem indicação cadastrada.
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">Nome do projeto *</label>
+                      <input
+                        value={detailsForm.name}
+                        onChange={(e) => setDetailsForm((p) => ({ ...p, name: e.target.value }))}
+                        className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">Descrição / detalhes</label>
+                      <textarea
+                        rows={3}
+                        value={detailsForm.description}
+                        onChange={(e) => setDetailsForm((p) => ({ ...p, description: e.target.value }))}
+                        placeholder="Escopo, observações, o que mudou no projeto..."
+                        className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">Prazo de entrega</label>
+                        <input
+                          type="date"
+                          value={detailsForm.deadline}
+                          onChange={(e) => setDetailsForm((p) => ({ ...p, deadline: e.target.value }))}
+                          className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">Responsável</label>
+                        <select
+                          value={detailsForm.assignedToId}
+                          onChange={(e) => setDetailsForm((p) => ({ ...p, assignedToId: e.target.value }))}
+                          className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">Sem responsável</option>
+                          {members.map((m) => (
+                            <option key={m.id} value={m.id}>{m.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">Link do projeto</label>
+                      <input
+                        value={detailsForm.projectLink}
+                        onChange={(e) => setDetailsForm((p) => ({ ...p, projectLink: e.target.value }))}
+                        placeholder="https://..."
+                        className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div className="border border-neutral-200 dark:border-neutral-700 rounded-xl p-3">
+                      <div className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">Indicação (opcional)</div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] text-neutral-400 mb-1">Nome do indicador</label>
+                          <input
+                            value={detailsForm.referralName}
+                            onChange={(e) => setDetailsForm((p) => ({ ...p, referralName: e.target.value }))}
+                            className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-neutral-400 mb-1">Modelo</label>
+                          <select
+                            value={detailsForm.referralModel}
+                            onChange={(e) => setDetailsForm((p) => ({ ...p, referralModel: e.target.value }))}
+                            className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="">Nenhum</option>
+                            <option value="PERCENTAGE">Percentual (%)</option>
+                            <option value="FIXED">Valor Fixo (R$)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-neutral-400 mb-1">
+                            {detailsForm.referralModel === 'PERCENTAGE' ? 'Percentual (%)' : 'Valor (R$)'}
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            disabled={!detailsForm.referralModel}
+                            value={detailsForm.referralValue}
+                            onChange={(e) => setDetailsForm((p) => ({ ...p, referralValue: e.target.value }))}
+                            className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                          />
+                        </div>
+                        <label className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400 mt-5">
+                          <input
+                            type="checkbox"
+                            checked={detailsForm.referralPaid}
+                            onChange={(e) => setDetailsForm((p) => ({ ...p, referralPaid: e.target.checked }))}
+                            className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 accent-amber-600"
+                          />
+                          Comissão já paga
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 justify-end pt-1">
+                      <button
+                        onClick={() => { setEditingDetails(false); setDetailsError('') }}
+                        className="px-4 py-2 text-sm text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={handleSaveDetails}
+                        disabled={savingDetails}
+                        className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-60"
+                      >
+                        {savingDetails ? 'Salvando...' : 'Salvar detalhes'}
+                      </button>
                     </div>
                   </div>
                 )}
@@ -919,8 +1399,29 @@ export function ProjectDetail({ project, onClose, onUpdated, onInstallmentPaid, 
       {showActivate && (
         <ActivateModal
           project={project}
+          defaultDate={defaultDateForCompetence(
+            competence?.year ?? currentCompetence().year,
+            competence?.month ?? currentCompetence().month
+          )}
           onActivate={handleActivate}
           onClose={() => setShowActivate(false)}
+        />
+      )}
+
+      {showCompetence && (
+        <CompetenceModal
+          title={isProposal ? 'Mover proposta de mês' : 'Mover projeto de mês'}
+          description={
+            isProposal
+              ? 'A proposta passa a aparecer na aba do mês escolhido.'
+              : 'O projeto passa a contar no mês escolhido.'
+          }
+          note={isProposal ? undefined : 'As parcelas em aberto serão deslocadas pelo mesmo número de meses. As já pagas ficam no histórico.'}
+          initialYear={competenceYM.year}
+          initialMonth={competenceYM.month}
+          confirmLabel="Mover"
+          onSave={handleChangeCompetence}
+          onClose={() => setShowCompetence(false)}
         />
       )}
 

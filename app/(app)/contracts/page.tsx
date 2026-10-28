@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Card } from '@/components/ui/card'
@@ -11,7 +11,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { PageHeading } from '@/components/layout/page-heading'
 import { toast } from 'sonner'
 import { Plus, FileText, Loader2, ArrowRight, MessageSquare, Mail, CheckCircle2 } from 'lucide-react'
-import { CONTRACT_STATUS_META } from '@/lib/crm-constants'
+import { CONTRACT_STATUS_META, MONTH_NAMES_PT } from '@/lib/crm-constants'
+import { currentCompetence } from '@/lib/date-utils'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -43,6 +44,16 @@ export default function ContractsPage() {
   })
   const [creating, setCreating] = useState(false)
 
+  // ── Orçamentos (PDF): filtro por mês e ordenação ──
+  const competenceNow = currentCompetence()
+  const [proposalYear, setProposalYear] = useState(competenceNow.year)
+  // 'all' = todos os meses
+  const [proposalMonth, setProposalMonth] = useState<string>('all')
+  const [proposalSort, setProposalSort] = useState<{ key: 'title' | 'client' | 'date' | 'value'; direction: 'asc' | 'desc' }>({
+    key: 'date',
+    direction: 'desc',
+  })
+
   const fetchData = async () => {
     setLoading(true)
     try {
@@ -72,6 +83,66 @@ export default function ContractsPage() {
   useEffect(() => {
     fetchData()
   }, [])
+
+  // ── Orçamentos (PDF): valor, filtro por mês e ordenação ──
+  const proposalData = (proposal: any) => {
+    try {
+      return typeof proposal.data === 'string' ? JSON.parse(proposal.data || '{}') : proposal.data || {}
+    } catch {
+      return {}
+    }
+  }
+
+  const proposalValue = (proposal: any) => {
+    const data = proposalData(proposal)
+    if (typeof data.finalPrice === 'number') return data.finalPrice
+    const items = data.serviceItems || data.items || []
+    return items.reduce(
+      (sum: number, item: any) =>
+        sum + (parseFloat(item.price) || parseFloat(item.total) || 0) * (parseFloat(item.quantity) || 1),
+      0
+    )
+  }
+
+  const proposalYears = useMemo(() => {
+    const set = new Set<number>([competenceNow.year])
+    for (const p of proposals) {
+      const d = new Date(p.createdAt)
+      if (!Number.isNaN(d.getTime())) set.add(d.getUTCFullYear())
+    }
+    return Array.from(set).sort((a, b) => b - a)
+  }, [proposals])
+
+  const visibleProposals = useMemo(() => {
+    const dir = proposalSort.direction === 'asc' ? 1 : -1
+    const list = proposals.filter((p) => {
+      if (proposalMonth === 'all') return true
+      const d = new Date(p.createdAt)
+      if (Number.isNaN(d.getTime())) return false
+      return d.getUTCFullYear() === proposalYear && d.getUTCMonth() === Number(proposalMonth)
+    })
+
+    list.sort((a, b) => {
+      let cmp = 0
+      switch (proposalSort.key) {
+        case 'title':
+          cmp = (a.title || '').localeCompare(b.title || '', 'pt-BR')
+          break
+        case 'client':
+          cmp = (a.client?.name || a.lead?.name || '').localeCompare(b.client?.name || b.lead?.name || '', 'pt-BR')
+          break
+        case 'value':
+          cmp = proposalValue(a) - proposalValue(b)
+          break
+        case 'date':
+          cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          break
+      }
+      if (cmp === 0) cmp = (a.title || '').localeCompare(b.title || '', 'pt-BR')
+      return cmp * dir
+    })
+    return list
+  }, [proposals, proposalMonth, proposalYear, proposalSort])
 
   // Função para auto-gerar título inteligente do contrato
   const generateAutoTitle = (clientId?: string, templateId?: string, customService?: string) => {
@@ -275,10 +346,62 @@ export default function ContractsPage() {
         </TabsContent>
         
         <TabsContent value="proposals" className="space-y-4">
-          <div className="flex justify-end">
-             <Button onClick={() => router.push('/contracts/proposals/new')} className="bg-[#ac84ff] hover:bg-[#ac84ff]/90 text-white border-0">
-               <Plus className="h-4 w-4 mr-2" /> Novo Orçamento
-             </Button>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
+              <select
+                value={proposalMonth}
+                onChange={(e) => setProposalMonth(e.target.value)}
+                className="border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none"
+                title="Filtrar orçamentos por mês"
+              >
+                <option value="all">Todos os meses</option>
+                {MONTH_NAMES_PT.map((name, idx) => (
+                  <option key={idx} value={String(idx)}>{name}</option>
+                ))}
+              </select>
+
+              {proposalMonth !== 'all' && (
+                <select
+                  value={proposalYear}
+                  onChange={(e) => setProposalYear(parseInt(e.target.value))}
+                  className="border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none"
+                  title="Ano"
+                >
+                  {proposalYears.map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              )}
+
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <span className="text-xs">Ordenar:</span>
+                <select
+                  value={proposalSort.key}
+                  onChange={(e) => {
+                    const key = e.target.value as typeof proposalSort.key
+                    setProposalSort((prev) => ({ key, direction: prev.key === key ? prev.direction : 'asc' }))
+                  }}
+                  className="border border-neutral-200 dark:border-neutral-700 rounded-lg px-2 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none"
+                >
+                  <option value="date">Data</option>
+                  <option value="title">Nome</option>
+                  <option value="client">Cliente</option>
+                  <option value="value">Valor</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setProposalSort((prev) => ({ ...prev, direction: prev.direction === 'asc' ? 'desc' : 'asc' }))}
+                  className="px-2 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 text-xs hover:bg-muted"
+                  title={proposalSort.direction === 'asc' ? 'Crescente' : 'Decrescente'}
+                >
+                  {proposalSort.direction === 'asc' ? '▲' : '▼'}
+                </button>
+              </div>
+            </div>
+
+            <Button onClick={() => router.push('/contracts/proposals/new')} className="bg-[#ac84ff] hover:bg-[#ac84ff]/90 text-white border-0">
+              <Plus className="h-4 w-4 mr-2" /> Novo Orçamento
+            </Button>
           </div>
           <Card>
             {loading ? (
@@ -289,13 +412,19 @@ export default function ContractsPage() {
                 <p>Nenhum orçamento gerado ainda.</p>
                 <Button variant="link" onClick={() => router.push('/contracts/proposals/new')}>Gerar primeiro orçamento</Button>
               </div>
+            ) : visibleProposals.length === 0 ? (
+              <div className="p-12 text-center text-muted-foreground">
+                <FileText className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                <p>Nenhum orçamento em {MONTH_NAMES_PT[Number(proposalMonth)]}/{proposalYear}.</p>
+                <Button variant="link" onClick={() => setProposalMonth('all')}>Ver todos os meses</Button>
+              </div>
             ) : (
               <div className="divide-y">
-                {proposals.map(proposal => (
+                {visibleProposals.map(proposal => (
                   <div key={proposal.id} className="block hover:bg-muted/50 transition-colors p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-3 flex-wrap">
                           <span className="font-medium text-primary">{proposal.title || 'Orçamento sem título'}</span>
                           <span className={`text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-700`}>
                             {proposal.status}
@@ -304,9 +433,10 @@ export default function ContractsPage() {
                         <p className="text-sm text-muted-foreground mt-1">
                           {proposal.client?.name ? `Cliente: ${proposal.client.name}` : proposal.lead?.name ? `Lead: ${proposal.lead.name}` : 'N/A'} • 
                           Data: {new Date(proposal.createdAt).toLocaleDateString('pt-BR')}
+                          {proposalValue(proposal) > 0 && ` • R$ ${proposalValue(proposal).toFixed(2)}`}
                         </p>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-shrink-0">
                         <Button variant="outline" size="sm" onClick={() => router.push(`/contracts/proposals/${proposal.id}`)}>
                           Abrir
                         </Button>
