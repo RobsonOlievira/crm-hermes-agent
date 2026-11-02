@@ -3,6 +3,7 @@ import { decryptText, encryptText } from '@/lib/crypto'
 import { sendGmailMessage } from './adapters/google-adapter'
 import { sendMicrosoftGraphMessage } from './adapters/microsoft-adapter'
 import { sendSmtpMessage } from './adapters/imap-smtp-adapter'
+import { sendEmail as sendResendEmail, defaultConfig } from '@/lib/resend'
 
 export interface SendEmailInput {
   tenantId: string
@@ -124,64 +125,90 @@ export async function sendEmailFromAccount(input: SendEmailInput) {
     })
   }
 
+  let message: { id: string; sentAt: Date | null }
+
   if (!account) {
-    throw new Error('Nenhuma conta de e-mail ativa encontrada. Conecte uma conta em Configurações → Contas de Email.')
+    // Sem caixa conectada: tenta o Resend configurado no tenant (Configurações → Email).
+    if (accountId) {
+      throw new Error('Conta de e-mail informada não encontrada ou inativa neste tenant.')
+    }
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { resendApiKey: true, resendEnabled: true, resendFrom: true, resendReplyTo: true },
+    })
+    const fallback = defaultConfig()
+    const apiKey = tenant?.resendApiKey || fallback.apiKey
+    if (!apiKey) {
+      throw new Error('Nenhuma conta de e-mail ativa nem chave do Resend configurada. Configure em Configurações → Email (Resend) ou conecte uma conta em Configurações → Contas de Email.')
+    }
+    if (tenant?.resendApiKey && !tenant.resendEnabled) {
+      throw new Error('Envio via Resend está desativado para este tenant (Configurações → Email) e não há conta de e-mail ativa.')
+    }
+    const res = await sendResendEmail(
+      { to, subject, html, tags: [{ name: 'type', value: 'mcp-1to1' }] },
+      {
+        apiKey,
+        from: tenant?.resendApiKey ? tenant.resendFrom || fallback.from : fallback.from,
+        replyTo: tenant?.resendReplyTo || tenant?.resendFrom || fallback.replyTo,
+      }
+    )
+    if (!res.ok) {
+      throw new Error('Falha no envio via Resend: ' + (res.error || 'erro desconhecido'))
+    }
+    // EmailMessage exige accountId: o histórico fica na Interaction abaixo.
+    message = { id: res.id || 'resend', sentAt: new Date() }
+  } else {
+    let externalResultId: string | null = null
+
+    if (account.provider === 'google') {
+      const accessToken = await getOrRefreshGoogleToken(account)
+      const res = await sendGmailMessage({
+        accessToken,
+        from: account.displayName ? `"${account.displayName}" <${account.emailAddress}>` : account.emailAddress,
+        to,
+        subject,
+        html,
+      })
+      externalResultId = res.id
+    } else if (account.provider === 'microsoft') {
+      const accessToken = await getOrRefreshMicrosoftToken(account)
+      await sendMicrosoftGraphMessage({ accessToken, to, subject, html })
+    } else if (account.provider === 'imap') {
+      const authPass = decryptText(account.authPassEnc || '')
+      const res = await sendSmtpMessage({
+        smtpHost: account.smtpHost || '',
+        smtpPort: account.smtpPort || 587,
+        smtpSecure: account.smtpSecure ?? true,
+        authUser: account.authUser || account.emailAddress,
+        authPass,
+        from: account.displayName ? `"${account.displayName}" <${account.emailAddress}>` : account.emailAddress,
+        to,
+        subject,
+        html,
+      })
+      externalResultId = res.messageId
+    } else {
+      throw new Error(`Provedor de e-mail desconhecido: "${account.provider}".`)
+    }
+
+    message = await prisma.emailMessage.create({
+      data: {
+        tenantId,
+        accountId: account.id,
+        leadId,
+        clientId,
+        direction: 'outbound',
+        externalId: externalResultId,
+        fromAddress: account.emailAddress,
+        toAddresses: [to],
+        subject,
+        bodyHtml: html,
+        snippet: html.replace(/<[^>]*>?/gm, '').slice(0, 150),
+        isRead: true,
+        sentAt: new Date(),
+      },
+    })
   }
-
-  let externalResultId: string | null = null
-
-  if (account.provider === 'google') {
-    const accessToken = await getOrRefreshGoogleToken(account)
-    const res = await sendGmailMessage({
-      accessToken,
-      from: account.displayName ? `"${account.displayName}" <${account.emailAddress}>` : account.emailAddress,
-      to,
-      subject,
-      html,
-    })
-    externalResultId = res.id
-  } else if (account.provider === 'microsoft') {
-    const accessToken = await getOrRefreshMicrosoftToken(account)
-    await sendMicrosoftGraphMessage({
-      accessToken,
-      to,
-      subject,
-      html,
-    })
-  } else if (account.provider === 'imap') {
-    const authPass = decryptText(account.authPassEnc || '')
-    const res = await sendSmtpMessage({
-      smtpHost: account.smtpHost || '',
-      smtpPort: account.smtpPort || 587,
-      smtpSecure: account.smtpSecure ?? true,
-      authUser: account.authUser || account.emailAddress,
-      authPass,
-      from: account.displayName ? `"${account.displayName}" <${account.emailAddress}>` : account.emailAddress,
-      to,
-      subject,
-      html,
-    })
-    externalResultId = res.messageId
-  }
-
-  // Registrar mensagem no banco
-  const message = await prisma.emailMessage.create({
-    data: {
-      tenantId,
-      accountId: account.id,
-      leadId,
-      clientId,
-      direction: 'outbound',
-      externalId: externalResultId,
-      fromAddress: account.emailAddress,
-      toAddresses: [to],
-      subject,
-      bodyHtml: html,
-      snippet: html.replace(/<[^>]*>?/gm, '').slice(0, 150),
-      isRead: true,
-      sentAt: new Date(),
-    },
-  })
 
   // Criar interação na linha do tempo do Lead ou Client
   await prisma.interaction.create({
