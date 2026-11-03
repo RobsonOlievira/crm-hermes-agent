@@ -17,7 +17,8 @@ export default async function EmailMarketingPage() {
       include: {
         template: { select: { id: true, name: true } },
         createdBy: { select: { id: true, name: true } },
-        _count: { select: { recipients: true } },
+        audiences: true,
+        _count: { select: { recipients: true, exclusions: true } },
       },
     }),
     prisma.leadType.findMany({ where: { tenantId: user.tenantId }, select: { id: true, label: true } }),

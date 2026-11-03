@@ -12,6 +12,12 @@ import {
 } from 'lucide-react'
 
 /* ─── tipos ─── */
+interface CampaignList {
+  id?: string
+  segmentType: string
+  segmentValue: string | null
+}
+
 interface Campaign {
   id: string
   name: string
@@ -31,10 +37,29 @@ interface Campaign {
   totalClicked: number
   totalBounced: number
   totalFailed: number
+  unsubscribed?: number
   createdAt: string
+  audiences?: CampaignList[]
   template?: { id: string; name: string } | null
   createdBy?: { id: string; name: string } | null
-  _count?: { recipients: number }
+  _count?: { recipients: number; exclusions?: number }
+}
+
+interface AudiencePreview {
+  total: number
+  porLista: { segmentType: string; segmentValue: string | null; total: number }[]
+  semEmail: number
+  descadastrados: number
+  excluidos: number
+}
+
+interface CampaignExclusion {
+  id: string
+  leadId: string | null
+  name: string | null
+  email: string | null
+  reason: string | null
+  createdAt: string
 }
 
 interface Template {
@@ -98,6 +123,19 @@ const SEGMENT_VALUE_OPTIONS = {
 
 type View = 'list' | 'create' | 'detail'
 
+function campaignLists(c: Campaign): CampaignList[] {
+  if (c.audiences && c.audiences.length > 0) {
+    return c.audiences.map(a => ({ id: a.id, segmentType: a.segmentType, segmentValue: a.segmentValue }))
+  }
+  return [{ segmentType: c.segmentType || 'ALL', segmentValue: c.segmentValue || null }]
+}
+
+function listLabel(segmentType: string, segmentValue: string | null): string {
+  const label = SEGMENT_TYPES.find(s => s.id === segmentType)?.label || segmentType
+  if (segmentType === 'ALL' || !segmentValue) return label
+  return `${label}: ${segmentValue}`
+}
+
 /* ─── componente ─── */
 export function EmailMarketingManager({
   initialCampaigns,
@@ -133,22 +171,31 @@ export function EmailMarketingManager({
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL')
 
-  // Formulário de criação
+  // Formulário de criação/edição
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [name, setName] = useState('')
   const [subject, setSubject] = useState('')
   const [htmlBody, setHtmlBody] = useState('')
   const [category, setCategory] = useState('broadcast')
-  const [segmentType, setSegmentType] = useState('ALL')
-  const [segmentValue, setSegmentValue] = useState('')
+  const [lists, setLists] = useState<CampaignList[]>([{ segmentType: 'ALL', segmentValue: null }])
+  const [newListType, setNewListType] = useState('FORMULARIO')
+  const [newListValue, setNewListValue] = useState('')
   const [senderName, setSenderName] = useState('')
   const [senderEmail, setSenderEmail] = useState('')
   const [showPreview, setShowPreview] = useState(false)
   const [saving, setSaving] = useState(false)
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
-  // Leads para segmentação
-  const [segmentLeads, setSegmentLeads] = useState<LeadOption[]>([])
-  const [loadingLeads, setLoadingLeads] = useState(false)
+  // Prévia do público
+  const [audience, setAudience] = useState<AudiencePreview | null>(null)
+  const [loadingAudience, setLoadingAudience] = useState(false)
+
+  // Leads para busca nas exclusões
+  const [leadQuery, setLeadQuery] = useState('')
+  const [leadResults, setLeadResults] = useState<LeadOption[]>([])
+  const [searchingLeads, setSearchingLeads] = useState(false)
+  const [exclusions, setExclusions] = useState<CampaignExclusion[]>([])
+  const [exclusionBusy, setExclusionBusy] = useState(false)
 
   // Envio real
   const [sending, setSending] = useState(false)
@@ -178,17 +225,51 @@ export function EmailMarketingManager({
     }
   }, [view])
 
-  // Carrega leads quando muda segmento
+  // Prévia do público (debounce). Recalcula ao mudar listas ou a campanha editada.
   useEffect(() => {
     if (view !== 'create') return
-    setLoadingLeads(true)
-    const params = new URLSearchParams({ segmentType })
-    if (segmentValue) params.set('segmentValue', segmentValue)
-    fetch(`/api/email-campaigns/leads?${params}`)
-      .then(r => r.json())
-      .then(d => setSegmentLeads(d.leads || []))
-      .finally(() => setLoadingLeads(false))
-  }, [view, segmentType, segmentValue])
+    let cancelled = false
+    setLoadingAudience(true)
+    const timer = setTimeout(() => {
+      fetch('/api/email-campaigns/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          segmentos: lists.map(l => ({ segmentType: l.segmentType, segmentValue: l.segmentValue })),
+          campanhaId: editingId,
+        }),
+      })
+        .then(r => r.json())
+        .then(d => { if (!cancelled && !d.error) setAudience(d) })
+        .catch(() => {})
+        .finally(() => { if (!cancelled) setLoadingAudience(false) })
+    }, 350)
+    return () => { cancelled = true; clearTimeout(timer) }
+  }, [view, lists, editingId])
+
+  // Busca de leads para adicionar às exclusões (somente no detalhe).
+  useEffect(() => {
+    if (view !== 'detail' || leadQuery.trim().length < 2) {
+      setLeadResults([])
+      return
+    }
+    let cancelled = false
+    setSearchingLeads(true)
+    const timer = setTimeout(() => {
+      fetch(`/api/leads?search=${encodeURIComponent(leadQuery.trim())}&limit=8`)
+        .then(r => r.json())
+        .then(d => {
+          if (cancelled) return
+          const items = (d.items || d.leads || []) as any[]
+          setLeadResults(items.map(l => ({
+            id: l.id, name: l.name, email: l.email ?? null, status: l.status, source: l.source ?? null, tags: [],
+          })))
+        })
+        .catch(() => {})
+        .finally(() => { if (!cancelled) setSearchingLeads(false) })
+    }, 350)
+    return () => { cancelled = true; clearTimeout(timer) }
+  }, [view, leadQuery])
 
   // Filtragem das campanhas
   const filtered = useMemo(() => {
@@ -273,32 +354,129 @@ export function EmailMarketingManager({
   }
 
   const resetForm = () => {
+    setEditingId(null)
     setName(''); setSubject(''); setHtmlBody(''); setCategory('broadcast')
-    setSegmentType('ALL'); setSegmentValue(''); setSenderName(''); setSenderEmail('')
-    setShowPreview(false); setFeedback(null)
+    setLists([{ segmentType: 'ALL', segmentValue: null }])
+    setNewListType('FORMULARIO'); setNewListValue('')
+    setSenderName(''); setSenderEmail('')
+    setShowPreview(false); setFeedback(null); setAudience(null)
   }
 
-  const handleSave = async (asDraft = true) => {
+  const addList = () => {
+    const type = newListType
+    if (type !== 'ALL' && !newListValue) {
+      setFeedback({ type: 'error', message: 'Selecione o valor da lista antes de adicionar.' })
+      return
+    }
+    const value = type === 'ALL' ? null : newListValue
+    if (lists.some(l => l.segmentType === type && (l.segmentValue || null) === value)) {
+      setFeedback({ type: 'error', message: 'Essa lista já está na campanha.' })
+      return
+    }
+    // "Todos os leads" já cobre tudo — não faz sentido somar outras listas.
+    if (type === 'ALL') setLists([{ segmentType: 'ALL', segmentValue: null }])
+    else setLists(prev => [{ segmentType: type, segmentValue: value }, ...prev.filter(l => l.segmentType !== 'ALL')])
+    setNewListValue('')
+    setFeedback(null)
+  }
+
+  const removeList = (index: number) => {
+    setLists(prev => {
+      const next = prev.filter((_, i) => i !== index)
+      return next.length ? next : [{ segmentType: 'ALL', segmentValue: null }]
+    })
+  }
+
+  const openEdit = (c: Campaign) => {
+    setEditingId(c.id)
+    setName(c.name); setSubject(c.subject); setHtmlBody(c.htmlBody)
+    setCategory(c.category)
+    setLists(campaignLists(c))
+    setSenderName(c.senderName || ''); setSenderEmail(c.senderEmail || '')
+    setFeedback(null); setAudience(null)
+    setView('create')
+  }
+
+  // Duplica o conteúdo numa campanha nova para redisparar em outra lista.
+  const duplicateToList = (c: Campaign) => {
+    setEditingId(null)
+    setName(`${c.name} (reenvio)`)
+    setSubject(c.subject); setHtmlBody(c.htmlBody); setCategory(c.category)
+    setLists(campaignLists(c))
+    setSenderName(c.senderName || ''); setSenderEmail(c.senderEmail || '')
+    setFeedback({ type: 'success', message: 'Ajuste as listas e salve: será criada uma campanha nova, sem afetar quem já recebeu a original.' })
+    setAudience(null)
+    setView('create')
+  }
+
+  const loadExclusions = async (campaignId: string) => {
+    try {
+      const r = await fetch(`/api/email-campaigns/${campaignId}/exclusions`)
+      const d = await r.json()
+      setExclusions(d.exclusions || [])
+    } catch {
+      setExclusions([])
+    }
+  }
+
+  const addExclusion = async (lead: LeadOption) => {
+    if (!selectedCampaign) return
+    setExclusionBusy(true)
+    try {
+      const r = await fetch(`/api/email-campaigns/${selectedCampaign.id}/exclusions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadIds: [lead.id], motivo: 'Removido manualmente' }),
+      })
+      if (r.ok) {
+        setLeadQuery(''); setLeadResults([])
+        await loadExclusions(selectedCampaign.id)
+      }
+    } finally {
+      setExclusionBusy(false)
+    }
+  }
+
+  const removeExclusion = async (id: string) => {
+    if (!selectedCampaign) return
+    setExclusionBusy(true)
+    try {
+      const r = await fetch(`/api/email-campaigns/${selectedCampaign.id}/exclusions`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: [id] }),
+      })
+      if (r.ok) await loadExclusions(selectedCampaign.id)
+    } finally {
+      setExclusionBusy(false)
+    }
+  }
+
+  const handleSave = async () => {
     if (!name.trim()) { setFeedback({ type: 'error', message: 'Informe o nome da campanha' }); return }
     if (!subject.trim()) { setFeedback({ type: 'error', message: 'Informe o assunto' }); return }
+    const segments = (lists.length ? lists : [{ segmentType: 'ALL', segmentValue: null }]).map(l => ({
+      segmentType: l.segmentType,
+      segmentValue: l.segmentValue || null,
+    }))
     setSaving(true)
     setFeedback(null)
     try {
-      const r = await fetch('/api/email-campaigns', {
-        method: 'POST',
+      const r = await fetch(editingId ? `/api/email-campaigns/${editingId}` : '/api/email-campaigns', {
+        method: editingId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name, subject, htmlBody, category, segmentType,
-          segmentValue: segmentValue || null,
+          name, subject, htmlBody, category,
+          segmentos: segments,
           senderName: senderName || null,
           senderEmail: senderEmail || null,
         }),
       })
       const d = await r.json()
       if (!r.ok) { setFeedback({ type: 'error', message: d.error || 'Erro ao salvar' }); return }
-      setFeedback({ type: 'success', message: 'Campanha salva como rascunho!' })
+      setFeedback({ type: 'success', message: editingId ? 'Campanha atualizada!' : 'Campanha salva como rascunho!' })
       await refreshCampaigns()
-      setTimeout(() => { resetForm(); setView('list') }, 1500)
+      setTimeout(() => { resetForm(); setView('list') }, 1200)
     } catch {
       setFeedback({ type: 'error', message: 'Erro de conexão' })
     } finally {
@@ -315,6 +493,8 @@ export function EmailMarketingManager({
   }
 
   const openDetail = async (c: Campaign) => {
+    setLeadQuery('')
+    setLeadResults([])
     try {
       const r = await fetch(`/api/email-campaigns/${c.id}`)
       const d = await r.json()
@@ -323,12 +503,14 @@ export function EmailMarketingManager({
       setView('detail')
       setSendError(null)
       setSendProgress(null)
+      loadExclusions(c.id)
     } catch {
       setSelectedCampaign(c)
       setRecipients([])
       setView('detail')
       setSendError(null)
       setSendProgress(null)
+      loadExclusions(c.id)
     }
   }
 
@@ -468,6 +650,7 @@ export function EmailMarketingManager({
                   <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden md:table-cell">Categoria</th>
                   <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
                   <th className="px-4 py-3 text-right font-medium text-muted-foreground hidden lg:table-cell">Destinatários</th>
+                  <th className="px-4 py-3 text-right font-medium text-muted-foreground hidden lg:table-cell">Enviados</th>
                   <th className="px-4 py-3 text-right font-medium text-muted-foreground hidden lg:table-cell">Aberturas</th>
                   <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden sm:table-cell">Data</th>
                   <th className="px-4 py-3 text-right font-medium text-muted-foreground">Ações</th>
@@ -495,6 +678,15 @@ export function EmailMarketingManager({
                       </td>
                       <td className="px-4 py-3 text-right hidden lg:table-cell">
                         <span className="text-muted-foreground">{c.totalRecipients || c._count?.recipients || 0}</span>
+                        {c._count?.exclusions ? (
+                          <span className="text-xs text-muted-foreground/70 ml-1">(-{c._count.exclusions})</span>
+                        ) : null}
+                      </td>
+                      <td className="px-4 py-3 text-right hidden lg:table-cell">
+                        <span className="text-muted-foreground">{c.totalSent || 0}</span>
+                        {c.totalFailed > 0 && (
+                          <span className="text-xs text-red-500 ml-1">({c.totalFailed} falhas)</span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-right hidden lg:table-cell">
                         {c.totalSent > 0 ? (
@@ -508,6 +700,11 @@ export function EmailMarketingManager({
                       </td>
                       <td className="px-4 py-3 text-right" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1">
+                          <button onClick={() => duplicateToList(c)}
+                            className="p-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400"
+                            title="Duplicar para outra lista">
+                            <Users className="h-4 w-4" />
+                          </button>
                           {(c.status === 'DRAFT' || c.status === 'CANCELLED') && (
                             <button onClick={() => handleDelete(c.id)}
                               className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500" title="Excluir">
@@ -546,43 +743,118 @@ export function EmailMarketingManager({
             <h2 className="text-xl font-bold">{c.name}</h2>
             <p className="text-sm text-muted-foreground mt-1">Assunto: {c.subject}</p>
           </div>
-          <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${sm.color}`}>
-            {sm.label}
-          </span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${sm.color}`}>
+              {sm.label}
+            </span>
+            {['DRAFT', 'PAUSED', 'SCHEDULED'].includes(c.status) && (
+              <Button size="sm" variant="outline" onClick={() => openEdit(c)}>
+                <Edit3 className="h-4 w-4 mr-1" /> Editar
+              </Button>
+            )}
+            <Button size="sm" variant="outline" onClick={() => duplicateToList(c)}>
+              <Users className="h-4 w-4 mr-1" /> Duplicar para outra lista
+            </Button>
+          </div>
         </div>
 
         {/* Stats cards */}
-        {c.totalSent > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { label: 'Enviados', value: c.totalSent, icon: Send, color: 'text-blue-600 dark:text-blue-400' },
-              { label: 'Aberturas', value: `${c.totalOpened} (${openRate}%)`, icon: Eye, color: 'text-green-600 dark:text-green-400' },
-              { label: 'Cliques', value: `${c.totalClicked} (${clickRate}%)`, icon: BarChart3, color: 'text-violet-600 dark:text-violet-400' },
-              { label: 'Bounces', value: c.totalBounced + c.totalFailed, icon: RefreshCw, color: 'text-red-600 dark:text-red-400' },
-            ].map(s => (
-              <div key={s.label} className="rounded-xl border p-4 dark:border-neutral-700 dark:bg-neutral-900/40">
-                <div className="flex items-center gap-2 mb-1">
-                  <s.icon className={`h-4 w-4 ${s.color}`} />
-                  <span className="text-xs text-muted-foreground">{s.label}</span>
-                </div>
-                <p className="text-lg font-semibold">{s.value}</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {[
+            { label: 'Enviados', value: c.totalSent, icon: Send, color: 'text-blue-600 dark:text-blue-400' },
+            { label: 'Pendentes', value: Math.max(0, (c.totalRecipients || 0) - c.totalSent - c.totalFailed), icon: Users, color: 'text-amber-600 dark:text-amber-400' },
+            { label: 'Falhas', value: c.totalFailed + c.totalBounced, icon: AlertCircle, color: 'text-red-600 dark:text-red-400' },
+            { label: 'Descadastros', value: c.unsubscribed || 0, icon: Mail, color: 'text-neutral-600 dark:text-neutral-400' },
+            { label: 'Aberturas', value: `${c.totalOpened} (${openRate}%)`, icon: Eye, color: 'text-green-600 dark:text-green-400' },
+            { label: 'Cliques', value: `${c.totalClicked} (${clickRate}%)`, icon: BarChart3, color: 'text-violet-600 dark:text-violet-400' },
+          ].map(s => (
+            <div key={s.label} className="rounded-xl border p-4 dark:border-neutral-700 dark:bg-neutral-900/40">
+              <div className="flex items-center gap-2 mb-1">
+                <s.icon className={`h-4 w-4 ${s.color}`} />
+                <span className="text-xs text-muted-foreground">{s.label}</span>
               </div>
-            ))}
-          </div>
-        )}
+              <p className="text-lg font-semibold">{s.value}</p>
+            </div>
+          ))}
+        </div>
 
         {/* Info */}
         <div className="rounded-xl border p-5 space-y-3 dark:border-neutral-700 dark:bg-neutral-900/30">
           <h3 className="font-semibold text-sm">Detalhes</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm">
             <InfoRow label="Categoria" value={catLabel} />
-            <InfoRow label="Segmento" value={c.segmentType === 'ALL' ? 'Todos os leads' : `${c.segmentType}: ${c.segmentValue || '—'}`} />
             <InfoRow label="Criado por" value={c.createdBy?.name || '—'} />
             <InfoRow label="Criado em" value={fmtDate(c.createdAt)} />
             {c.sentAt && <InfoRow label="Enviado em" value={fmtDate(c.sentAt)} />}
             {c.scheduledAt && <InfoRow label="Agendado para" value={fmtDate(c.scheduledAt)} />}
             {c.senderName && <InfoRow label="Remetente" value={`${c.senderName}${c.senderEmail ? ` <${c.senderEmail}>` : ''}`} />}
           </div>
+          <div className="pt-3 border-t dark:border-neutral-700">
+            <p className="text-xs text-muted-foreground mb-2">Listas da campanha (público é a união)</p>
+            <div className="flex flex-wrap gap-2">
+              {campaignLists(c).map((l, i) => (
+                <span key={`${l.segmentType}-${l.segmentValue}-${i}`}
+                  className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-xs font-medium dark:bg-neutral-800">
+                  {listLabel(l.segmentType, l.segmentValue)}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Exclusões do público */}
+        <div className="rounded-xl border p-5 space-y-3 dark:border-neutral-700 dark:bg-neutral-900/30">
+          <div>
+            <h3 className="font-semibold text-sm flex items-center gap-2">
+              <Users className="h-4 w-4" /> Excluídos do público ({exclusions.length})
+            </h3>
+            <p className="text-xs text-muted-foreground mt-1">
+              Estes leads não recebem esta campanha. Eles continuam no CRM normalmente.
+            </p>
+          </div>
+
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input value={leadQuery} onChange={e => setLeadQuery(e.target.value)}
+              placeholder="Buscar lead por nome, e-mail ou empresa..." className="pl-9" />
+            {leadResults.length > 0 && (
+              <div className="absolute z-20 mt-1 w-full rounded-md border bg-background shadow-lg dark:bg-neutral-900 dark:border-neutral-700 max-h-56 overflow-auto">
+                {leadResults.map(l => (
+                  <button key={l.id} onClick={() => addExclusion(l)} disabled={exclusionBusy}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-muted dark:hover:bg-neutral-800 flex items-center justify-between gap-2">
+                    <span className="truncate">
+                      {l.name}
+                      <span className="text-xs text-muted-foreground ml-1">{l.email || 'sem e-mail'}</span>
+                    </span>
+                    <Plus className="h-4 w-4 shrink-0" />
+                  </button>
+                ))}
+              </div>
+            )}
+            {searchingLeads && <p className="text-xs text-muted-foreground mt-1">Buscando…</p>}
+          </div>
+
+          {exclusions.length > 0 ? (
+            <div className="divide-y rounded-lg border dark:border-neutral-700 dark:divide-neutral-700">
+              {exclusions.map(ex => (
+                <div key={ex.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                  <div className="min-w-0">
+                    <p className="truncate">{ex.name || ex.email || '—'}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {ex.email || '—'}{ex.reason ? ` · ${ex.reason}` : ''}
+                    </p>
+                  </div>
+                  <button onClick={() => removeExclusion(ex.id)} disabled={exclusionBusy}
+                    className="p-1.5 rounded-md text-muted-foreground hover:bg-muted dark:hover:bg-neutral-800"
+                    title="Voltar ao público">
+                    <RefreshCw className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">Nenhum lead excluído.</p>
+          )}
         </div>
 
         {/* Envio real */}
@@ -694,7 +966,7 @@ export function EmailMarketingManager({
         <ChevronLeft className="h-4 w-4" /> Voltar
       </button>
 
-      <h2 className="text-xl font-bold">Nova Campanha</h2>
+      <h2 className="text-xl font-bold">{editingId ? 'Editar Campanha' : 'Nova Campanha'}</h2>
 
       {feedback && (
         <div className={`rounded-lg px-4 py-3 text-sm ${
@@ -737,40 +1009,86 @@ export function EmailMarketingManager({
             {Object.entries(EMAIL_CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
           </select>
         </div>
-        <div>
-          <label className="text-sm font-medium mb-1 block">Segmento</label>
-          <select value={segmentType} onChange={e => { setSegmentType(e.target.value); setSegmentValue('') }}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-100">
-            {SEGMENT_TYPES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-          </select>
-        </div>
       </div>
 
-      {/* Valor do segmento */}
-      {segmentType !== 'ALL' && (
-        <div>
-          <label className="text-sm font-medium mb-1 block">
-            {segmentType === 'STATUS' ? 'Status' : segmentType === 'SOURCE' ? 'Origem' : segmentType === 'LEAD_TYPE' ? 'Tipo de lead' : segmentType === 'TAG' ? 'Tag' : SEGMENT_VALUE_OPTIONS[segmentType as keyof typeof SEGMENT_VALUE_OPTIONS]?.label || 'Valor'}
-          </label>
-          <select value={segmentValue} onChange={e => setSegmentValue(e.target.value)}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-100 max-w-xs">
-            <option value="">Selecione...</option>
-            {segmentType === 'STATUS' && leadStatuses.map(s => <option key={s} value={s}>{s}</option>)}
-            {segmentType === 'SOURCE' && leadSources.map(s => <option key={s} value={s}>{s}</option>)}
-            {segmentType === 'LEAD_TYPE' && leadTypes.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
-            {segmentType === 'TAG' && leadTags.map(t => <option key={t} value={t}>{t}</option>)}
-            {segmentType === 'FORMULARIO' && leadFormularios.map(s => <option key={s} value={s}>{s}</option>)}
-            {segmentType === 'COMPANY' && leadCompanies.map(s => <option key={s} value={s}>{s}</option>)}
-            {segmentType === 'CNPJ' && leadCnpjs.map(s => <option key={s} value={s}>{s}</option>)}
-            {segmentType === 'OBJECTIVE' && leadObjectives.map(s => <option key={s} value={s}>{s}</option>)}
-            {segmentType === 'CATALOG_ITEM' && catalogItems.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
-          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-            <Users className="h-3 w-3" />
-            {loadingLeads ? 'Carregando...' : `${segmentLeads.length} leads com email neste segmento`}
-          </p>
+      {/* Listas da campanha */}
+      <div className="rounded-xl border p-5 space-y-4 dark:border-neutral-700 dark:bg-neutral-900/30">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h3 className="font-semibold text-sm flex items-center gap-2">
+              <Users className="h-4 w-4" /> Listas da campanha
+            </h3>
+            <p className="text-xs text-muted-foreground mt-1">
+              O público é a união das listas. Quem estiver em mais de uma recebe uma vez só.
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-2xl font-bold leading-none">{loadingAudience ? '…' : audience?.total ?? 0}</p>
+            <p className="text-xs text-muted-foreground mt-1">destinatários com e-mail</p>
+          </div>
         </div>
-      )}
+
+        <div className="flex flex-wrap gap-2">
+          {lists.map((l, i) => (
+            <span key={`${l.segmentType}-${l.segmentValue}-${i}`}
+              className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-xs font-medium dark:bg-neutral-800">
+              {listLabel(l.segmentType, l.segmentValue)}
+              {lists.length > 1 && (
+                <button onClick={() => removeList(i)} className="text-muted-foreground hover:text-red-500" title="Remover lista">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </span>
+          ))}
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
+          <div className="sm:w-56">
+            <label className="text-xs font-medium mb-1 block text-muted-foreground">Tipo de lista</label>
+            <select value={newListType} onChange={e => { setNewListType(e.target.value); setNewListValue('') }}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-100">
+              {SEGMENT_TYPES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+            </select>
+          </div>
+          {newListType !== 'ALL' && (
+            <div className="flex-1">
+              <label className="text-xs font-medium mb-1 block text-muted-foreground">
+                {newListType === 'STATUS' ? 'Status' : newListType === 'SOURCE' ? 'Origem' : newListType === 'LEAD_TYPE' ? 'Tipo de lead' : newListType === 'TAG' ? 'Tag' : SEGMENT_VALUE_OPTIONS[newListType as keyof typeof SEGMENT_VALUE_OPTIONS]?.label || 'Valor'}
+              </label>
+              <select value={newListValue} onChange={e => setNewListValue(e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-100">
+                <option value="">Selecione...</option>
+                {newListType === 'STATUS' && leadStatuses.map(s => <option key={s} value={s}>{s}</option>)}
+                {newListType === 'SOURCE' && leadSources.map(s => <option key={s} value={s}>{s}</option>)}
+                {newListType === 'LEAD_TYPE' && leadTypes.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+                {newListType === 'TAG' && leadTags.map(t => <option key={t} value={t}>{t}</option>)}
+                {newListType === 'FORMULARIO' && leadFormularios.map(s => <option key={s} value={s}>{s}</option>)}
+                {newListType === 'COMPANY' && leadCompanies.map(s => <option key={s} value={s}>{s}</option>)}
+                {newListType === 'CNPJ' && leadCnpjs.map(s => <option key={s} value={s}>{s}</option>)}
+                {newListType === 'OBJECTIVE' && leadObjectives.map(s => <option key={s} value={s}>{s}</option>)}
+                {newListType === 'CATALOG_ITEM' && catalogItems.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+          )}
+          <Button variant="outline" size="sm" onClick={addList}>
+            <Plus className="h-4 w-4 mr-1" /> Adicionar lista
+          </Button>
+        </div>
+
+        {audience && (
+          <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground border-t pt-3 dark:border-neutral-700">
+            <span><strong className="text-foreground">{audience.total}</strong> no público</span>
+            <span>{audience.semEmail} sem e-mail</span>
+            <span>{audience.descadastrados} descadastrados</span>
+            {audience.excluidos > 0 && <span>{audience.excluidos} excluídos manualmente</span>}
+            {audience.porLista.map((p, i) => (
+              <span key={`${p.segmentType}-${i}`}>
+                {listLabel(p.segmentType, p.segmentValue)}: <strong className="text-foreground">{p.total}</strong>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Remetente (opcional) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -819,9 +1137,9 @@ export function EmailMarketingManager({
 
       {/* Ações */}
       <div className="flex items-center gap-3 pt-2">
-        <Button onClick={() => handleSave(true)} disabled={saving}>
+        <Button onClick={handleSave} disabled={saving}>
           {saving ? <RefreshCw className="h-4 w-4 mr-1 animate-spin" /> : <Edit3 className="h-4 w-4 mr-1" />}
-          Salvar Rascunho
+          {editingId ? 'Salvar alterações' : 'Salvar Rascunho'}
         </Button>
         <Button variant="outline" onClick={() => { resetForm(); setView('list') }}>Cancelar</Button>
       </div>

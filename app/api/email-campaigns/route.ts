@@ -18,7 +18,8 @@ export async function GET(req: Request) {
       include: {
         template: { select: { id: true, name: true } },
         createdBy: { select: { id: true, name: true } },
-        _count: { select: { recipients: true } },
+        audiences: true,
+        _count: { select: { recipients: true, exclusions: true } },
       },
     })
     return NextResponse.json({ campaigns })

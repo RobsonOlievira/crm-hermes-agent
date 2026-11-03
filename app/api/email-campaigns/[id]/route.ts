@@ -13,12 +13,16 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       include: {
         template: { select: { id: true, name: true } },
         createdBy: { select: { id: true, name: true } },
+        audiences: true,
         recipients: { orderBy: { createdAt: 'desc' }, take: 200 },
-        _count: { select: { recipients: true } },
+        _count: { select: { recipients: true, exclusions: true } },
       },
     })
     if (!campaign) return NextResponse.json({ error: 'Campanha não encontrada' }, { status: 404 })
-    return NextResponse.json({ campaign })
+    const unsubscribed = await prisma.emailRecipient.count({
+      where: { campaignId: params.id, tenantId: user.tenantId, status: 'UNSUBSCRIBED' },
+    })
+    return NextResponse.json({ campaign: { ...campaign, unsubscribed }, unsubscribed })
   } catch (e) {
     return NextResponse.json({ error: 'Erro ao carregar campanha' }, { status: 500 })
   }
