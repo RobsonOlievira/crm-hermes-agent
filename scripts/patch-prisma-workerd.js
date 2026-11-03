@@ -15,9 +15,13 @@ const fs = require('fs')
 const path = require('path')
 
 const targets = [
-  path.join(process.cwd(), 'node_modules', '.prisma', 'client', 'index.js'),
   path.join(process.cwd(), '.next', 'standalone', 'node_modules', '.prisma', 'client', 'index.js'),
 ].filter((file) => fs.existsSync(file))
+
+if (targets.length === 0) {
+  console.error('[prisma-workerd] .next/standalone não encontrado — rode `npm run build` antes.')
+  process.exit(1)
+}
 
 const pattern =
   /getQueryCompilerWasmModule: async \(\) => \{\s*const queryCompilerWasmFilePath = require\('path'\)\.join\(config\.dirname, 'query_compiler_bg\.wasm'\)\s*const queryCompilerWasmFileBytes = require\('fs'\)\.readFileSync\(queryCompilerWasmFilePath\)\s*return new WebAssembly\.Module\(queryCompilerWasmFileBytes\)\s*\}/

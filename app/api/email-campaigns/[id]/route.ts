@@ -52,9 +52,36 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       data.scheduledAt = body.scheduledAt ? new Date(body.scheduledAt) : null
     }
 
-    const updated = await prisma.emailCampaign.update({
-      where: { id: params.id },
-      data,
+    const segments = Array.isArray(body.segmentos) && body.segmentos.length > 0
+      ? body.segmentos
+          .map((s: any) => ({
+            segmentType: String(s?.segmentType || s?.tipo || '').toUpperCase(),
+            segmentValue: s?.segmentValue || s?.valor || null,
+          }))
+          .filter((s: any) => s.segmentType)
+      : null
+    if (segments && segments.length > 0) {
+      data.segmentType = segments[0].segmentType
+      data.segmentValue = segments[0].segmentValue || null
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      if (segments && segments.length > 0) {
+        await tx.emailCampaignAudience.deleteMany({ where: { campaignId: params.id } })
+        await tx.emailCampaignAudience.createMany({
+          data: segments.map((s: any) => ({
+            tenantId: user.tenantId!,
+            campaignId: params.id,
+            segmentType: s.segmentType,
+            segmentValue: s.segmentValue || null,
+          })),
+        })
+      }
+      return tx.emailCampaign.update({
+        where: { id: params.id },
+        data,
+        include: { audiences: true },
+      })
     })
     return NextResponse.json({ campaign: updated })
   } catch (e) {

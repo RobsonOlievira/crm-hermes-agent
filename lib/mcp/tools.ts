@@ -11,6 +11,7 @@ import { deriveLeadStatus } from '@/lib/lead-stages'
 import { resolveTenantStage, findTenantStages } from '@/lib/stage-resolver'
 import { agendaMcpTools } from '@/lib/mcp/tools/calendar-tools'
 import { emailMcpTools } from '@/lib/mcp/tools/email-tools'
+import { emailMarketingMcpTools } from '@/lib/mcp/tools/email-marketing-tools'
 import { financeMcpTools } from '@/lib/mcp/tools/finance-tools'
 import { contractMcpTools } from '@/lib/mcp/tools/contract-tools'
 import { whatsappMcpTools } from '@/lib/mcp/tools/whatsapp-tools'
@@ -103,20 +104,25 @@ export const MCP_TOOLS: McpTool[] = [
   {
     name: 'listar_leads',
     description:
-      'Lista os leads do CRM. Permite filtrar por status da jornada, tipo de lead, texto (nome/telefone/email) e se está arquivado. Use antes de agir para localizar o lead certo.',
+      'Lista os leads do CRM com paginação. Filtra por status, tipo de lead, formulário/origem de captação, texto (nome/telefone/email) e arquivados. Use antes de agir para localizar o lead certo.',
     inputSchema: {
       type: 'object',
       properties: {
         status: { type: 'string', description: 'Status da jornada (ex.: PRIMEIRO_CONTATO, CONVERSA_ATIVA, FOLLOW_UP, BANCO_7_DIAS, SERVICO_FECHADO, NOVAS_MENSAGENS, CONVERSAS_OFF).' },
         busca: { type: 'string', description: 'Texto para buscar em nome, telefone ou email.' },
+        formulario: { type: 'string', description: 'Formulário/origem de captação (ex.: comunidade-olha-o-foguete).' },
         arquivados: { type: 'boolean', description: 'Se true, retorna somente arquivados; se false (padrão), somente ativos.' },
         limite: { type: 'number', description: 'Máximo de leads a retornar (padrão 25, máx 100).' },
+        pagina: { type: 'number', description: 'Página (padrão 1). Use junto com limite.' },
+        cursor: { type: 'string', description: 'ID do último lead da página anterior (paginação por cursor).' },
       },
     },
     handler: async (tenantId, args) => {
       const limit = Math.min(Math.max(Number(args.limite) || 25, 1), 100)
+      const page = Math.max(Number(args.pagina) || 1, 1)
       const where: any = { tenantId, isArchived: args.arquivados === true }
       if (args.status) where.status = args.status
+      if (args.formulario) where.formulario = String(args.formulario)
       if (args.busca) {
         where.OR = [
           { name: { contains: String(args.busca), mode: 'insensitive' } },
@@ -124,13 +130,29 @@ export const MCP_TOOLS: McpTool[] = [
           { email: { contains: String(args.busca), mode: 'insensitive' } },
         ]
       }
-      const leads = await prisma.lead.findMany({
-        where,
-        include: { leadTypes: { include: { leadType: true } }, assignedTo: true },
-        orderBy: { updatedAt: 'desc' },
-        take: limit,
-      })
-      return { total: leads.length, leads: leads.map(leadView) }
+      const orderBy = [{ updatedAt: 'desc' as const }, { id: 'desc' as const }]
+      const [total, leads] = await Promise.all([
+        prisma.lead.count({ where }),
+        prisma.lead.findMany({
+          where,
+          include: { leadTypes: { include: { leadType: true } }, assignedTo: true },
+          orderBy,
+          take: limit,
+          ...(args.cursor
+            ? { cursor: { id: String(args.cursor) }, skip: 1 }
+            : { skip: (page - 1) * limit }),
+        }),
+      ])
+      const nextCursor = leads.length === limit ? leads[leads.length - 1].id : null
+      return {
+        total,
+        pagina: page,
+        limite: limit,
+        retornados: leads.length,
+        temMais: Boolean(nextCursor),
+        proximoCursor: nextCursor,
+        leads: leads.map(leadView),
+      }
     },
   },
   {
@@ -1410,6 +1432,7 @@ export const MCP_TOOLS: McpTool[] = [
   // Módulos adicionais (Agenda, E-mail, Financeiro/Projetos/Propostas, Contratos)
   ...agendaMcpTools,
   ...emailMcpTools,
+  ...emailMarketingMcpTools,
   ...financeMcpTools,
   ...contractMcpTools,
   ...whatsappMcpTools,

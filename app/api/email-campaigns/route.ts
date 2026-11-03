@@ -41,6 +41,15 @@ export async function POST(req: Request) {
       if (!isNaN(d.getTime())) scheduledAt = d
     }
 
+    const segments = Array.isArray(body.segmentos) && body.segmentos.length > 0
+      ? body.segmentos
+          .map((s: any) => ({
+            segmentType: String(s?.segmentType || s?.tipo || 'ALL').toUpperCase(),
+            segmentValue: s?.segmentValue || s?.valor || null,
+          }))
+          .filter((s: any) => s.segmentType)
+      : [{ segmentType: body.segmentType || 'ALL', segmentValue: body.segmentValue || null }]
+
     const created = await prisma.emailCampaign.create({
       data: {
         tenantId: user.tenantId,
@@ -49,13 +58,21 @@ export async function POST(req: Request) {
         htmlBody: typeof body.htmlBody === 'string' ? body.htmlBody : '',
         category: typeof body.category === 'string' && body.category ? body.category : 'broadcast',
         templateId: body.templateId || null,
-        segmentType: body.segmentType || 'ALL',
-        segmentValue: body.segmentValue || null,
+        segmentType: segments[0].segmentType,
+        segmentValue: segments[0].segmentValue || null,
         senderName: body.senderName || null,
         senderEmail: body.senderEmail || null,
         scheduledAt,
         createdById: user.id || null,
+        audiences: {
+          create: segments.map((s: any) => ({
+            tenantId: user.tenantId!,
+            segmentType: s.segmentType,
+            segmentValue: s.segmentValue || null,
+          })),
+        },
       },
+      include: { audiences: true },
     })
     return NextResponse.json({ campaign: created })
   } catch (e) {

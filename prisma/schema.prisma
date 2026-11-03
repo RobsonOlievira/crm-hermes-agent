@@ -633,6 +633,8 @@ model Lead {
   isArchived      Boolean      @default(false)
   archivedAt      DateTime?
   formulario      String?
+  emailOptOut     Boolean      @default(false)
+  emailOptOutAt   DateTime?
   utmSource       String?
   utmMedium       String?
   utmCampaign     String?
@@ -880,6 +882,8 @@ model EmailCampaign {
   createdById     String?
   createdBy       User?               @relation("CampaignCreator", fields: [createdById], references: [id])
   recipients      EmailRecipient[]
+  audiences       EmailCampaignAudience[]
+  exclusions      EmailCampaignExclusion[]
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
 
@@ -904,6 +908,37 @@ model EmailRecipient {
   externalId   String?
   errorMessage String?
   createdAt    DateTime             @default(now())
+
+  @@index([campaignId])
+  @@index([tenantId, email])
+}
+
+// Listas/segmentos de uma campanha. Uma campanha pode ter várias listas
+// (união dos públicos). Quando vazio, vale o segmentType/segmentValue legado.
+model EmailCampaignAudience {
+  id           String         @id @default(cuid())
+  tenantId     String
+  campaignId   String
+  campaign     EmailCampaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  segmentType  String
+  segmentValue String?
+  label        String?
+  createdAt    DateTime       @default(now())
+
+  @@index([campaignId])
+  @@index([tenantId])
+}
+
+// Leads/e-mails removidos manualmente do público de uma campanha.
+model EmailCampaignExclusion {
+  id         String        @id @default(cuid())
+  tenantId   String
+  campaignId String
+  campaign   EmailCampaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  leadId     String?
+  email      String?
+  reason     String?
+  createdAt  DateTime      @default(now())
 
   @@index([campaignId])
   @@index([tenantId, email])
