@@ -70,6 +70,8 @@ export interface SendEmailInput {
   text?: string | null
   replyTo?: string
   tags?: { name: string; value: string }[]
+  /** Cabeçalhos extras (ex.: List-Unsubscribe). */
+  headers?: Record<string, string>
 }
 
 // Envia um email via Resend. Aceita a configuração do tenant; se não for
@@ -89,6 +91,7 @@ export async function sendEmail(input: SendEmailInput, config?: ResendConfig): P
   }
   if (input.text) payload.text = input.text
   if (input.tags?.length) payload.tags = input.tags
+  if (input.headers && Object.keys(input.headers).length) payload.headers = input.headers
 
   return sendWithRetry(payload, apiKey, 3)
 }

@@ -121,6 +121,9 @@ const SEGMENT_VALUE_OPTIONS = {
   OBJECTIVE: { field: 'leadObjectives', label: 'Objetivo' },
 } as const
 
+// Rodapé de descadastro que é anexado automaticamente no envio real (prévia).
+const FOOTER_PREVIEW = `<div style="margin:28px 0 8px;text-align:center;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.4;color:#9ca3af"><a href="#" onclick="return false" style="color:#9ca3af;text-decoration:none">Não quero mais receber estes e-mails</a></div>`
+
 type View = 'list' | 'create' | 'detail'
 
 function campaignLists(c: Campaign): CampaignList[] {
@@ -1122,7 +1125,7 @@ export function EmailMarketingManager({
         <Button variant="outline" size="sm" onClick={() => setShowPreview(!showPreview)}>
           <Eye className="h-4 w-4 mr-1" /> {showPreview ? 'Ocultar' : 'Ver'} Preview
         </Button>
-        <span className="text-xs text-muted-foreground">Variáveis são substituídas por dados de exemplo</span>
+        <span className="text-xs text-muted-foreground">Variáveis são substituídas por dados de exemplo · o rodapé de descadastro entra automaticamente</span>
       </div>
 
       {showPreview && htmlBody.trim() && (
@@ -1131,7 +1134,7 @@ export function EmailMarketingManager({
             <span className="text-xs font-medium text-muted-foreground">Preview</span>
           </div>
           <div className="p-4 bg-white dark:bg-neutral-900 prose prose-sm max-w-none dark:prose-invert"
-            dangerouslySetInnerHTML={{ __html: personalize(htmlBody) }} />
+            dangerouslySetInnerHTML={{ __html: personalize(htmlBody) + FOOTER_PREVIEW }} />
         </div>
       )}
 

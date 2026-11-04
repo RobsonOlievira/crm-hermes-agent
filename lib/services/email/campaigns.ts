@@ -131,13 +131,24 @@ export function verifyUnsubscribeToken(token: string): { campaignId: string; ema
   return { campaignId: payload.slice(0, idx), email: payload.slice(idx + 1) }
 }
 
+export function unsubscribeUrl(campaignId: string, email: string): string {
+  return `${appUrl()}/api/email/unsubscribe?t=${encodeURIComponent(unsubscribeToken(campaignId, email))}`
+}
+
+// Rodapé bem discreto: uma linha, centralizada, cinza claro, sem borda.
 export function unsubscribeFooter(campaignId: string, email: string): string {
-  const url = `${appUrl()}/api/email/unsubscribe?t=${encodeURIComponent(unsubscribeToken(campaignId, email))}`
-  return `
-<div style="margin-top:32px;padding-top:16px;border-top:1px solid #e5e5e5;font-family:Arial,sans-serif;font-size:12px;color:#888;line-height:1.5">
-  Você recebeu este e-mail porque está cadastrado em nossa base.
-  <a href="${url}" style="color:#888;text-decoration:underline">Não quero mais receber estes e-mails</a>.
+  const url = unsubscribeUrl(campaignId, email)
+  return `<div style="margin:28px 0 8px;text-align:center;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.4;color:#9ca3af">
+  <a href="${url}" style="color:#9ca3af;text-decoration:none">Não quero mais receber estes e-mails</a>
 </div>`
+}
+
+// Cabeçalhos de descadastro em um clique (exigidos por Gmail/Yahoo para volume).
+export function unsubscribeHeaders(campaignId: string, email: string): Record<string, string> {
+  return {
+    'List-Unsubscribe': `<${unsubscribeUrl(campaignId, email)}>`,
+    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+  }
 }
 
 export interface CampaignStats {
@@ -346,6 +357,7 @@ export async function sendCampaignBatch(opts: {
         subject: campaign.subject,
         html,
         replyTo: campaign.senderEmail || undefined,
+        headers: unsubscribeHeaders(campaign.id, lead.email),
         tags: [
           { name: 'campaign_id', value: campaign.id },
           { name: 'category', value: campaign.category || 'geral' },

@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/session'
 import { sendEmail, isResendConfigured, defaultConfig, type ResendConfig } from '@/lib/resend'
+import { unsubscribeFooter, unsubscribeHeaders } from '@/lib/services/email/campaigns'
 
 interface TenantResend {
   resendApiKey: string | null
@@ -57,12 +58,13 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const html = campaign.htmlBody
       .replace(/\{\{primeiro_nome\}\}/g, first)
       .replace(/\{\{nome\}\}/g, user.name || 'Teste')
-      .replace(/\{\{email\}\}/g, user.email)
+      .replace(/\{\{email\}\}/g, user.email) + unsubscribeFooter(campaign.id, user.email)
 
     const res = await sendEmail({
       to: user.email,
       subject: '[TESTE] ' + campaign.subject,
       html,
+      headers: unsubscribeHeaders(campaign.id, user.email),
       tags: [
         { name: 'campaign_id', value: campaign.id },
         { name: 'type', value: 'test' },
